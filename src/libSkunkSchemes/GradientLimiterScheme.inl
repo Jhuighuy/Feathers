@@ -1,0 +1,246 @@
+/**
+ *    ______             __     __  _____ _____
+ *   / __/ /____ _____  / /__  /  |/  / // / _ \
+ *  _\ \/  '_/ // / _ \/  '_/ / /|_/ / _  / // /
+ * /___/_/\_\\_,_/_//_/_/\_\ /_/  /_/_//_/____/
+ *
+ * Copyright (c) 2019 Oleg Butakov
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+namespace skunk {
+
+/**
+ * Compute local slope coefficient.
+ * @verbatim
+ * [1] Krzysztof Michalak, Carl Ollivier-Gooch,
+ *     "Limiters for Unstructured Higher-Order Accurate
+ *      Solutions of the Euler Equations" (2008).
+ * @endverbatim
+ */
+inline real_t MinmodSlopeLimiter::operator()(real_t du_min, real_t du_max,
+                                             real_t du_face, real_t MHD_NOT_USED(eps_sqr)) const {
+    /* Compute deltas:
+     * [1], page 4. */
+    const auto delta_neg = du_face;
+    real_t delta_pos;
+    if (delta_neg < 0.0) {
+        delta_pos = du_min;
+    } else if (delta_neg > 0.0) {
+        delta_pos = du_max;
+    } else {
+        return 1.0;
+    }
+    /* Compute limiter:
+     * [1], page 3. */
+    const auto y_cur = delta_pos/delta_neg;
+    const auto limiter = std::min(1.0, y_cur);
+    return limiter;
+}   // MinmodSlopeLimiter::get_limiter_coefficient
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+/**
+ * Compute local slope coefficient.
+ * @verbatim
+ * [1] Krzysztof Michalak, Carl Ollivier-Gooch,
+ *     "Limiters for Unstructured Higher-Order Accurate
+ *      Solutions of the Euler Equations" (2008).
+ * @endverbatim
+ */
+inline real_t VenkatakrishnanSlopeLimiter::operator()(real_t du_min, real_t du_max,
+                                                      real_t du_face, real_t eps_sqr) const {
+    /* Compute deltas:
+     * [1], page 4. */
+    const auto delta_neg = du_face;
+    real_t delta_pos;
+    if (delta_neg < 0.0) {
+        delta_pos = du_min;
+    } else if (delta_neg > 0.0) {
+        delta_pos = du_max;
+    } else {
+        return 1.0;
+    }
+    /* Compute limiter:
+     * [1], page 4. */
+    const auto delta_pos_sqr = std::pow(delta_pos, 2);
+    const auto delta_neg_sqr = std::pow(delta_neg, 2);
+    const auto delta_pos_neg = delta_pos*delta_neg;
+    const auto limiter = (delta_pos_sqr + 2.0 * delta_pos_neg + eps_sqr) /
+                         (delta_pos_sqr + 2.0*delta_neg_sqr + delta_pos_neg + eps_sqr);
+    return limiter;
+}   // VenkatakrishnanSlopeLimiter::operator()
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+/**
+ * Compute local slope coefficient.
+ * @verbatim
+ * [1] Krzysztof Michalak, Carl Ollivier-Gooch,
+ *     "Limiters for Unstructured Higher-Order Accurate
+ *      Solutions of the Euler Equations" (2008).
+ * @endverbatim
+ */
+inline real_t CubicSlopeLimiter::operator()(real_t du_min, real_t du_max,
+                                            real_t du_face, real_t MHD_NOT_USED(eps_sqr)) const {
+    /* Calculate deltas:
+     * [1], page 4. */
+    const auto delta_neg = du_face;
+    real_t delta_pos;
+    if (delta_neg < 0.0) {
+        delta_pos = du_min;
+    } else if (delta_neg > 0.0) {
+        delta_pos = du_max;
+    } else {
+        return 1.0;
+    }
+    /* Compute limiter:
+     * [1], page 5. */
+    const auto y_cur = delta_pos/delta_neg;
+    const auto y_thr = 1.75;
+    auto limiter = 1.0;
+    if (y_cur < y_thr) {
+        const auto y_div = y_cur/y_thr;
+        limiter = y_cur + std::pow(y_div, 2) * (3.0 - 2.0 * y_thr + (y_thr - 2.0) * y_div);
+    }
+    return limiter;
+}   // CubicSlopeLimiter::operator()
+
+}   // namespace skunk
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+namespace skunk {
+
+/**
+ * Compute second slope coefficient.
+ */
+inline real_t DummySecondLimiter::operator()(real_t limiter,
+                                             real_t MHD_NOT_USED(du_min),
+                                             real_t MHD_NOT_USED(du_max),
+                                             real_t MHD_NOT_USED(eps_sqr)) const {
+    const auto second_limiter = limiter;
+    return second_limiter;
+}   // DummySecondLimiter::operator()
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+/**
+ * Compute second slope coefficient.
+ * @verbatim
+ * [1] Krzysztof Michalak, Carl Ollivier-Gooch,
+ *     "Limiters for Unstructured Higher-Order Accurate
+ *      Solutions of the Euler Equations" (2008).
+ * @endverbatim
+ */
+inline real_t CubicSecondLimiter::operator()(real_t limiter,
+                                             real_t du_min, real_t du_max,
+                                             real_t eps_sqr) const {
+    /* Compute weight:
+     * [1], page 5. */
+    const auto du_sqr = std::pow(du_max - du_min, 2);
+    if (du_sqr <= eps_sqr) {
+        return 1.0;
+    } else if (eps_sqr < du_sqr && du_sqr < 2.0*eps_sqr) {
+        const auto dy = (du_sqr - eps_sqr)/eps_sqr;
+        const auto dy_sqr = std::pow(dy, 2);
+        const auto weight = (2.0*dy - 3.0)*dy_sqr + 1.0;
+        const auto second_limiter = weight + (1.0 - weight)*limiter;
+        return second_limiter;
+    } else if (2.0*eps_sqr <= du_sqr) {
+        return limiter;
+    }
+    return 0.0;
+}   // CubicSecondLimiter::get_slope_coefficient
+
+}   // namespace skunk
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+namespace skunk {
+
+/**
+ * Compute cell-centered gradient limiter coefficients and averages. 
+ */
+template<int_t num_vars, typename TSlopeLimiter, typename TSecondLimiter>
+template<template<int_t> class TPiecewiseFunction>
+void TGradientLimiterScheme<num_vars, TSlopeLimiter, TSecondLimiter>::
+                                    get_cell_limiter_(TScalarField<num_vars>& lim_u,
+                                                      const TPiecewiseFunction<num_vars>& u) const {
+    /* Compute the cell-centered
+     * limiting coefficients and averages. */
+    for_each_interior_cell(*m_mesh, [&](CellIter cell) {
+        static const real_t k = 0.1;
+        const real_t eps_sqr = std::pow(k*cell->get_volume(), 3);
+        /* Find largest negative and positive differences
+         * between values of and neighbor cells and the current cell. */
+        std::array<real_t, num_vars> du_min(u[cell]), du_max(u[cell]);
+        cell.for_each_face_cells([&](CellIter cell_inner, CellIter cell_outer) {
+            for (int_t i = 0; i < num_vars; ++i) {
+                du_min[i] = std::min(du_min[i],
+                                     std::min(u[cell_outer][i], u[cell_inner][i]));
+                du_max[i] = std::max(du_max[i],
+                                     std::max(u[cell_outer][i], u[cell_inner][i]));
+            }
+        });
+        for (int_t i = 0; i < num_vars; ++i) {
+            du_min[i] = std::min(0.0, du_min[i] - u[cell][i]);
+            du_max[i] = std::max(0.0, du_max[i] - u[cell][i]);
+        }
+
+        /* Compute the slope limiting coefficients:
+         * clamp the node delta with computed local delta extrema. */
+        lim_u[cell].fill(1.0), cell.for_each_face([&](FaceIter face) {
+            const vec3_t dr =
+                face->get_center_position() - cell->get_center_position();
+            for (int_t i = 0; i < num_vars; ++i) {
+                const real_t du_face = u(cell, dr, 0.0)[i];
+                const real_t limiter =
+                    m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
+                lim_u[cell][i] = std::min(lim_u[cell][i], limiter);
+            }
+        });
+
+        /* Compute the secondary limiting coefficients:
+         * disable limiting near smooth regions. */
+        for (int_t i = 0; i < num_vars; ++i) {
+            const real_t limiter =
+                m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
+            lim_u[cell][i] = limiter;
+        }
+   });
+}   // IGradientLimiterScheme::get_cell_limiter_
+
+}   // namespace skunk
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
