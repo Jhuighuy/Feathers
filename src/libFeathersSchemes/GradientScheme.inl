@@ -29,7 +29,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Init the gradient scheme.
@@ -43,7 +43,7 @@ void TLeastSquaresGradientScheme<num_vars>::init_gradients_() {
         cell.for_each_face_cells([&](CellIter cell_inner, CellIter cell_outer) {
             const vec3_t dr =
                 cell_outer->get_center_position() - cell_inner->get_center_position();
-            mat += dr.outer_prod(dr);
+            mat += glm::outerProduct(dr, dr);
         });
     });
 
@@ -54,17 +54,17 @@ void TLeastSquaresGradientScheme<num_vars>::init_gradients_() {
         mat3_t& mat = m_inverse_matrices[cell_outer][0];
         const vec3_t dr =
             cell_outer->get_center_position() - cell_inner->get_center_position();
-        mat += dr.outer_prod(dr);
+        mat += glm::outerProduct(dr, dr);
         cell_inner.for_each_face_cells([&](CellIter cell_inner_inner,
                                            CellIter cell_inner_outer) {
             if (cell_inner_inner == cell_inner) {
                 const vec3_t dr_inner =
                     cell_inner_outer->get_center_position() - cell_inner->get_center_position();
-                mat += dr_inner.outer_prod(dr_inner);
+                mat += glm::outerProduct(dr_inner, dr_inner);
             } else if (cell_inner_outer == cell_inner) {
                 const vec3_t dr_inner =
                     cell_inner_inner->get_center_position() - cell_inner->get_center_position();
-                mat += dr_inner.outer_prod(dr_inner);
+                mat += glm::outerProduct(dr_inner, dr_inner);
             }
         });
     });
@@ -72,11 +72,9 @@ void TLeastSquaresGradientScheme<num_vars>::init_gradients_() {
     /* Compute the inverse of the least squares problem matrices.
      * ( Matrix is stabilized by a small number, added to the diagonal. ) */
     for_each_cell(*m_mesh, [&](CellIter cell) {
-        static const mat3_t eps{1e-14, 0.0, 0.0,
-                                0.0, 1e-14, 0.0,
-                                0.0, 0.0, 1e-14};
+        static const mat3_t eps(1e-14);
         mat3_t& mat = m_inverse_matrices[cell][0];
-        mat = mat3_t::inv(mat + eps);
+        mat = glm::inverse(mat + eps);
     });
 }   // TLeastSquaresGradientScheme::init_gradients_
 
@@ -87,7 +85,7 @@ template<int_t num_vars>
 template</*template<int_t>*/ class TOutField,
          /*template<int_t>*/ class TInField>
 void TLeastSquaresGradientScheme<num_vars>::get_gradients_(TOutField/*<num_vars>*/& grad_u,
-                                                                const TInField/*<num_vars>*/& u) const {
+                                                           const TInField/*<num_vars>*/& u) const {
     /* Compute the least-squares
      * problem right hand statements for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](CellIter cell) {
@@ -131,12 +129,12 @@ void TLeastSquaresGradientScheme<num_vars>::get_gradients_(TOutField/*<num_vars>
     for_each_cell(*m_mesh, [&](CellIter cell) {
         for (int_t i = 0; i < num_vars; ++i) {
             const mat3_t& mat = m_inverse_matrices[cell][0];
-            grad_u[cell][i] = mat.prod(grad_u[cell][i]);
+            grad_u[cell][i] = mat*grad_u[cell][i];
         }
     });
 }   // TLeastSquaresGradientScheme::get_gradients_
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

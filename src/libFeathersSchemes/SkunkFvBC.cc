@@ -36,7 +36,7 @@
  * Scalars are copied, velocity components are set to zero.
  */
 template<typename MhdPhysicsT>
-void MhdFvBcFarFieldT<MhdPhysicsT>::get_ghost_state_(const mhd_vec3_t& n, const mhd_vec3_t& r, const mhd_vec3_t& r_ghost,
+void MhdFvBcFarFieldT<MhdPhysicsT>::get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
                                                      const MhdFluidStateT& u,
                                                      MhdFluidStateT& u_ghost) const {
     u_ghost = u;
@@ -51,7 +51,7 @@ void MhdFvBcFarFieldT<MhdPhysicsT>::get_ghost_state_(const mhd_vec3_t& n, const 
  * Scalars are copied, velocity components are set to zero.
  */
 template<typename MhdPhysicsT>
-void MhdFvBcNoSlipT<MhdPhysicsT>::get_ghost_state_(const mhd_vec3_t& n, const mhd_vec3_t& r, const mhd_vec3_t& r_ghost,
+void MhdFvBcNoSlipT<MhdPhysicsT>::get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
                                                    const MhdFluidStateT& u,
                                                    MhdFluidStateT& u_ghost) const {
     u_ghost = u;
@@ -67,7 +67,7 @@ void MhdFvBcNoSlipT<MhdPhysicsT>::get_ghost_state_(const mhd_vec3_t& n, const mh
  * Scalars are copied, velocity components are set to zero.
  */
 template<typename MhdPhysicsT>
-void MhdFvBcSlipT<MhdPhysicsT>::get_ghost_state_(const mhd_vec3_t& n, const mhd_vec3_t& r, const mhd_vec3_t& r_ghost,
+void MhdFvBcSlipT<MhdPhysicsT>::get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
                                                  const MhdFluidStateT& u,
                                                  MhdFluidStateT& u_ghost) const {
     u_ghost = u;

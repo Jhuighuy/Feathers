@@ -29,7 +29,7 @@ public:
 
 private:
     std::shared_ptr<UMesh> m_mesh;
-    std::shared_ptr<skunk::TConvectionScheme<num_vars>> m_conv;
+    std::shared_ptr<feathers::TConvectionScheme<num_vars>> m_conv;
     std::map<int_t, std::shared_ptr<MhdFvBcPT<MhdPhysicsT>>> m_bcs;
 
 public:

@@ -3,14 +3,13 @@
 #include <string>
 
 #include "SkunkBase.hh"
-#include "libSkunkSchemes/SkunkFvSolver.hh"
-#include "libSkunkMesh/SkunkMeshStructured.hh"
+#include "libFeathersSchemes/SkunkFvSolver.hh"
 
 #include <chrono>
 #include <fstream>
 #include <iomanip>
 
-inline std::string my_to_string(int32_t i) {
+inline std::string my_to_string(uint_t i) {
     std::string s = std::to_string(i);
     std::string z(5-s.size(), '0');
     return z + s;
@@ -21,7 +20,7 @@ static void print(
         const UMesh & m,
         const std::array<real_t, 5>* u) {
     std::cout << nn << std::endl;
-    std::ofstream file("../results/fields-" + my_to_string(nn) + ".csv");
+    std::ofstream file("out/fields-" + my_to_string(nn) + ".csv");
     file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
     file << "x,y,z,r,p,vx,vy,vz" << std::endl;
     for (uint_t cell_ind1 = 0; cell_ind1 < m.num_marked_cells(0); ++cell_ind1) {
@@ -36,11 +35,11 @@ static void print(
 }
 
 template<unsigned N>
-static void print_vtk(int_t nn,
+static void print_vtk(uint_t nn,
                       const UMesh & m,
                       const std::array<real_t, N>* u) {
-    using namespace skunk;
-    std::ofstream file("results/fields-" + my_to_string(nn) + ".vtk");
+    using namespace feathers;
+    std::ofstream file("out/fields-" + my_to_string(nn) + ".vtk");
     file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
     file << "# vtk DataFile Version 2.0" << std::endl;
     file << "kek" << std::endl;
@@ -56,7 +55,7 @@ static void print_vtk(int_t nn,
 
     file << "CELLS " << m.num_marked_cells(0) << " " << m.num_marked_cells(0)*4 << std::endl;
     for (uint_t cell_ind = m.begin_cell(0); cell_ind < m.end_cell(0); ++cell_ind) {
-        const mesh_cell_t& cell = m.get_cell(cell_ind);
+        const Cell& cell = m.get_cell(cell_ind);
         file << "3 ";
         std::for_each(cell.begin_node(), cell.end_node(), [&](int_t node_ind) {
             file << node_ind << " ";
@@ -82,16 +81,16 @@ static void print_vtk(int_t nn,
 
 #if 0
 int main() {
-    using namespace skunk;
-    std::shared_ptr<UMesh> mesh(new skunk::structured_mesh_t(0.5, 1.0, 50,
+    using namespace feathers;
+    std::shared_ptr<UMesh> mesh(new feathers::structured_mesh_t(0.5, 1.0, 50,
                                                                -SKUNK_PI/125, +SKUNK_PI/125, 1,
                                                                0.0, SKUNK_PI_2, 200,
                                                                1, 2, 3, 3, 5, 4));
-    //std::shared_ptr<UMesh> mesh(new skunk::structured_mesh_t(0.1, 1.0, 50,
+    //std::shared_ptr<UMesh> mesh(new feathers::structured_mesh_t(0.1, 1.0, 50,
     //                                                           -SKUNK_PI/2 +SKUNK_PI/2, 200,
     //                                                           0.0, 1.0, 1,
     //                                                           1, 2, 3, 3, 5, 4));
-    /*std::shared_ptr<UMesh> mesh(new skunk::structured_mesh_t(0.0, 10.0, 200,
+    /*std::shared_ptr<UMesh> mesh(new feathers::structured_mesh_t(0.0, 10.0, 200,
                                                                0.0, 2.50, 50,
                                                                -0.5, 0.5, 1,
                                                                1, 2, 3, 3, 5, 4));*/
@@ -109,7 +108,7 @@ int main() {
     std::ofstream file("../results/_normals.csv");
     file << "x,y,z,nx,ny,nz,dx,dy,dz" << std::endl;
     for (uint_t face_ind = 0; face_ind != mesh->num_faces(); ++face_ind) {
-        const mesh_face_t& face = mesh->get_face(face_ind);
+        const Face& face = mesh->get_face(face_ind);
         vec3_t direction = mesh->get_cell_center_position(face.get_outer_cell()) -
                            mesh->get_cell_center_position(face.get_inner_cell());
         direction *= safe_inv(direction.len());
@@ -192,7 +191,7 @@ int main() {
 #include <omp.h>
 
 int main(int argc, char** argv) {
-    omp_set_num_threads(16);
+    omp_set_num_threads(20);
 
     std::shared_ptr<UMesh> mesh(new UMesh(2));
 
@@ -268,21 +267,22 @@ int main(int argc, char** argv) {
     real_t dt = 1e-4;
 #endif
 
-    system("rm results/*");
+    system("rm out/*");
+    const uint_t freq = 500;
     print_vtk<5>(0, *mesh, &uc[0]);
     //print(0, *mesh, &uc[0]);
     real_t tt = 0.0;
     {
         std::chrono::high_resolution_clock::time_point t0, t1;
-        for (int_t l = 1; l <= 2000000; ++l) {
+        for (uint_t l = 1; l <= 2000000; ++l) {
             t0 = std::chrono::high_resolution_clock::now();
             solver.calc_step(dt, uc, up);
             t1 = std::chrono::high_resolution_clock::now();
             tt += real_t(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count()) * 1e-9;
 
-            if (l % 500 == 0) {
-                std::cout << l/500 << "\t" << tt << "\t" << std::endl;
-                print_vtk<5>(l/500, *mesh, &up[0]);
+            if (l%freq == 0) {
+                std::cout << l/freq << "\t" << tt << "\t" << std::endl;
+                print_vtk<5>(l/freq, *mesh, &up[0]);
                 tt = 0.0;
             }
 

@@ -30,14 +30,14 @@
 #define SKUNK_MESH_ITER_HH
 
 #include <SkunkBase.hh>
-#include <libSkunkMesh/SkunkMesh.hh>
+#include "Mesh.hh"
 #include <libSkunkMisc/SkunkMiscParallel.hh>
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 template<typename mesh_t>
 class mesh_node_iter_struct_t;
@@ -260,36 +260,36 @@ public:
     }
 };  // class mesh_elem_iter_struct_t
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Mesh nodes random-access iterator. */
 /** @{ */
-using NodeIter = mesh_node_iter_struct_t<mesh_t>;
-using NodeConstIter = mesh_node_iter_struct_t<const mesh_t>;
+using NodeIter = mesh_node_iter_struct_t<UMesh>;
+using NodeConstIter = mesh_node_iter_struct_t<const UMesh>;
 /** @} */
 
 /** Mesh edges random-access iterator. */
 /** @{ */
-using EdgeIter = mesh_edge_iter_struct_t<mesh_t>;
-using EdgeConstIter = mesh_edge_iter_struct_t<const mesh_t>;
+using EdgeIter = mesh_edge_iter_struct_t<UMesh>;
+using EdgeConstIter = mesh_edge_iter_struct_t<const UMesh>;
 /** @} */
 
 /** Mesh faces random-access iterator. */
 /** @{ */
-using FaceIter = mesh_face_iter_struct_t<mesh_t>;
-using FaceConstIter = mesh_face_iter_struct_t<const mesh_t>;
+using FaceIter = mesh_face_iter_struct_t<UMesh>;
+using FaceConstIter = mesh_face_iter_struct_t<const UMesh>;
 /** @} */
 
 /** Mesh cells random-access iterator. */
 /** @{ */
-using CellIter = mesh_cell_iter_struct_t<mesh_t>;
-using CellConstIter = mesh_cell_iter_struct_t<const mesh_t>;
+using CellIter = mesh_cell_iter_struct_t<UMesh>;
+using CellConstIter = mesh_cell_iter_struct_t<const UMesh>;
 /** @} */
 
 /**************************************************************************/
@@ -640,13 +640,13 @@ SKUNK_INLINE func_t for_each_boundary_cell(mesh_t& mesh, func_t func) {
 }   // for_each_boundary_cell
 /** @} */
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Base node iterator. */
 template<typename mesh_t>
@@ -671,20 +671,20 @@ public:
     }
 };  // class NodeIter
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Base edge iterator. */
 template<typename mesh_t>
 class mesh_edge_iter_struct_t final :
-    public mesh_elem_iter_struct_t<mesh_edge_iter_struct_t<mesh_t>, mesh_t, mesh_edge_t> {
+    public mesh_elem_iter_struct_t<mesh_edge_iter_struct_t<mesh_t>, mesh_t, Edge> {
 private:
-    friend class mesh_elem_iter_struct_t<mesh_edge_iter_struct_t<mesh_t>, mesh_t, mesh_edge_t>;
+    friend class mesh_elem_iter_struct_t<mesh_edge_iter_struct_t<mesh_t>, mesh_t, Edge>;
 
     /** @internal
      ** Get mesh element at index. */
@@ -698,24 +698,24 @@ public:
     /** Construct base edge iterator. */
     template<typename mesh_ptr_t>
     SKUNK_INLINE explicit mesh_edge_iter_struct_t(const mesh_ptr_t& mesh, uint_t edge_ind = 0)
-        : mesh_elem_iter_struct_t<mesh_edge_iter_struct_t<mesh_t>, mesh_t, mesh_edge_t>(mesh, edge_ind) {
+        : mesh_elem_iter_struct_t<mesh_edge_iter_struct_t<mesh_t>, mesh_t, Edge>(mesh, edge_ind) {
     }
 };  // class EdgeIter
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Base face iterator. */
 template<typename mesh_t>
 class mesh_face_iter_struct_t final :
-    public mesh_elem_iter_struct_t<mesh_face_iter_struct_t<mesh_t>, mesh_t, mesh_face_t> {
+    public mesh_elem_iter_struct_t<mesh_face_iter_struct_t<mesh_t>, mesh_t, Face> {
 private:
-    friend class mesh_elem_iter_struct_t<mesh_face_iter_struct_t<mesh_t>, mesh_t, mesh_face_t>;
+    friend class mesh_elem_iter_struct_t<mesh_face_iter_struct_t<mesh_t>, mesh_t, Face>;
 
     /** @internal
      ** Get mesh element at index. */
@@ -729,7 +729,7 @@ public:
     /** Construct base face iterator. */
     template<typename mesh_ptr_t>
     SKUNK_INLINE explicit mesh_face_iter_struct_t(const mesh_ptr_t& mesh, uint_t face_ind = 0)
-        : mesh_elem_iter_struct_t<mesh_face_iter_struct_t<mesh_t>, mesh_t, mesh_face_t>(mesh, face_ind) {
+        : mesh_elem_iter_struct_t<mesh_face_iter_struct_t<mesh_t>, mesh_t, Face>(mesh, face_ind) {
     }
 
     /**************************************************************************/
@@ -745,20 +745,20 @@ public:
     }
 };  // class FaceIter
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Base cell iterator. */
 template<typename mesh_t>
 class mesh_cell_iter_struct_t final :
-    public mesh_elem_iter_struct_t<mesh_cell_iter_struct_t<mesh_t>, mesh_t, mesh_cell_t> {
+    public mesh_elem_iter_struct_t<mesh_cell_iter_struct_t<mesh_t>, mesh_t, Cell> {
 private:
-    friend class mesh_elem_iter_struct_t<mesh_cell_iter_struct_t<mesh_t>, mesh_t, mesh_cell_t>;
+    friend class mesh_elem_iter_struct_t<mesh_cell_iter_struct_t<mesh_t>, mesh_t, Cell>;
 
     /** @internal
      ** Get mesh element at index. */
@@ -772,11 +772,11 @@ public:
     /** Construct base cell iterator. */
     template<typename mesh_ptr_t>
     SKUNK_INLINE explicit mesh_cell_iter_struct_t(const mesh_ptr_t& mesh, uint_t cell_ind = 0)
-        : mesh_elem_iter_struct_t<mesh_cell_iter_struct_t<mesh_t>, mesh_t, mesh_cell_t>(mesh, cell_ind) {
+        : mesh_elem_iter_struct_t<mesh_cell_iter_struct_t<mesh_t>, mesh_t, Cell>(mesh, cell_ind) {
     }
 };  // class CellIter
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

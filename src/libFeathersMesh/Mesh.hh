@@ -26,40 +26,41 @@
  */
 
 #pragma once
-#ifndef SKUNK_MESH_HH
-#define SKUNK_MESH_HH
+#ifndef MESH_HH_
+#define MESH_HH_
 
 #include <SkunkBase.hh>
-#include <libSkunkGeom/SkunkGeomMatrix.hh>
+
+#include <boost/graph/compressed_sparse_row_graph.hpp>
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Type of the mesh elements. */
-enum class mesh_elem_type_t : byte_t {
+enum class ElementType : byte_t {
     null,
     node,
-    segment_2, segment_3,
-    triangle_3, triangle_6,
-    quadrangle_4, quadrangle_8, quadrangle_9,
-    tetrahedron_4, tetrahedron_10,
-    pyramid_5, pyramid_14,
-    pentahedron_6, pentahedron_15, pentahedron_18,
-    hexahedron_8, hexahedron_20, hexahedron_27,
-};  // enum class mesh_elem_type_t
+    segment_2,
+    triangle_3,
+    quadrangle_4,
+    tetrahedron_4,
+    pyramid_5,
+    pentahedron_6,
+    hexahedron_8,
+};  // enum class ElementType
 
 /** Mesh element connectivity structure. */
-template<mesh_elem_type_t type_t,
+template<ElementType type_t,
          uint_t num_nodes_t, uint_t num_edges_t, uint_t num_faces_t, uint_t num_cells_t>
 class mesh_elem_struct_t {
 private:
     /** @internal
      ** @warning Order of the fields should not be changed! */
     /** @{ */
-    mesh_elem_type_t m_type : 8;
+    ElementType m_type : 8;
     uint_t m_num_nodes : 6, m_num_edges : 6, m_num_faces : 6, m_num_cells : 6;
     uint_t m_elem_conn[std::max(1u, num_nodes_t + num_edges_t + num_faces_t + num_cells_t)];
     /** @} */
@@ -101,7 +102,7 @@ public:
     /**************************************************************************/
 
     /** Type of the element. */
-    mesh_elem_type_t get_type() const {
+    ElementType get_type() const {
         return m_type;
     }
 
@@ -202,78 +203,34 @@ public:
     /**************************************************************************/
     /**************************************************************************/
 
-    /** Assign node indices. */
-    void set_nodes(std::initializer_list<uint_t> nodes) {
-        std::copy(nodes.begin(), nodes.end(), begin_node());
-    }
-    /** Assign edge indices. */
-    void set_edges(std::initializer_list<uint_t> edges) {
-        std::copy(edges.begin(), edges.end(), begin_edge());
-    }
-    /** Assign face indices. */
-    void set_faces(std::initializer_list<uint_t> faces) {
-        std::copy(faces.begin(), faces.end(), begin_face());
-    }
-    /** Assign cell indices. */
-    void set_cells(std::initializer_list<uint_t> cells) {
-        std::copy(cells.begin(), cells.end(), begin_cell());
-    }
-
-    /**************************************************************************/
-    /**************************************************************************/
-
-    /** Erase the node from element.
-     ** @warning Element type would be set to unknown. */
-    void erase_node(uint_t node_loc) {
-        SKUNK_ASSERT(node_loc < num_nodes());
-        std::rotate(begin_face() + node_loc, begin_face() + node_loc + 1, end_cell());
-        m_type = mesh_elem_type_t::null;
-        m_num_nodes -= 1;
-    }
-    /** Erase the edge from element.
-     ** @warning Element type would be set to unknown. */
-    void erase_edge(uint_t edge_loc) {
-        SKUNK_ASSERT(edge_loc < num_edges());
-        std::rotate(begin_face() + edge_loc, begin_face() + edge_loc + 1, end_cell());
-        m_type = mesh_elem_type_t::null;
-        m_num_edges -= 1;
-    }
     /** Erase the face from element.
      ** @warning Element type would be set to unknown. */
     void erase_face(uint_t face_loc) {
         SKUNK_ASSERT(face_loc < num_faces());
         std::rotate(begin_face() + face_loc, begin_face() + face_loc + 1, end_cell());
-        m_type = mesh_elem_type_t::null;
+        m_type = ElementType::null;
         m_num_faces -= 1;
-    }
-    /** Erase the cell from element.
-     ** @warning Element type would be set to unknown. */
-    void erase_cell(uint_t cell_loc) {
-        SKUNK_ASSERT(cell_loc < num_cells());
-        std::rotate(begin_cell() + cell_loc, begin_cell() + cell_loc + 1, end_cell());
-        m_type = mesh_elem_type_t::null;
-        m_num_cells -= 1;
     }
 };  // class mesh_elem_struct_t
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
-template<mesh_elem_type_t type_t>
+template<ElementType type_t>
 class mesh_node_struct_t;
 
 /** Generic node element. */
 using mesh_node_t
-    = mesh_node_struct_t<mesh_elem_type_t::null>;
+    = mesh_node_struct_t<ElementType::null>;
 
 /** Node element. */
 using mesh_node1_t
-    = mesh_node_struct_t<mesh_elem_type_t::node>;
+    = mesh_node_struct_t<ElementType::node>;
 
 /** Base node element. */
 class mesh_node_struct_base_t {
@@ -308,7 +265,7 @@ public:
 };  // class mesh_node_struct_base_t
 
 /** Node element. */
-template<mesh_elem_type_t type_t>
+template<ElementType type_t>
 class mesh_node_struct_t final : public mesh_node_struct_base_t,
                                  public mesh_elem_struct_t<type_t, 0, 0, 0, 0> {
 public:
@@ -323,32 +280,29 @@ public:
     }
 };  // class mesh_node_struct_t
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
-template<mesh_elem_type_t type_t, uint_t num_nodes_t>
+template<ElementType type_t, uint_t num_nodes_t>
 class mesh_edge_struct_t;
 
 /** Generic edge element. */
-using mesh_edge_t
-    = mesh_edge_struct_t<mesh_elem_type_t::null, 0>;
+using Edge
+    = mesh_edge_struct_t<ElementType::null, 0>;
 
 /** Dummy "node" edge element.
  ** Acts as a placeholder fo 1D/2D meshes. */
 using mesh_edge_node1_t
-    = mesh_edge_struct_t<mesh_elem_type_t::node, 1>;
+    = mesh_edge_struct_t<ElementType::node, 1>;
 
 /** Linear segment edge element. */
 using mesh_edge_segment2_t
-    = mesh_edge_struct_t<mesh_elem_type_t::segment_2, 2>;
-/** Quadratic segment edge element. */
-using mesh_edge_segment3_t
-    = mesh_edge_struct_t<mesh_elem_type_t::segment_3, 3>;
+    = mesh_edge_struct_t<ElementType::segment_2, 2>;
 
 /** Base edge element. */
 class mesh_edge_struct_base_t {
@@ -393,7 +347,7 @@ public:
 };  // class mesh_edge_struct_base_t
 
 /** Edge element. */
-template<mesh_elem_type_t type_t, uint_t num_nodes_t>
+template<ElementType type_t, uint_t num_nodes_t>
 class mesh_edge_struct_t : public mesh_edge_struct_base_t,
                            public mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0> {
 public:
@@ -415,50 +369,37 @@ public:
     /** @} */
 };  // class mesh_edge_struct_t
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
-template<mesh_elem_type_t type_t, uint_t num_nodes_t, uint_t num_edges_t>
+template<ElementType type_t, uint_t num_nodes_t, uint_t num_edges_t>
 class mesh_face_struct_t;
 
 /** Generic face element. */
-using mesh_face_t
-    = mesh_face_struct_t<mesh_elem_type_t::null, 0, 0>;
+using Face
+    = mesh_face_struct_t<ElementType::null, 0, 0>;
 
 /** Dummy "node" face element.
  ** Acts as a placeholder for 1D meshes. */
 using mesh_face_node1_t
-    = mesh_face_struct_t<mesh_elem_type_t::node, 1, 1>;
+    = mesh_face_struct_t<ElementType::node, 1, 1>;
 
 /** Linear segment face element for 2D meshes. */
 using mesh_face_segment2_t
-    = mesh_face_struct_t<mesh_elem_type_t::segment_2, 2, 2>;
-/** Quadratic segment face element for 2D meshes. */
-using mesh_face_segment3_t
-    = mesh_face_struct_t<mesh_elem_type_t::segment_3, 3, 2>;
+    = mesh_face_struct_t<ElementType::segment_2, 2, 2>;
 
 /** Linear triangle face element. */
 using mesh_face_triangle3_t
-    = mesh_face_struct_t<mesh_elem_type_t::triangle_3, 3, 3>;
-/** Quadratic triangle face element. */
-using mesh_face_triangle6_t
-    = mesh_face_struct_t<mesh_elem_type_t::triangle_6, 6, 3>;
+    = mesh_face_struct_t<ElementType::triangle_3, 3, 3>;
 
 /** Linear quadrangle face element. */
 using mesh_face_quadrangle4_t
-    = mesh_face_struct_t<mesh_elem_type_t::quadrangle_4, 4, 4>;
-/** Quadratic quadrangle face element. */
-/** @{ */
-using mesh_face_quadrangle8_t
-    = mesh_face_struct_t<mesh_elem_type_t::quadrangle_8, 8, 4>;
-using mesh_face_quadrangle9_t
-    = mesh_face_struct_t<mesh_elem_type_t::quadrangle_9, 9, 4>;
-/** @} */
+    = mesh_face_struct_t<ElementType::quadrangle_4, 4, 4>;
 
 /** Base face element. */
 class mesh_face_struct_base_t {
@@ -512,7 +453,7 @@ public:
 };  // class mesh_face_struct_base_t
 
 /** Face element. */
-template<mesh_elem_type_t type_t, uint_t num_nodes_t, uint_t num_edges_t>
+template<ElementType type_t, uint_t num_nodes_t, uint_t num_edges_t>
 class mesh_face_struct_t : public mesh_face_struct_base_t,
                            public mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2> {
 public:
@@ -556,81 +497,48 @@ public:
     /** @} */
 };  // class mesh_face_struct_t
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
-template<mesh_elem_type_t type_t, uint_t num_nodes_t, uint_t num_faces_t>
+template<ElementType type_t, uint_t num_nodes_t, uint_t num_faces_t>
 class mesh_cell_struct_t;
 
 /** Generic cell element. */
-using mesh_cell_t
-    = mesh_cell_struct_t<mesh_elem_type_t::null, 0, 0>;
+using Cell
+    = mesh_cell_struct_t<ElementType::null, 0, 0>;
 
 /** Linear segment cell element for 1D meshes. */
 using mesh_cell_segment2_t
-    = mesh_cell_struct_t<mesh_elem_type_t::segment_2, 2, 2>;
-/** Quadratic segment cell element for 1D meshes. */
-using mesh_cell_segment3_t
-    = mesh_cell_struct_t<mesh_elem_type_t::segment_3, 3, 2>;
+    = mesh_cell_struct_t<ElementType::segment_2, 2, 2>;
 
 /** Linear triangle cell element for 2D meshes. */
 using mesh_cell_triangle3_t
-    = mesh_cell_struct_t<mesh_elem_type_t::triangle_3, 3, 3>;
-/** Quadratic triangle cell element for 2D meshes. */
-using mesh_cell_triangle6_t
-    = mesh_cell_struct_t<mesh_elem_type_t::triangle_6, 6, 3>;
+    = mesh_cell_struct_t<ElementType::triangle_3, 3, 3>;
 
 /** Linear quadrangle cell element for 2D meshes. */
 using mesh_cell_quadrangle4_t
-    = mesh_cell_struct_t<mesh_elem_type_t::quadrangle_4, 4, 4>;
-/** Quadratic quadrangle cell element for 2D meshes. */
-/** @{ */
-using mesh_cell_quadrangle8_t
-    = mesh_cell_struct_t<mesh_elem_type_t::quadrangle_8, 8, 4>;
-using mesh_cell_quadrangle9_t
-    = mesh_cell_struct_t<mesh_elem_type_t::quadrangle_9, 9, 4>;
-/** @} */
+    = mesh_cell_struct_t<ElementType::quadrangle_4, 4, 4>;
 
 /** Linear tetrahedron cell element. */
 using mesh_cell_tetrahedron4_t
-    = mesh_cell_struct_t<mesh_elem_type_t::tetrahedron_4, 4, 4>;
-/** Quadratic tetrahedron cell element. */
-using mesh_cell_tetrahedron10_t
-    = mesh_cell_struct_t<mesh_elem_type_t::tetrahedron_10, 10, 4>;
+    = mesh_cell_struct_t<ElementType::tetrahedron_4, 4, 4>;
 
 /** Linear pyramid cell element. */
 using mesh_cell_pyramid5_t
-    = mesh_cell_struct_t<mesh_elem_type_t::pyramid_5, 5, 5>;
-/** Quadratic pyramid cell element. */
-using mesh_cell_pyramid14_t
-    = mesh_cell_struct_t<mesh_elem_type_t::pyramid_14, 14, 5>;
+    = mesh_cell_struct_t<ElementType::pyramid_5, 5, 5>;
 
 /** Linear pentahedron cell element. */
 using mesh_cell_pentahedron6_t
-    = mesh_cell_struct_t<mesh_elem_type_t::pentahedron_6, 6, 5>;
-/** Quadratic pentahedron cell element. */
-/** @{ */
-using mesh_cell_pentahedron15_t
-    = mesh_cell_struct_t<mesh_elem_type_t::pentahedron_15, 15, 5>;
-using mesh_cell_pentahedron18_t
-    = mesh_cell_struct_t<mesh_elem_type_t::pentahedron_18, 18, 5>;
-/** @} */
+    = mesh_cell_struct_t<ElementType::pentahedron_6, 6, 5>;
 
 /** Linear hexahedron cell element. */
 using mesh_cell_hexahedron8_t
-    = mesh_cell_struct_t<mesh_elem_type_t::hexahedron_8, 8, 6>;
-/** Quadratic hexahedron cell element. */
-/** @{ */
-using mesh_cell_hexahedron20_t
-    = mesh_cell_struct_t<mesh_elem_type_t::hexahedron_20, 20, 8>;
-using mesh_cell_hexahedron27_t
-    = mesh_cell_struct_t<mesh_elem_type_t::hexahedron_27, 27, 8>;
-/** @} */
+    = mesh_cell_struct_t<ElementType::hexahedron_8, 8, 6>;
 
 /** Base cell element. */
 class mesh_cell_struct_base_t {
@@ -675,7 +583,7 @@ public:
 };  // class mesh_cell_struct_base_t
 
 /** Cell element. */
-template<mesh_elem_type_t type_t, uint_t num_nodes_t, uint_t num_faces_t>
+template<ElementType type_t, uint_t num_nodes_t, uint_t num_faces_t>
 class mesh_cell_struct_t : public mesh_cell_struct_base_t,
                            public mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0> {
 public:
@@ -697,16 +605,28 @@ public:
     /** @} */
 };  // class mesh_cell_struct_t
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Hybrid unstructured finite element mesh. */
-class mesh_t : public TObject<mesh_t> {
+class UMesh : public TObject<UMesh> {
+private:
+    std::vector<vec3_t> m_nodes;
+    std::vector<ElementType> m_edge_types, m_face_types, m_cell_types;
+    boost::compressed_sparse_row_graph<
+        boost::directedS,
+        boost::no_property, boost::no_property, boost::no_property,
+        uint_t, uint_t> m_edge_nodes, m_face_nodes, m_cell_nodes;
+    std::vector<uint_t> m_marked_node_ranges{0};
+    std::vector<uint_t> m_marked_edge_ranges{0};
+    std::vector<uint_t> m_marked_face_ranges{0};
+    std::vector<uint_t> m_marked_cell_ranges{0};
+
 private:
     uint_t m_dim;
     std::vector<byte_t> m_node_storage;
@@ -717,31 +637,26 @@ private:
     std::vector<size_t> m_edge_offsets;
     std::vector<size_t> m_face_offsets;
     std::vector<size_t> m_cell_offsets;
-    std::vector<uint_t> m_marked_node_ranges{0};
-    std::vector<uint_t> m_marked_edge_ranges{0};
-    std::vector<uint_t> m_marked_face_ranges{0};
-    std::vector<uint_t> m_marked_cell_ranges{0};
 
 public:
 
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
     /** Initialize an empty mesh. */
-    explicit mesh_t(uint_t dim = 0)
-        : m_dim(dim) {
+    explicit UMesh(uint_t dim = 0)
+        : m_dim(dim), m_cell_nodes() {
         SKUNK_ASSERT(0 <= m_dim && m_dim <= 3);
     }
 
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
-    bool read_su2(const char* path);
-    bool read_tetgen(const char* path);
     bool read_triangle(const char* path);
+    bool read_tetgen(const char* path);
 
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
     /** Number of the mesh dimensions. */
     uint_t num_dim() const {
@@ -778,40 +693,40 @@ public:
     /** @} */
     /** Get edge element at global index. */
     /** @{ */
-    mesh_edge_t& get_edge(uint_t edge_ind) {
+    Edge& get_edge(uint_t edge_ind) {
         SKUNK_ASSERT(edge_ind < num_edges());
-        return reinterpret_cast<mesh_edge_t&>(m_edge_storage[m_edge_offsets[edge_ind]]);
+        return reinterpret_cast<Edge&>(m_edge_storage[m_edge_offsets[edge_ind]]);
     }
-    const mesh_edge_t& get_edge(uint_t edge_ind) const {
+    const Edge& get_edge(uint_t edge_ind) const {
         SKUNK_ASSERT(edge_ind < num_edges());
-        return reinterpret_cast<const mesh_edge_t&>(m_edge_storage[m_edge_offsets[edge_ind]]);
+        return reinterpret_cast<const Edge&>(m_edge_storage[m_edge_offsets[edge_ind]]);
     }
     /** @} */
     /** Get face element at global index. */
     /** @{ */
-    mesh_face_t& get_face(uint_t face_ind) {
+    Face& get_face(uint_t face_ind) {
         SKUNK_ASSERT(face_ind < num_faces());
-        return reinterpret_cast<mesh_face_t&>(m_face_storage[m_face_offsets[face_ind]]);
+        return reinterpret_cast<Face&>(m_face_storage[m_face_offsets[face_ind]]);
     }
-    const mesh_face_t& get_face(uint_t face_ind) const {
+    const Face& get_face(uint_t face_ind) const {
         SKUNK_ASSERT(face_ind < num_faces());
-        return reinterpret_cast<const mesh_face_t&>(m_face_storage[m_face_offsets[face_ind]]);
+        return reinterpret_cast<const Face&>(m_face_storage[m_face_offsets[face_ind]]);
     }
     /** @} */
     /** Get cell element at global index. */
     /** @{ */
-    mesh_cell_t& get_cell(uint_t cell_ind) {
+    Cell& get_cell(uint_t cell_ind) {
         SKUNK_ASSERT(cell_ind < num_cells());
-        return reinterpret_cast<mesh_cell_t&>(m_cell_storage[m_cell_offsets[cell_ind]]);
+        return reinterpret_cast<Cell&>(m_cell_storage[m_cell_offsets[cell_ind]]);
     }
-    const mesh_cell_t& get_cell(uint_t cell_ind) const {
+    const Cell& get_cell(uint_t cell_ind) const {
         SKUNK_ASSERT(cell_ind < num_cells());
-        return reinterpret_cast<const mesh_cell_t&>(m_cell_storage[m_cell_offsets[cell_ind]]);
+        return reinterpret_cast<const Cell&>(m_cell_storage[m_cell_offsets[cell_ind]]);
     }
     /** @} */
 
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
     /** Number of node marks. */
     uint_t num_node_marks() const {
@@ -890,8 +805,8 @@ public:
         return end_cell(mark) - begin_cell(mark);
     }
 
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
     /** Get node position. */
     const vec3_t& get_node_position(uint_t node_ind) const {
@@ -930,47 +845,40 @@ public:
     }
 
     /** Get minimal edge length. */
-    SKUNK_EXTERN real_t get_min_edge_length() const;
+    real_t get_min_edge_length() const;
     /** Get maximal edge length. */
-    SKUNK_EXTERN real_t get_max_edge_length() const;
+    real_t get_max_edge_length() const;
 
     /** Get minimal face area. */
-    SKUNK_EXTERN real_t get_min_face_area() const;
+    real_t get_min_face_area() const;
     /** Get maximal face area. */
-    SKUNK_EXTERN real_t get_max_face_area() const;
+    real_t get_max_face_area() const;
 
     /** Get minimal cell volume. */
-    SKUNK_EXTERN real_t get_min_cell_volume() const;
+    real_t get_min_cell_volume() const;
     /** Get maximal cell volume. */
-    SKUNK_EXTERN real_t get_max_cell_volume() const;
+    real_t get_max_cell_volume() const;
 
     /** Compute mesh orthogonality.
-     ** Mesh orthogonality is defined as a. */
-    SKUNK_EXTERN real_t get_orthogonality() const;
+     ** Mesh orthogonality is defined as a ... */
+    real_t get_orthogonality() const;
 
-    /**************************************************************************/
-    /**************************************************************************/
-
-    /** Rescale the mesh. */
-    SKUNK_EXTERN void scale(real_t scale);
-
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
 protected:
 
     /** Insert a new node into the mesh.
      ** @param node Edge nodes.
      ** @returns Index of the inserted node. */
-    SKUNK_EXTERN virtual uint_t insert_node(const mesh_node1_t& node);
+    uint_t insert_node(const mesh_node1_t& node);
 
     /** Insert a new edge into the mesh.
      ** @param edge Edge nodes.
      ** @returns Index of the inserted edge. */
     /** @{ */
-    SKUNK_EXTERN virtual uint_t insert_edge(const mesh_edge_node1_t& edge);
-    SKUNK_EXTERN virtual uint_t insert_edge(const mesh_edge_segment2_t& edge);
-    SKUNK_EXTERN virtual uint_t insert_edge(const mesh_edge_segment3_t& edge);
+    uint_t insert_edge(const mesh_edge_node1_t& edge);
+    uint_t insert_edge(const mesh_edge_segment2_t& edge);
     /** @} */
 
     /** Insert a new edge into the mesh.
@@ -979,20 +887,16 @@ protected:
      ** @param mark Boundary mark.
      ** @param dim Overridden dimension.
      ** @returns Index of the inserted edge. */
-    SKUNK_EXTERN virtual uint_t insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark = 0, uint_t dim = 0);
+    uint_t insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark = 0, uint_t dim = 0);
 
     /** Insert a new face into the mesh.
      ** @param face Face nodes.
      ** @returns Index of the inserted face. */
     /** @{ */
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_node1_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_segment2_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_segment3_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_triangle3_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_triangle6_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_quadrangle4_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_quadrangle8_t& face);
-    SKUNK_EXTERN virtual uint_t insert_face(const mesh_face_quadrangle9_t& face);
+    uint_t insert_face(const mesh_face_node1_t& face);
+    uint_t insert_face(const mesh_face_segment2_t& face);
+    uint_t insert_face(const mesh_face_triangle3_t& face);
+    uint_t insert_face(const mesh_face_quadrangle4_t& face);
     /** @} */
 
     /** Insert a new face into the mesh.
@@ -1001,29 +905,19 @@ protected:
      ** @param mark Boundary mark.
      ** @param dim Overridden dimension.
      ** @returns Index of the inserted face. */
-    SKUNK_EXTERN virtual uint_t insert_face(const std::vector<uint_t>& face_nodes, uint_t mark = 0, uint_t dim = 0);
+    uint_t insert_face(const std::vector<uint_t>& face_nodes, uint_t mark = 0, uint_t dim = 0);
 
     /** Insert a new cell into the mesh.
      ** @param cell Cell nodes.
      ** @returns Index of the inserted face. */
     /** @{ */
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_segment2_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_segment3_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_triangle3_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_triangle6_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_quadrangle4_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_quadrangle8_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_quadrangle9_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_tetrahedron4_t&  cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_tetrahedron10_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_pyramid5_t&  cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_pyramid14_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_pentahedron6_t&  cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_pentahedron15_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_pentahedron18_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_hexahedron8_t&  cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_hexahedron20_t& cell);
-    SKUNK_EXTERN virtual uint_t insert_cell(const mesh_cell_hexahedron27_t& cell);
+    uint_t insert_cell(const mesh_cell_segment2_t& cell);
+    uint_t insert_cell(const mesh_cell_triangle3_t& cell);
+    uint_t insert_cell(const mesh_cell_quadrangle4_t& cell);
+    uint_t insert_cell(const mesh_cell_tetrahedron4_t& cell);
+    uint_t insert_cell(const mesh_cell_pyramid5_t& cell);
+    uint_t insert_cell(const mesh_cell_pentahedron6_t& cell);
+    uint_t insert_cell(const mesh_cell_hexahedron8_t& cell);
     /** @} */
 
     /** Insert a new cell into the mesh.
@@ -1032,7 +926,7 @@ protected:
      ** @param mark Boundary mark.
      ** @param dim Overridden dimension.
      ** @returns Index of the inserted cell. */
-    SKUNK_EXTERN virtual uint_t insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark = 0, uint_t dim = 0);
+    uint_t insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark = 0, uint_t dim = 0);
 
 private:
 
@@ -1057,85 +951,19 @@ private:
     template<typename mesh_cell_struct_t>
     uint_t allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment = s_default_alignment);
 
-    /**************************************************************************/
-    /**************************************************************************/
-
-protected:
-
-    /** Erase the node.
-     ** @param replacement_node_ind Node to connect links of adjacent elements. */
-    SKUNK_EXTERN void erase_node(uint_t node_ind, uint_t replacement_node_ind = npos);
-    /** Erase the edge.
-     ** @param replacement_edge_ind Edge to connect links of adjacent elements. */
-    SKUNK_EXTERN void erase_edge(uint_t edge_ind, uint_t replacement_edge_ind = npos);
-    /** Erase the face.
-     ** @param replacement_face_ind Face to connect links of adjacent elements. */
-    SKUNK_EXTERN void erase_face(uint_t face_ind, uint_t replacement_face_ind = npos);
-    /** Erase the cell.
-     ** @param replacement_cell_ind Cell to connect links of adjacent elements. */
-    SKUNK_EXTERN void erase_cell(uint_t cell_ind, uint_t replacement_cell_ind = npos);
-
-private:
-
-    /** @internal
-     ** Deallocate and erase the node. */
-    void deallocate_node_(uint_t node_ind);
-    /** @internal
-     ** Deallocate and erase the edge. */
-    void deallocate_edge_(uint_t edge_ind);
-    /** @internal
-     ** Deallocate and erase the face. */
-    void deallocate_face_(uint_t face_ind);
-    /** @internal
-     ** Deallocate and erase the cell. */
-    void deallocate_cell_(uint_t cell_ind);
-
-protected:
-
-    /** Erase edges that's length is less than specified tolerance. */
-    SKUNK_EXTERN void erase_degenerate_edges(real_t min_edge_length);
-    /** Erase faces that's area is less than specified tolerance. */
-    SKUNK_EXTERN void erase_degenerate_faces(real_t min_face_area);
-
-    /**************************************************************************/
-    /**************************************************************************/
-
-protected:
-
-    /** Change order of two nodes. */
-    SKUNK_EXTERN void reorder_nodes(uint_t first_node_ind, uint_t second_node_ind);
-    /** Change order of two edges. */
-    SKUNK_EXTERN void reorder_edges(uint_t first_edge_ind, uint_t second_edge_ind);
-    /** Change order of two faces. */
-    SKUNK_EXTERN void reorder_faces(uint_t first_face_ind, uint_t second_face_ind);
-    /** Change order of two cells. */
-    SKUNK_EXTERN void reorder_cells(uint_t first_cell_ind, uint_t second_cell_ind);
-
-private:
-
-    /** @internal
-     ** Swap bytes of two nodes. */
-    void swap_node_bytes_(uint_t first_node_ind, uint_t second_node_ind);
-    /** @internal
-     ** Swap bytes of two nodes. */
-    void swap_edge_bytes_(uint_t first_edge_ind, uint_t second_edge_ind);
-    /** @internal
-     ** Swap bytes of two nodes. */
-    void swap_face_bytes_(uint_t first_face_ind, uint_t second_face_ind);
-    /** @internal
-     ** Swap bytes of two nodes. */
-    void swap_cell_bytes_(uint_t first_cell_ind, uint_t second_cell_ind);
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
 protected:
 
     /** Change order of all nodes. */
-    SKUNK_EXTERN void reorder_nodes(const std::vector<uint_t>& node_reordering);
+    void reorder_nodes(const std::vector<uint_t>& node_reordering);
     /** Change order of all edges. */
-    SKUNK_EXTERN void reorder_edges(const std::vector<uint_t>& edge_reordering);
+    void reorder_edges(const std::vector<uint_t>& edge_reordering);
     /** Change order of all faces. */
-    SKUNK_EXTERN void reorder_faces(const std::vector<uint_t>& face_reordering);
+    void reorder_faces(const std::vector<uint_t>& face_reordering);
     /** Change order of all cells. */
-    SKUNK_EXTERN void reorder_cells(const std::vector<uint_t>& cell_reordering);
+    void reorder_cells(const std::vector<uint_t>& cell_reordering);
 
 private:
 
@@ -1154,33 +982,68 @@ private:
 
 protected:
 
-    SKUNK_EXTERN void reorder_faces();
+    void reorder_faces();
 
-    /**************************************************************************/
-    /**************************************************************************/
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
-    /** Generate edges using the face to node connectivity.
-     ** @warning This function may be slow and memory-consuming. */
-    SKUNK_EXTERN void generate_edges();
-    /** Generate faces using the cell to node connectivity.
-     ** @warning This function may be slow and memory-consuming. */
-    SKUNK_EXTERN void generate_faces();
+    /**
+     * Insert a node.
+     * @returns Index of the inserted node.
+     */
+    uint_t insert_node(const vec3_t& node_position);
+
+    /**
+     * Insert an edge.
+     * @returns Index of the inserted edge.
+     */
+    uint_t insert_edge(ElementType edge_type,
+                       const std::vector<uint_t>& edge_nodes, uint_t mark = 0);
+
+    /**
+     * Insert a face.
+     * @returns Index of the inserted face.
+     */
+    uint_t insert_face(ElementType face_type,
+                       const std::vector<uint_t>& face_nodes, uint_t mark = 0);
+
+    /**
+     * Insert a cell.
+     * @returns Index of the inserted cell.
+     */
+    uint_t insert_cell(ElementType cell_type,
+                       const std::vector<uint_t>& cell_nodes, uint_t mark = 0);
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /**
+     * Generate edges using the face to node connectivity.
+     * @warning This function may be slow and memory-consuming.
+     */
+    void generate_edges();
+
+    /**
+     * Generate faces using the cell to node connectivity.
+     * @warning This function may be slow and memory-consuming.
+     */
+    void generate_faces();
 
     /** Generate boundary cells to complete face connectivity. */
-    SKUNK_EXTERN void generate_boundary_cells();
-};  // class mesh_t
+    void generate_boundary_cells();
+};  // class UMesh
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
 /* Include iterators. */
-#include <libSkunkMesh/SkunkMeshIterator.hh>
-
-#endif  // ifndef SKUNK_MESH_HH
+#include "MeshIterator.hh"
 
 /** @todo Remove me. */
-using UMesh = skunk::mesh_t;
+using UMesh = feathers::UMesh;
 #include "libSkunkSparse/SkunkSparseField.hh"
+
+#endif  // ifndef MESH_HH_

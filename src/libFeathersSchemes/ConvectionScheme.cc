@@ -31,7 +31,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Compute the first-order upwind convection.
@@ -105,7 +105,7 @@ void TUpwind2ConvectionScheme<num_vars>::get_cell_convection(TScalarField<num_va
         const CellIter cell_inner = face.get_inner_cell();
         const vec3_t dr_outer =
             face->get_center_position() - cell_outer->get_center_position();
-        const mhd_vec3_t dr_inner =
+        const vec3_t dr_inner =
             face->get_center_position() - cell_inner->get_center_position();
         const auto u_outer = u_rec(cell_outer, dr_outer);
         const auto u_inner = u_rec(cell_inner, dr_inner);
@@ -138,11 +138,11 @@ void TUpwind2ConvectionScheme<num_vars>::get_cell_convection(TScalarField<num_va
     });
 }   // TUpwind2ConvectionScheme::get_cell_convection
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-template class skunk::TUpwindConvectionScheme<5>;
-template class skunk::TUpwind2ConvectionScheme<5>;
+template class feathers::TUpwindConvectionScheme<5>;
+template class feathers::TUpwind2ConvectionScheme<5>;

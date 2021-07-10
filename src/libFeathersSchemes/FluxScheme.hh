@@ -37,7 +37,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Abstract numerical flux.
@@ -79,13 +79,13 @@ public:
     /** @} */
 };  // class IPhysicalFluxScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * @brief Local Lax-Friedrichs (Rusanov) numerical flux.
@@ -106,13 +106,13 @@ public:
                             std::array<real_t, num_vars>& f) const final;
 };  // class TLaxFriedrichsFluxScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * @brief Harten-Lax-van Leer-Einfeldt numerical flux.
@@ -165,13 +165,13 @@ public:
                             std::array<real_t, num_vars>& f) const override;
 };  // class THLLCFluxScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * @brief Roe numerical flux.
@@ -193,7 +193,7 @@ public:
                              std::array<real_t, num_vars>& f) const override;
 };  // class TRoeFluxScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

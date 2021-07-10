@@ -29,7 +29,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Compute local slope coefficient.
@@ -88,7 +88,7 @@ inline real_t VenkatakrishnanSlopeLimiter::operator()(real_t du_min, real_t du_m
     const auto delta_pos_sqr = std::pow(delta_pos, 2);
     const auto delta_neg_sqr = std::pow(delta_neg, 2);
     const auto delta_pos_neg = delta_pos*delta_neg;
-    const auto limiter = (delta_pos_sqr + 2.0 * delta_pos_neg + eps_sqr) /
+    const auto limiter = (delta_pos_sqr + 2.0*delta_pos_neg + eps_sqr) /
                          (delta_pos_sqr + 2.0*delta_neg_sqr + delta_pos_neg + eps_sqr);
     return limiter;
 }   // VenkatakrishnanSlopeLimiter::operator()
@@ -129,13 +129,13 @@ inline real_t CubicSlopeLimiter::operator()(real_t du_min, real_t du_max,
     return limiter;
 }   // CubicSlopeLimiter::operator()
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Compute second slope coefficient.
@@ -179,13 +179,13 @@ inline real_t CubicSecondLimiter::operator()(real_t limiter,
     return 0.0;
 }   // CubicSecondLimiter::get_slope_coefficient
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Compute cell-centered gradient limiter coefficients and averages. 
@@ -239,7 +239,7 @@ void TGradientLimiterScheme<num_vars, TSlopeLimiter, TSecondLimiter>::
    });
 }   // IGradientLimiterScheme::get_cell_limiter_
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

@@ -32,6 +32,12 @@
 #include "SkunkBase.hh"
 #include "libSkunkSparse/SkunkSparseField.hh"
 
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+namespace feathers {
+
 template<int_t num_vars_t>
 class TPiecewiseLinearFunction {
 public:
@@ -58,14 +64,20 @@ public:
         }
         return value;
     }
-    array_t operator()(int_t index, const skunk::vec3_t& r, real_t a=1.0, real_t b=1.0) const {
+    array_t operator()(int_t index, const feathers::vec3_t& r, real_t a=1.0, real_t b=1.0) const {
         array_t value{};
         for (int_t i = 0; i < num_vars_t; ++i) {
-            value[i] = a*u[index][i] + b*grad_u[index][i].inner_prod(r);
+            value[i] = a*u[index][i] + b*glm::dot(grad_u[index][i], r);
         }
         return value;
     }
     /** @} */
 };
+
+}   // namespace feathers
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
 
 #endif  // ifndef MHD_SPARSE_FUNCTION_HH

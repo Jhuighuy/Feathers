@@ -25,13 +25,9 @@
  * SOFTWARE.
  */
 
-/*
-
-*/
-
 #pragma once
-#ifndef SKUNK_BASE_HH
-#define SKUNK_BASE_HH
+#ifndef FEATHERS_BASE_HH_
+#define FEATHERS_BASE_HH_
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES 1
@@ -55,11 +51,15 @@
 #include <algorithm>
 #include <type_traits>
 
+#include <glm/glm.hpp>
+
+#include <boost/graph/compressed_sparse_row_graph.hpp>
+
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**************************************************************************/
 /**************************************************************************/
@@ -67,36 +67,36 @@ namespace skunk {
 /** C++03 support. */
 /** @{ */
 #if (__cplusplus >= 199711L) || (_MSVC_LANG >= 199711L)
-#define SKUNK_HAS_CPP03 1
+#define FEATHERS_HAS_CPP03 1
 #else
-#define SKUNK_HAS_CPP03 0
+#define FEATHERS_HAS_CPP03 0
 #endif
 /** @} */
 
 /** C++11 support. */
 /** @{ */
 #if (__cplusplus >= 201103L) || (_MSVC_LANG >= 201103L)
-#define SKUNK_HAS_CPP11 1
+#define FEATHERS_HAS_CPP11 1
 #else
-#define SKUNK_HAS_CPP11 0
+#define FEATHERS_HAS_CPP11 0
 #endif
 /** @} */
 
 /** C++14 support. */
 /** @{ */
 #if (__cplusplus >= 201402L) || (_MSVC_LANG >= 201402L)
-#define SKUNK_HAS_CPP14 1
+#define FEATHERS_HAS_CPP14 1
 #else
-#define SKUNK_HAS_CPP14 0
+#define FEATHERS_HAS_CPP14 0
 #endif
 /** @} */
 
 /** C++17 support. */
 /** @{ */
 #if (__cplusplus >= 201703L) || (_MSVC_LANG >= 201703L)
-#define SKUNK_HAS_CPP17 1
+#define FEATHERS_HAS_CPP17 1
 #else
-#define SKUNK_HAS_CPP17 0
+#define FEATHERS_HAS_CPP17 0
 #endif
 /** @} */
 
@@ -106,27 +106,27 @@ namespace skunk {
 /** OpenMP 2.0 support. */
 /** @{ */
 #if (defined(_OPENMP) && (_OPENMP >= 200203))
-#define SKUNK_HAS_OPENMP2 1
+#define FEATHERS_HAS_OPENMP2 1
 #else
-#define SKUNK_HAS_OPENMP2 1
+#define FEATHERS_HAS_OPENMP2 1
 #endif
 /** @} */
 
 /** OpenMP 3.0 support. */
 /** @{ */
 #if (defined(_OPENMP) && (_OPENMP >= 200805))
-#define SKUNK_HAS_OPENMP3 1
+#define FEATHERS_HAS_OPENMP3 1
 #else
-#define SKUNK_HAS_OPENMP3 1
+#define FEATHERS_HAS_OPENMP3 1
 #endif
 /** @} */
 
 /** OpenMP 4.0 support. */
 /** @{ */
 #if (defined(_OPENMP) && (_OPENMP >= 201307))
-#define SKUNK_HAS_OPENMP4 1
+#define FEATHERS_HAS_OPENMP4 1
 #else
-#define SKUNK_HAS_OPENMP4 1
+#define FEATHERS_HAS_OPENMP4 1
 #endif
 /** @} */
 
@@ -135,14 +135,14 @@ namespace skunk {
 
 /** Convert token to string. */
 /** @{ */
-#define SKUNK_TO_STRING_(x) #x
-#define SKUNK_TO_STRING(x) SKUNK_TO_STRING_(x)
+#define FEATHERS_TO_STRING_(x) #x
+#define FEATHERS_TO_STRING(x) FEATHERS_TO_STRING_(x)
 /** @} */
 
 /** Concatenate tokens. */
 /** @{ */
-#define SKUNK_CONCAT_(x, y) x##y
-#define SKUNK_CONCAT(x, y) SKUNK_CONCAT_(x, y)
+#define FEATHERS_CONCAT_(x, y) x##y
+#define FEATHERS_CONCAT(x, y) FEATHERS_CONCAT_(x, y)
 /** @} */
 
 /**************************************************************************/
@@ -153,7 +153,7 @@ namespace skunk {
 #ifdef _MSC_VER
 #define SKUNK_PRAGMA(...) __pragma(__VA_ARGS__)
 #else
-#define SKUNK_PRAGMA(...) _Pragma(SKUNK_TO_STRING(__VA_ARGS__))
+#define SKUNK_PRAGMA(...) _Pragma(FEATHERS_TO_STRING(__VA_ARGS__))
 #endif
 /** @} */
 
@@ -193,7 +193,7 @@ namespace skunk {
 
 /** Compile-time expression macro. */
 /** @{ */
-#if SKUNK_HAS_CPP14
+#if FEATHERS_HAS_CPP14
 #define SKUNK_CONSTEXPR constexpr
 #else
 #define SKUNK_CONSTEXPR const
@@ -202,7 +202,7 @@ namespace skunk {
 
 /** Compile-time if statement macro. */
 /** @{ */
-#if SKUNK_HAS_CPP17
+#if FEATHERS_HAS_CPP17
 #define SKUNK_IF_CONSTEXPR if constexpr
 #else
 #define SKUNK_IF_CONSTEXPR if
@@ -212,10 +212,10 @@ namespace skunk {
 /** Compile-time assertion macro.
  ** Assertion message is optional. */
 /** @{ */
-#if SKUNK_HAS_CPP17
+#if FEATHERS_HAS_CPP17
 #define SKUNK_STATIC_ASSERT(x) static_assert(x)
 #else
-#define SKUNK_STATIC_ASSERT(x) static_assert(x, SKUNK_TO_STRING(x))
+#define SKUNK_STATIC_ASSERT(x) static_assert(x, FEATHERS_TO_STRING(x))
 #endif
 /** @} */
 
@@ -229,7 +229,7 @@ namespace skunk {
 #else
 #define SKUNK_ASSERT(x) do { if(!(x)) { \
         std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
-                     __FILE__, __LINE__, __FUNCTION__, SKUNK_TO_STRING(x)); \
+                     __FILE__, __LINE__, __FUNCTION__, FEATHERS_TO_STRING(x)); \
         std::abort(); \
     } } while (false)
 #endif
@@ -253,13 +253,13 @@ namespace skunk {
 /** Not implemented macro. */
 #define SKUNK_NOT_REACHABLE() SKUNK_ASSERT_FALSE("not reachable.")
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Signed byte type. */
 using char_t = std::int8_t;
@@ -288,18 +288,22 @@ SKUNK_INLINE static constexpr auto is_not_npos(uint_t ind) {
     return ind != npos;
 }   // is_not_npos
 
-/**************************************************************************/
-/**************************************************************************/
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
-/** Floating-point type. */
+/** Floating-point type, vector and matrix types. */
 /** @{ */
 #ifndef SKUNK_CONFIG_REAL_IS_DOUBLE
 #define SKUNK_CONFIG_REAL_IS_DOUBLE 1
 #endif
 #if SKUNK_CONFIG_REAL_IS_DOUBLE
 using real_t = double;
+using vec2_t = glm::dvec2; using vec3_t = glm::dvec3; using vec4_t = glm::dvec4;
+using mat2_t = glm::dmat2; using mat3_t = glm::dmat3; using mat4_t = glm::dmat4;
 #else
 using real_t = float;
+using vec2_t = glm::vec2; using vec3_t = glm::vec3; using vec4_t = glm::vec4;
+using mat2_t = glm::mat2; using mat3_t = glm::mat3; using mat4_t = glm::mat4;
 #endif
 /** @} */
 
@@ -427,13 +431,13 @@ SKUNK_INLINE static constexpr type_t safe_inv(type_t x) {
     return x == zero ? zero : type_t(1)/x;
 }   // safe_inv
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Sequential 1D 'for' loop wrapper. */
 template<typename iter_t, typename func_t>
@@ -515,7 +519,7 @@ SKUNK_INLINE auto shared_from_this(const obj_ptr_t& obj) {
     return std::static_pointer_cast<obj_t>(obj->shared_from_this());
 }   // shared_from_this
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -536,7 +540,7 @@ SKUNK_INLINE auto shared_from_this(const obj_ptr_t& obj) {
 /** @todo Remove me. */
 using int_t = int;
 using uint_t = unsigned int;
-using real_t = skunk::real_t;
+using real_t = feathers::real_t;
 #define MHD_NOT_USED(a)
 
 // ************************************************************************************ //

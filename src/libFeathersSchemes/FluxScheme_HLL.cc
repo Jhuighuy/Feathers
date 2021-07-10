@@ -36,7 +36,7 @@ const double gamma_2 = (gamma + 1.0)/(2.0*gamma);
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * @brief Calculate signal speed estimates.
@@ -264,11 +264,11 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
     assert(!"Broken signal velocities.");
 }   // THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-template class skunk::THLLFluxScheme<MhdPhysicsIdealGas>;
-template class skunk::THLLCFluxScheme<MhdPhysicsIdealGas>;
+template class feathers::THLLFluxScheme<MhdPhysicsIdealGas>;
+template class feathers::THLLCFluxScheme<MhdPhysicsIdealGas>;

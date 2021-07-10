@@ -38,7 +38,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Abstract convection scheme.
@@ -50,13 +50,13 @@ public:
                                      const TScalarField<num_vars>& u) const = 0;
 };  // class TConvectionScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Piecewise-constant upwind convection scheme.
@@ -97,7 +97,7 @@ public:
 public:
     explicit TUpwind2ConvectionScheme(std::shared_ptr<UMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_flux(new THLLCFluxScheme<MhdPhysicsIdealGas>()),
+        m_flux(new TLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>()),
         m_gradient_scheme(new TLeastSquaresGradientScheme<num_vars>(m_mesh)),
         m_gradient_limiter_scheme(
             new TGradientLimiterScheme<num_vars, MinmodSlopeLimiter, CubicSecondLimiter>(m_mesh)) {
@@ -108,7 +108,7 @@ public:
                              const TScalarField<num_vars>& u) const final;
 };  // class TUpwindConvectionScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

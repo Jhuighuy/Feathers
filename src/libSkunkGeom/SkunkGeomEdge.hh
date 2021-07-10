@@ -2,14 +2,12 @@
 
 #include "SkunkBase.hh"
 
-#include <glm/glm.hpp>
-
 /**
  * Edge (half-open interval) in 2D space.
  */
 struct mhd_e2d final
 {
-    using mhd_vec2_t = skunk::vec2_t;
+    using mhd_vec2_t = feathers::vec2_t;
     mhd_vec2_t p1{};
     mhd_vec2_t p2{};
 
@@ -24,12 +22,12 @@ public:
     {
         mhd_vec2_t p1{e1.vec()};
         mhd_vec2_t p2{e2.vec()};
-        return p1.inner_prod(p2);
+        return glm::dot(p1, p2);
     }
     static real_t len(const mhd_e2d& e1)
     {
         mhd_vec2_t p1{e1.vec()};
-        return (p1).len();
+        return glm::length(p1);
     }
 
     static real_t dist(const mhd_e2d& e, const mhd_vec2_t& p)
@@ -44,7 +42,7 @@ public:
     {
         mhd_vec2_t p1{e1.vec()};
         mhd_vec2_t p2{e2.vec()};
-        return p1.det(p2);
+        return glm::determinant(feathers::mat2_t(p1, p2));
     }
 
 public:
@@ -52,7 +50,7 @@ public:
     {
         mhd_vec2_t p = e.vec();
         mhd_vec2_t n{p.y, -p.x};
-        real_t l{n.len()};
+        real_t l{glm::length(n)};
         if (l != 0.0) {
             return n / l;
         } else {
@@ -60,7 +58,7 @@ public:
             return {1.0, 0.0};
         }
     }
-    static skunk::vec3_t normal3(const mhd_e2d& e) {
+    static feathers::vec3_t normal3(const mhd_e2d& e) {
         const auto n{ normal(e) };
         return { n.x, n.y, 0.0 };
     }
@@ -77,7 +75,7 @@ typedef mhd_e2d mhd_seg2_t;
  */
 struct mhd_e3d final
 {
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec3_t p1{};
     mhd_vec3_t p2{};
 
@@ -94,13 +92,13 @@ public:
     {
         mhd_vec3_t p1{e1.vec()};
         mhd_vec3_t p2{e2.vec()};
-        return p1.inner_prod(p2);
+        return glm::dot(p1, p2);
     }
     
     static real_t len(const mhd_e3d& e1)
     {
         mhd_vec3_t p1{e1.vec()};
-        return (p1).len();
+        return glm::length(p1);
     }
 
 public:
@@ -109,7 +107,7 @@ public:
     {
         mhd_vec3_t p1{e1.vec()};
         mhd_vec3_t p2{e2.vec()};
-        return p1.cross(p2);
+        return glm::cross(p1, p2);
     }
 
 public:
@@ -117,15 +115,12 @@ public:
     static mhd_vec3_t normal(const mhd_e3d& e1, const mhd_e3d& e2)
     {
         mhd_vec3_t n{cross(e1, e2)};
-        real_t l{(n).len()};
+        real_t l{glm::length(n)};
         if (l != 0.0) {
             return n / l;
         } else {
             std::cerr << "Warning: normal to singular edges." << std::endl;
-            return {1.0, 0.0};
+            return {1.0, 0.0, 0.0};
         }
     }
-
-public:
-    static std::string str(const mhd_e3d& e);
 };  // struct mhd_e3d

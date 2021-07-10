@@ -30,13 +30,13 @@
 #define GRADIENT_SCHEME_HH_
 
 #include "SkunkBase.hh"
-#include "libSkunkMesh/SkunkMesh.hh"
+#include "libFeathersMesh/Mesh.hh"
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /** Abstract cell-centered gradient scheme. */
 template<int_t num_vars>
@@ -49,13 +49,13 @@ public:
     /** @} */
 };  // class IGradientScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Weighted Least-Squares gradient estimation scheme, cell-based:
@@ -67,7 +67,7 @@ namespace skunk {
 template<int_t num_vars>
 class TLeastSquaresGradientScheme final : public IGradientScheme<num_vars> {
 private:
-    std::shared_ptr<mesh_t> m_mesh;
+    std::shared_ptr<UMesh> m_mesh;
     TMatrixField<1> m_inverse_matrices;
 
 public:
@@ -97,7 +97,7 @@ private:
     /** @} */
 };  // class TLeastSquaresGradientScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

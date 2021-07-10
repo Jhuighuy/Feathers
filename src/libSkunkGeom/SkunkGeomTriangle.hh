@@ -7,15 +7,12 @@
  */
 struct mhd_triangle2d final
 {
-    using mhd_vec2_t = skunk::vec2_t;
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec2_t = feathers::vec2_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec2_t p1{};
     mhd_vec2_t p2{};
     mhd_vec2_t p3{};
 
-
-public:
-    
     mhd_vec2_t& node(int k)
     {
         k += 1;
@@ -31,36 +28,6 @@ public:
         }
     }
 
-    
-    mhd_e2d edge(int k) const
-    {
-        switch (k) {
-            case 1:
-                return {p2, p3};
-            case 2:
-                return {p3, p1};
-            case 3:
-                return {p1, p2};
-            default:
-                std::abort();
-        }
-    }
-    
-    /*real_t angle(int k) const
-    {
-        switch (k) {
-            case 1:
-                return mhd_e2d::angle({p3, p1}, {p2, p1});
-            case 2:
-                return mhd_e2d::angle({p1, p2}, {p3, p2});
-            case 3:
-                return mhd_e2d::angle({p2, p3}, {p1, p3});
-            default:
-                std::abort();
-        }
-    }*/
-
-public:
     static mhd_vec3_t barycenter3(const mhd_triangle2d& t1) {
         const mhd_vec2_t bc = (t1.p1 + t1.p2 + t1.p3)/3.0;
         return {bc.x,bc.y,0.0};
@@ -69,34 +36,18 @@ public:
         return barycenter3(*this);
     }
 
-public:
-    
-    static bool circle(const mhd_triangle2d& t1, const mhd_vec2_t& p1)
-    {
-        //real_t a13 = (t1.p1.x*t1.p1.x - p1.x*p1.x) + (t1.p1.y*t1.p1.y - p1.y*p1.y);
-        //real_t a23 = (t1.p2.x*t1.p2.x - p1.x*p1.x) + (t1.p2.y*t1.p2.y - p1.y*p1.y);
-        //real_t a33 = (t1.p3.x*t1.p3.x - p1.x*p1.x) + (t1.p3.y*t1.p3.y - p1.y*p1.y);
-        //real_t det{mhd_det(t1.p1.x - p1.x, t1.p1.y - p1.y, a13,
-        //                         t1.p2.x - p1.x, t1.p2.y - p1.y, a23,
-        //                         t1.p3.x - p1.x, t1.p3.y - p1.y, a33)};
-        //return det >= 0;
-        abort();
-    }
-
-public:
-    
     static real_t len(const mhd_triangle2d& t1)
     {
         real_t l{};
-        l += (t1.p1 - t1.p2).len();
-        l += (t1.p2 - t1.p3).len();
-        l += (t1.p3 - t1.p1).len();
+        l += glm::length(t1.p1 - t1.p2);
+        l += glm::length(t1.p2 - t1.p3);
+        l += glm::length(t1.p3 - t1.p1);
         return l;
     }
     
     static real_t area(const mhd_triangle2d& t1)
     {
-        real_t n{(t1.p2 - t1.p1).det(t1.p3 - t1.p1)};
+        real_t n{glm::determinant(feathers::mat2_t(t1.p2 - t1.p1, t1.p3 - t1.p1))};
         return 0.5 * n;
     }
     real_t area() const
@@ -109,8 +60,8 @@ typedef mhd_triangle2d mhd_tri2_t;
 typedef mhd_tri2_t geom_tri2_t;
 
 struct geom_quad2_t {
-    using mhd_vec2_t = skunk::vec2_t;
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec2_t = feathers::vec2_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec2_t p1{};
     mhd_vec2_t p2{};
     mhd_vec2_t p3{};
@@ -156,7 +107,7 @@ public:
  */
 struct mhd_tri3d final
 {
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec3_t p1{};
     mhd_vec3_t p2{};
     mhd_vec3_t p3{};
@@ -183,32 +134,20 @@ public:
         return (t1.p1 + t1.p2 + t1.p3)/3.0;
     }
     
-    static mhd_vec3_t circumcenter(const mhd_tri3d& t1)
-    {
-        mhd_vec3_t a = {t1.p1.x, t1.p1.y}, b = {t1.p2.x,t1.p2.y}, c = {t1.p3.x,t1.p3.y};
-        mhd_vec3_t ac = c - a;
-        mhd_vec3_t ab = b - a;
-        mhd_vec3_t ab_ac = ab.cross(ac);
-        mhd_vec3_t to_cc = ab_ac.cross(ab)*ac.dot(ac) +
-                           ac.cross(ab_ac)*ab.dot(ab);
-        to_cc /= 2.0 * ab_ac.dot(ab_ac);
-        return a + to_cc;
-    }
-
 public:
     
     static real_t area(const mhd_tri3d& t1)
     {
-        mhd_vec3_t n{(t1.p2 - t1.p1).cross(t1.p3 - t1.p1)};
-        return 0.5 * (n).len();
+        mhd_vec3_t n{glm::cross(t1.p2 - t1.p1, t1.p3 - t1.p1)};
+        return 0.5 * glm::length(n);
     }
 
 public:
     
     static mhd_vec3_t normal(const mhd_tri3d& t1)
     {
-        mhd_vec3_t n{(t1.p2 - t1.p1).cross(t1.p3 - t1.p1)};
-        real_t l{(n).len()};
+        mhd_vec3_t n{glm::cross(t1.p2 - t1.p1, t1.p3 - t1.p1)};
+        real_t l{glm::length(n)};
         if (l > 0) {
             n /= l;
             return n;
@@ -220,7 +159,7 @@ public:
 };  // struct mhd_tri3d
 
 struct mhd_tetr3d_t {
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec3_t p0, p1, p2, p3;
 
     mhd_vec3_t& node(int k)
@@ -245,14 +184,14 @@ public:
     }
     real_t volume() const {
         const auto a = p0 - p3, b = p1 - p3, c = p2 - p3;
-        const auto v = 1.0/6.0*a.det(b, c);
+        const auto v = 1.0/6.0*glm::dot(a, glm::cross(b, c));
         //assert(v >= 0.0);
         return std::abs(v);
     }
 };
 
 struct mhd_pyra3d_t {
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec3_t p0, p1, p2, p3;
     mhd_vec3_t p4;
 
@@ -292,7 +231,7 @@ public:
 };
 
 struct mhd_hexa3d_t {
-    using mhd_vec3_t = skunk::vec3_t;
+    using mhd_vec3_t = feathers::vec3_t;
     mhd_vec3_t p0, p1, p2, p3;
     mhd_vec3_t p4, p5, p6, p7;
 

@@ -30,14 +30,14 @@
 #define GRADIENT_LIMITER_SCHEME_HH_
 
 #include "SkunkBase.hh"
-#include "libSkunkMesh/SkunkMesh.hh"
+#include "libFeathersMesh/Mesh.hh"
 #include "libSkunkSparse/SkunkSparseFunction.hh"
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Barth-Jespersen (minmod)
@@ -85,13 +85,13 @@ public:
                       real_t du_face, real_t eps_sqr) const;
 };  // class CubicSlopeLimiter
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Dummy
@@ -124,13 +124,13 @@ public:
                       real_t eps_sqr) const;
 };  // class CubicSecondLimiter
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * Gradient cell limiter estimation scheme:
@@ -177,7 +177,7 @@ private:
                            const TPiecewiseFunction<num_vars>& u) const;
 };  // class IGradientLimiterScheme
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

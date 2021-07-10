@@ -26,16 +26,38 @@
  */
 
 #pragma once
-#ifndef MHD_SPARSE_FIELD_HH
-#define MHD_SPARSE_FIELD_HH
+#ifndef FIELD_HH_
+#define FIELD_HH_
 
 #include "SkunkBase.hh"
 
-template<int num_vars_t>
-using TScalarField = std::vector<std::array<double, num_vars_t>>;
-template<int num_vars_t>
-using TVectorField = std::vector<std::array<skunk::vec3_t, num_vars_t>>;
-template<int num_vars_t>
-using TMatrixField = std::vector<std::array<skunk::mat3_t, num_vars_t>>;
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
 
-#endif  // ifndef MHD_SPARSE_FIELD_HH
+//namespace feathers {
+
+template<int num_vars>
+using TScalarField = std::vector<std::array<feathers::real_t, num_vars>>;
+template<int num_vars>
+using TVectorField = std::vector<std::array<feathers::vec3_t, num_vars>>;
+template<int num_vars>
+using TMatrixField = std::vector<std::array<feathers::mat3_t, num_vars>>;
+
+//}   // namespace feathers
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+namespace feathers {
+
+
+
+} // namespace feathers
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+#endif // FIELD_HH_

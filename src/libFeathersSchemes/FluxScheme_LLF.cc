@@ -31,7 +31,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**
  * @brief Calculate the Local Lax-Friedrichs (Rusanov) numerical flux.
@@ -57,10 +57,10 @@ void TLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3
     }
 }   // TLaxFriedrichsFluxScheme::get_numerical_flux
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-template class skunk::TLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>;
+template class feathers::TLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>;

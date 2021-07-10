@@ -35,7 +35,7 @@
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace skunk {
+namespace feathers {
 
 /**************************************************************************/
 /**************************************************************************/
@@ -130,19 +130,19 @@ SKUNK_INLINE type_t for_range_reduce(iter_t x_iter, iter_t x_iter_end,
                                      iter_t z_iter, iter_t z_iter_end, type_t init, reduce_t reduce, func_t func);
 /** @} */
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-#if SKUNK_HAS_OPENMP2
+#if FEATHERS_HAS_OPENMP2
 #include <omp.h>
 #endif
 
-namespace skunk {
+namespace feathers {
 
-#if SKUNK_HAS_OPENMP2
+#if FEATHERS_HAS_OPENMP2
 
 /** Get maximum number of threads. */
 SKUNK_INLINE uint_t get_num_threads() {
@@ -168,7 +168,7 @@ SKUNK_INLINE func_t for_range(iter_t iter_beg, iter_t iter_end, func_t func) {
     }
     return func;
 }   // for_range
-#if SKUNK_HAS_OPENMP3
+#if FEATHERS_HAS_OPENMP3
 template<typename iter_t, typename func_t>
 SKUNK_INLINE func_t for_range(iter_t x_iter_beg, iter_t x_iter_end,
                               iter_t y_iter_beg, iter_t y_iter_end, func_t func) {
@@ -194,7 +194,7 @@ SKUNK_INLINE func_t for_range(iter_t x_iter_beg, iter_t x_iter_end,
     }
     return func;
 }   // for_range
-#endif  // if SKUNK_HAS_OPENMP3
+#endif  // if FEATHERS_HAS_OPENMP3
 /** @} */
 
 /**************************************************************************/
@@ -211,7 +211,7 @@ SKUNK_INLINE type_t for_range_sum(iter_t iter_beg, iter_t iter_end, type_t init,
     }
     return init + sum;
 }   // for_range_sum
-#if SKUNK_HAS_OPENMP3
+#if FEATHERS_HAS_OPENMP3
 template<typename iter_t, typename type_t, typename func_t>
 SKUNK_INLINE type_t for_range_sum(iter_t x_iter_beg, iter_t x_iter_end,
                                   iter_t y_iter_beg, iter_t y_iter_end, type_t init, func_t func) {
@@ -239,10 +239,10 @@ SKUNK_INLINE type_t for_range_sum(iter_t x_iter_beg, iter_t x_iter_end,
     }
     return init + sum;
 }   // for_range_sum
-#endif  // if SKUNK_HAS_OPENMP3
+#endif  // if FEATHERS_HAS_OPENMP3
 /** @} */
 
-#if SKUNK_HAS_OPENMP4
+#if FEATHERS_HAS_OPENMP4
 /** Compute minimum of the range values in parallel. */
 /** @{ */
 template<typename iter_t, typename type_t, typename func_t>
@@ -282,9 +282,9 @@ SKUNK_INLINE type_t for_range_min(iter_t x_iter_beg, iter_t x_iter_end,
     return std::min(min_val, init);
 }   // for_range_min
 /** @} */
-#endif  // if SKUNK_HAS_OPENMP4
+#endif  // if FEATHERS_HAS_OPENMP4
 
-#if SKUNK_HAS_OPENMP4
+#if FEATHERS_HAS_OPENMP4
 /** Compute maximum of the range values in parallel. */
 /** @{ */
 template<typename iter_t, typename type_t, typename func_t>
@@ -324,9 +324,9 @@ SKUNK_INLINE type_t for_range_max(iter_t x_iter_beg, iter_t x_iter_end,
     return std::max(max_val, init);
 }   // for_range_max
 /** @} */
-#endif  // if SKUNK_HAS_OPENMP4
+#endif  // if FEATHERS_HAS_OPENMP4
 
-#if SKUNK_HAS_OPENMP4
+#if FEATHERS_HAS_OPENMP4
 /** Compute minimum and maximum of the range values in parallel. */
 /** @{ */
 template<typename iter_t, typename type_t, typename func_t>
@@ -372,11 +372,11 @@ SKUNK_INLINE std::pair<type_t, type_t> for_range_minmax(iter_t x_iter_beg, iter_
     return {std::min(min_val, min_init), std::max(max_val, max_init)};
 }   // for_range_minmax
 /** @} */
-#endif  // if SKUNK_HAS_OPENMP4
+#endif  // if FEATHERS_HAS_OPENMP4
 
-#endif  // if SKUNK_HAS_OPENMP2
+#endif  // if FEATHERS_HAS_OPENMP2
 
-}   // namespace skunk
+}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -387,7 +387,7 @@ SKUNK_INLINE std::pair<type_t, type_t> for_range_minmax(iter_t x_iter_beg, iter_
 #include <thread>
 #include <functional>
 
-namespace skunk {
+namespace feathers {
 
 /** Get maximum number of threads. */
 SKUNK_INLINE size_t get_num_threads() {
@@ -458,7 +458,7 @@ SKUNK_INLINE func_t for_range(iter_t x_iter_beg, iter_t x_iter_end,
 }   // for_range
 /** @} */
 
-}   // namespace skunk
+}   // namespace feathers
 
 #endif
 
