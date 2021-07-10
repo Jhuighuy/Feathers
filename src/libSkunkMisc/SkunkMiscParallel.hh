@@ -404,8 +404,8 @@ SKUNK_INLINE size_t set_num_threads(size_t num_threads) {
 
 /** Run a range in parallel. */
 /** @{ */
-template<typename iter_t, typename func_t>
-SKUNK_INLINE func_t for_range(iter_t iter_beg, iter_t iter_end, func_t func) {
+template<typename tIter, typename func_t>
+SKUNK_INLINE func_t for_range(tIter iter_beg, tIter iter_end, func_t func) {
     const size_t num_threads = get_num_threads();
     if (num_threads <= 1) {
         for (auto iter = iter_beg; iter < iter_end; ++iter) {
@@ -437,22 +437,22 @@ SKUNK_INLINE func_t for_range(iter_t iter_beg, iter_t iter_end, func_t func) {
     std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
     return func;
 }   // for_range
-template<typename iter_t, typename func_t>
-SKUNK_INLINE func_t for_range(iter_t x_iter_beg, iter_t x_iter_end,
-                              iter_t y_iter_beg, iter_t y_iter_end, func_t func) {
+template<typename tIter, typename func_t>
+SKUNK_INLINE func_t for_range(tIter x_iter_beg, tIter x_iter_end,
+                              tIter y_iter_beg, tIter y_iter_end, func_t func) {
     const size_t size = (x_iter_end - x_iter_beg)*(y_iter_end - y_iter_beg);
     for_range(0, size, [&](size_t batch_ind) {
-        SKUNK_NOT_IMPLEMENTED();
+        FEATHERS_NOT_IMPLEMENTED();
     });
     return func;
 }   // for_range
-template<typename iter_t, typename func_t>
-SKUNK_INLINE func_t for_range(iter_t x_iter_beg, iter_t x_iter_end,
-                              iter_t y_iter_beg, iter_t y_iter_end,
-                              iter_t z_iter_beg, iter_t z_iter_end, func_t func) {
+template<typename tIter, typename func_t>
+SKUNK_INLINE func_t for_range(tIter x_iter_beg, tIter x_iter_end,
+                              tIter y_iter_beg, tIter y_iter_end,
+                              tIter z_iter_beg, tIter z_iter_end, func_t func) {
     const size_t size = (x_iter_end - x_iter_beg)*(y_iter_end - y_iter_beg)*(z_iter_end - z_iter_beg);
     for_range(0, size, [&](size_t batch_ind) {
-        SKUNK_NOT_IMPLEMENTED();
+        FEATHERS_NOT_IMPLEMENTED();
     });
     return func;
 }   // for_range

@@ -44,11 +44,11 @@ namespace feathers {
  * Abstract convection scheme.
  */
 template<int_t num_vars>
-class TConvectionScheme : public TObject<TConvectionScheme<num_vars>> {
+class iConvectionScheme : public tObject<iConvectionScheme<num_vars>> {
 public:
-    virtual void get_cell_convection(TScalarField<num_vars>& conv_u,
-                                     const TScalarField<num_vars>& u) const = 0;
-};  // class TConvectionScheme
+    virtual void get_cell_convection(tScalarField<num_vars>& conv_u,
+                                     const tScalarField<num_vars>& u) const = 0;
+};  // class iConvectionScheme
 
 }   // namespace feathers
 
@@ -63,21 +63,21 @@ namespace feathers {
  * This is a first-order scheme.
  */
 template<int_t num_vars>
-class TUpwindConvectionScheme final : public TConvectionScheme<num_vars> {
+class tUpwindConvectionScheme final : public iConvectionScheme<num_vars> {
 public:
-    std::shared_ptr<UMesh> m_mesh;
-    std::shared_ptr<IFluxScheme<num_vars>> m_flux;
+    std::shared_ptr<const uMesh> m_mesh;
+    std::shared_ptr<iFluxScheme<num_vars>> m_flux;
 
 public:
-    explicit TUpwindConvectionScheme(std::shared_ptr<UMesh> mesh):
+    explicit tUpwindConvectionScheme(std::shared_ptr<const uMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_flux(new THLLCFluxScheme<MhdPhysicsIdealGas>()) {
+        m_flux(new tHLLCFluxScheme<MhdPhysicsIdealGas>()) {
     }
 
     /** Compute the first-order upwind convection. */
-    void get_cell_convection(TScalarField<num_vars>& div_f,
-                             const TScalarField<num_vars>& u) const final;
-};  // class TUpwindConvectionScheme
+    void get_cell_convection(tScalarField<num_vars>& div_f,
+                             const tScalarField<num_vars>& u) const final;
+};  // class tUpwindConvectionScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -87,26 +87,25 @@ public:
  * This is a second-order scheme.
  */
 template<int_t num_vars>
-class TUpwind2ConvectionScheme final : public TConvectionScheme<num_vars> {
+class tUpwind2ConvectionScheme final : public iConvectionScheme<num_vars> {
 public:
-    std::shared_ptr<UMesh> m_mesh;
-    std::shared_ptr<IFluxScheme<num_vars>> m_flux;
-    std::shared_ptr<IGradientScheme<num_vars>> m_gradient_scheme;
-    std::shared_ptr<IGradientLimiterScheme<num_vars>> m_gradient_limiter_scheme;
+    std::shared_ptr<const uMesh> m_mesh;
+    std::shared_ptr<iFluxScheme<num_vars>> m_flux;
+    std::shared_ptr<iGradientScheme<num_vars>> m_gradient_scheme;
+    std::shared_ptr<iGradientLimiterScheme<num_vars>> m_gradient_limiter_scheme;
 
 public:
-    explicit TUpwind2ConvectionScheme(std::shared_ptr<UMesh> mesh):
+    explicit tUpwind2ConvectionScheme(std::shared_ptr<const uMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_flux(new TLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>()),
-        m_gradient_scheme(new TLeastSquaresGradientScheme<num_vars>(m_mesh)),
-        m_gradient_limiter_scheme(
-            new TGradientLimiterScheme<num_vars, MinmodSlopeLimiter, CubicSecondLimiter>(m_mesh)) {
+        m_flux(new tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>()),
+        m_gradient_scheme(new tLeastSquaresGradientScheme<num_vars>(m_mesh)),
+        m_gradient_limiter_scheme(new tCubic2GradientLimiterScheme<num_vars>(m_mesh)) {
     }
 
     /** Compute the second-order upwind convection. */
-    void get_cell_convection(TScalarField<num_vars>& div_f,
-                             const TScalarField<num_vars>& u) const final;
-};  // class TUpwindConvectionScheme
+    void get_cell_convection(tScalarField<num_vars>& div_f,
+                             const tScalarField<num_vars>& u) const final;
+};  // class tUpwindConvectionScheme
 
 }   // namespace feathers
 

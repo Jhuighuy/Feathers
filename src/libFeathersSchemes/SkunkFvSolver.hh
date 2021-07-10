@@ -29,18 +29,18 @@ public:
 
 private:
     std::shared_ptr<UMesh> m_mesh;
-    std::shared_ptr<feathers::TConvectionScheme<num_vars>> m_conv;
+    std::shared_ptr<feathers::iConvectionScheme<num_vars>> m_conv;
     std::map<int_t, std::shared_ptr<MhdFvBcPT<MhdPhysicsT>>> m_bcs;
 
 public:
     explicit MhdFvSolverT(std::shared_ptr<UMesh> mesh);
 
 public:
-    void calc_func(TScalarField<num_vars>& u,
-                   TScalarField<num_vars>& up) const;
+    void calc_func(tScalarField<num_vars>& u,
+                   tScalarField<num_vars>& up) const;
     void calc_step(real_t& dt,
-                   TScalarField<num_vars>& u,
-                   TScalarField<num_vars>& up) const;
+                   tScalarField<num_vars>& u,
+                   tScalarField<num_vars>& up) const;
 };  // class MhdFvSolverT
 
 // ************************************************************************************ //

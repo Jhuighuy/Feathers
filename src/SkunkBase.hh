@@ -61,9 +61,6 @@
 
 namespace feathers {
 
-/**************************************************************************/
-/**************************************************************************/
-
 /** C++03 support. */
 /** @{ */
 #if (__cplusplus >= 199711L) || (_MSVC_LANG >= 199711L)
@@ -100,8 +97,8 @@ namespace feathers {
 #endif
 /** @} */
 
-/**************************************************************************/
-/**************************************************************************/
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /** OpenMP 2.0 support. */
 /** @{ */
@@ -130,8 +127,8 @@ namespace feathers {
 #endif
 /** @} */
 
-/**************************************************************************/
-/**************************************************************************/
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /** Convert token to string. */
 /** @{ */
@@ -145,15 +142,17 @@ namespace feathers {
 #define FEATHERS_CONCAT(x, y) FEATHERS_CONCAT_(x, y)
 /** @} */
 
-/**************************************************************************/
-/**************************************************************************/
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
+#define FEATHERS_NOT_USED(x)
 
 /** Pragma. */
 /** @{ */
 #ifdef _MSC_VER
-#define SKUNK_PRAGMA(...) __pragma(__VA_ARGS__)
+#define FEATHERS_PRAGMA(...) __pragma(__VA_ARGS__)
 #else
-#define SKUNK_PRAGMA(...) _Pragma(FEATHERS_TO_STRING(__VA_ARGS__))
+#define FEATHERS_PRAGMA(...) _Pragma(FEATHERS_TO_STRING(__VA_ARGS__))
 #endif
 /** @} */
 
@@ -166,30 +165,28 @@ namespace feathers {
 #endif
 /** @} */
 
-#define SKUNK_EXTERN
-
 /** Assume macro: an optimization hint for the compiler. */
 /** @{ */
 #ifdef _MSC_VER
-#define SKUNK_ASSUME(x) __assume(x)
+#define FEATHERS_ASSUME(x) __assume(x)
 #else
-#define SKUNK_ASSUME(x) do { if (!(x)) { __builtin_unreachable(); } } while (false)
+#define FEATHERS_ASSUME(x) do { if (!(x)) { __builtin_unreachable(); } } while (false)
 #endif
 /** @} */
 
 /** Likely/Unlikely macro: a branching optimization hint for the compiler. */
 /** @{ */
 #ifdef _MSC_VER
-#define SKUNK_LIKELY(x) (x)
-#define SKUNK_UNLIKELY(x) (x)
+#define FEATHERS_LIKELY(x) (x)
+#define FEATHERS_UNLIKELY(x) (x)
 #else
-#define SKUNK_LIKELY(x) __builtin_expect((x), 1)
-#define SKUNK_UNLIKELY(x) __builtin_expect((x), 0)
+#define FEATHERS_LIKELY(x) __builtin_expect((x), 1)
+#define FEATHERS_UNLIKELY(x) __builtin_expect((x), 0)
 #endif
 /** @} */
 
-/**************************************************************************/
-/**************************************************************************/
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /** Compile-time expression macro. */
 /** @{ */
@@ -222,25 +219,27 @@ namespace feathers {
 /**************************************************************************/
 /**************************************************************************/
 
-/** Assertion macro. */
-/** @{ */
-#ifdef NDEBUG
-#define SKUNK_ASSERT(x) SKUNK_ASSUME(x)
-#else
-#define SKUNK_ASSERT(x) do { if(!(x)) { \
+#define FEATHERS_ENSURE(x) do { if(!(x)) { \
         std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
                      __FILE__, __LINE__, __FUNCTION__, FEATHERS_TO_STRING(x)); \
         std::abort(); \
     } } while (false)
+
+/** Assertion macro. */
+/** @{ */
+#ifdef NDEBUG
+#define FEATHERS_ASSERT(x) FEATHERS_ASSUME(x)
+#else
+#define FEATHERS_ASSERT(x) FEATHERS_ENSURE(x)
 #endif
 /** @} */
 
 /** Fatal assertion macro. */
 /** @{ */
 #ifdef NDEBUG
-#define SKUNK_ASSERT_FALSE(m) do { std::abort(); } while (false)
+#define FEATHERS_ASSERT_FALSE(m) do { std::abort(); } while (false)
 #else
-#define SKUNK_ASSERT_FALSE(m) do { \
+#define FEATHERS_ASSERT_FALSE(m) do { \
         std::fprintf(stderr, "\nFatal assertion failed:\n%s:%d %s: %s", \
                      __FILE__, __LINE__, __FUNCTION__, m); \
         std::abort(); \
@@ -249,9 +248,9 @@ namespace feathers {
 /** @} */
 
 /** Not implemented macro. */
-#define SKUNK_NOT_IMPLEMENTED() SKUNK_ASSERT_FALSE("not implemented.")
+#define FEATHERS_NOT_IMPLEMENTED() FEATHERS_ASSERT_FALSE("not implemented.")
 /** Not implemented macro. */
-#define SKUNK_NOT_REACHABLE() SKUNK_ASSERT_FALSE("not reachable.")
+#define FEATHERS_NOT_REACHABLE() FEATHERS_ASSERT_FALSE("not reachable.")
 
 }   // namespace feathers
 
@@ -261,8 +260,6 @@ namespace feathers {
 
 namespace feathers {
 
-/** Signed byte type. */
-using char_t = std::int8_t;
 /** Unsigned byte type. */
 using byte_t = std::uint8_t;
 
@@ -280,22 +277,23 @@ using uint_t = std::uint32_t;
 static constexpr uint_t npos = std::numeric_limits<uint_t>::max();
 
 /** Check if index is npos. */
-SKUNK_INLINE static constexpr auto is_npos(uint_t ind) {
+static constexpr auto is_npos(uint_t ind) {
     return ind == npos;
 }   // is_npos
 /** Check if index is not npos. */
-SKUNK_INLINE static constexpr auto is_not_npos(uint_t ind) {
+static constexpr auto is_not_npos(uint_t ind) {
     return ind != npos;
 }   // is_not_npos
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/** Floating-point type, vector and matrix types. */
-/** @{ */
 #ifndef SKUNK_CONFIG_REAL_IS_DOUBLE
 #define SKUNK_CONFIG_REAL_IS_DOUBLE 1
 #endif
+
+/** Floating-point type, vector and matrix types. */
+/** @{ */
 #if SKUNK_CONFIG_REAL_IS_DOUBLE
 using real_t = double;
 using vec2_t = glm::dvec2; using vec3_t = glm::dvec3; using vec4_t = glm::dvec4;
@@ -413,23 +411,12 @@ static constexpr real_t c_sqrt1_2(std::sqrt(0.5));
 #endif
 /** @} */
 
-/** Compute square of a given value. */
-template<typename type_t>
-SKUNK_INLINE static constexpr type_t sqr(type_t x) {
-    return std::pow(x, 2);
-}   // sqr
-/** Compute cube of a given value. */
-template<typename type_t>
-SKUNK_INLINE static constexpr type_t cube(type_t x) {
-    return std::pow(x, 3);
-}   // cube
-
 /** Compute pseudo-inverse value. */
 template<typename type_t>
-SKUNK_INLINE static constexpr type_t safe_inv(type_t x) {
+static constexpr type_t safe_inverse(type_t x) {
     constexpr type_t zero{};
     return x == zero ? zero : type_t(1)/x;
-}   // safe_inv
+}   // safe_inverse
 
 }   // namespace feathers
 
@@ -439,80 +426,9 @@ SKUNK_INLINE static constexpr type_t safe_inv(type_t x) {
 
 namespace feathers {
 
-/** Sequential 1D 'for' loop wrapper. */
-template<typename iter_t, typename func_t>
-SKUNK_INLINE constexpr func_t for_n(iter_t iter_beg, iter_t iter_end, func_t func) {
-    for (iter_t iter = iter_beg; iter != iter_end; ++iter) {
-        func(iter);
-    }
-    return func;
-}   // for_n
-/** Sequential 2D 'for' loop wrapper. */
-template<typename iter_t, typename func_t>
-SKUNK_INLINE constexpr func_t for_n(iter_t x_iter_beg, iter_t x_iter_end,
-                                    iter_t y_iter_beg, iter_t y_iter_end, func_t func) {
-    for (iter_t x_iter = x_iter_beg; x_iter != x_iter_end; ++x_iter) {
-    for (iter_t y_iter = y_iter_beg; y_iter != y_iter_end; ++y_iter) {
-        func(x_iter, y_iter);
-    }}
-    return func;
-}   // for_n
-/** Sequential 3D 'for' loop wrapper. */
-template<typename iter_t, typename func_t>
-SKUNK_INLINE constexpr func_t for_n(iter_t x_iter_beg, iter_t x_iter_end,
-                                    iter_t y_iter_beg, iter_t y_iter_end,
-                                    iter_t z_iter_beg, iter_t z_iter_end, func_t func) {
-    for (iter_t x_iter = x_iter_beg; x_iter != x_iter_end; ++x_iter) {
-    for (iter_t y_iter = y_iter_beg; y_iter != y_iter_end; ++y_iter) {
-    for (iter_t z_iter = z_iter_beg; z_iter != z_iter_end; ++z_iter) {
-        func(x_iter, y_iter, z_iter);
-    }}}
-    return func;
-}   // for_n
-
-/** Sequential 1D reduction 'for' loop wrapper. */
-template<typename iter_t, typename type_t,
-         typename reduce_func_t, typename func_t>
-SKUNK_INLINE constexpr type_t for_n_reduce(iter_t iter_beg, iter_t iter_end,
-                                           type_t init, reduce_func_t reduce_func, func_t func) {
-    for (iter_t iter = iter_beg; iter != iter_end; ++iter) {
-        init = std::move(reduce_func(init, func(iter)));
-    }
-    return init;
-}   // for_n_reduce
-/** Sequential 2D reduction 'for' loop wrapper. */
-template<typename iter_t, typename type_t,
-         typename reduce_func_t, typename func_t>
-SKUNK_INLINE constexpr type_t for_n_reduce(iter_t x_iter_beg, iter_t x_iter_end,
-                                           iter_t y_iter_beg, iter_t y_iter_end,
-                                           type_t init, reduce_func_t reduce_func, func_t func) {
-    for (iter_t x_iter = x_iter_beg; x_iter != x_iter_end; ++x_iter) {
-    for (iter_t y_iter = y_iter_beg; y_iter != y_iter_end; ++y_iter) {
-        init = std::move(reduce_func(init, func(x_iter, y_iter)));
-    }}
-    return init;
-}   // for_n_reduce
-/** Sequential 3D reduction 'for' loop wrapper. */
-template<typename iter_t, typename type_t,
-         typename reduce_func_t, typename func_t>
-SKUNK_INLINE constexpr type_t for_n_reduce(iter_t x_iter_beg, iter_t x_iter_end,
-                                           iter_t y_iter_beg, iter_t y_iter_end,
-                                           iter_t z_iter_beg, iter_t z_iter_end,
-                                           type_t init, reduce_func_t reduce_func, func_t func) {
-    for (iter_t x_iter = x_iter_beg; x_iter != x_iter_end; ++x_iter) {
-    for (iter_t y_iter = y_iter_beg; y_iter != y_iter_end; ++y_iter) {
-    for (iter_t z_iter = z_iter_beg; z_iter != z_iter_end; ++z_iter) {
-        init = std::move(reduce_func(init, func(x_iter, y_iter, z_iter)));
-    }}}
-    return init;
-}   // for_n_reduce
-
-/**************************************************************************/
-/**************************************************************************/
-
 /** Simple shortcut for @c std::enable_shared_from_this. */
 template<typename type_t>
-using TObject = std::enable_shared_from_this<type_t>;
+using tObject = std::enable_shared_from_this<type_t>;
 
 template<typename obj_t, typename obj_ptr_t>
 SKUNK_INLINE auto shared_from_this(const obj_ptr_t& obj) {
@@ -537,11 +453,10 @@ SKUNK_INLINE auto shared_from_this(const obj_ptr_t& obj) {
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-/** @todo Remove me. */
-using int_t = int;
-using uint_t = unsigned int;
+/* TODO: Remove me. */
+using int_t = feathers::int_t;
+using uint_t = feathers::uint_t;
 using real_t = feathers::real_t;
-#define MHD_NOT_USED(a)
 
 // ************************************************************************************ //
 // ************************************************************************************ //

@@ -9,14 +9,14 @@
 #include <fstream>
 #include <iomanip>
 
-inline std::string my_to_string(uint_t i) {
+inline std::string my_to_string(feathers::uint_t i) {
     std::string s = std::to_string(i);
     std::string z(5-s.size(), '0');
     return z + s;
 }
 
 static void print(
-        int_t nn,
+        feathers::int_t nn,
         const UMesh & m,
         const std::array<real_t, 5>* u) {
     std::cout << nn << std::endl;
@@ -35,7 +35,7 @@ static void print(
 }
 
 template<unsigned N>
-static void print_vtk(uint_t nn,
+static void print_vtk(feathers::uint_t nn,
                       const UMesh & m,
                       const std::array<real_t, N>* u) {
     using namespace feathers;
@@ -48,7 +48,7 @@ static void print_vtk(uint_t nn,
 
     file << "POINTS " << m.num_nodes() << " double" << std::endl;
     for (uint_t node_ind = 0; node_ind < m.num_nodes(); ++node_ind) {
-        const mesh_node_t& node = m.get_node(node_ind);
+        const Node& node = m.get_node(node_ind);
         const vec3_t& p = node.get_position();
         file << p.x << " " << p.y << " " << p.z << std::endl;
     }
@@ -82,15 +82,15 @@ static void print_vtk(uint_t nn,
 #if 0
 int main() {
     using namespace feathers;
-    std::shared_ptr<UMesh> mesh(new feathers::structured_mesh_t(0.5, 1.0, 50,
+    std::shared_ptr<uMesh> mesh(new feathers::structured_mesh_t(0.5, 1.0, 50,
                                                                -SKUNK_PI/125, +SKUNK_PI/125, 1,
                                                                0.0, SKUNK_PI_2, 200,
                                                                1, 2, 3, 3, 5, 4));
-    //std::shared_ptr<UMesh> mesh(new feathers::structured_mesh_t(0.1, 1.0, 50,
+    //std::shared_ptr<uMesh> mesh(new feathers::structured_mesh_t(0.1, 1.0, 50,
     //                                                           -SKUNK_PI/2 +SKUNK_PI/2, 200,
     //                                                           0.0, 1.0, 1,
     //                                                           1, 2, 3, 3, 5, 4));
-    /*std::shared_ptr<UMesh> mesh(new feathers::structured_mesh_t(0.0, 10.0, 200,
+    /*std::shared_ptr<uMesh> mesh(new feathers::structured_mesh_t(0.0, 10.0, 200,
                                                                0.0, 2.50, 50,
                                                                -0.5, 0.5, 1,
                                                                1, 2, 3, 3, 5, 4));*/
@@ -98,7 +98,7 @@ int main() {
     std::ofstream file1("../results/_nodes.csv");
     file1 << "x,y,z" << std::endl;
     for (uint_t node_ind = 0; node_ind != mesh->num_nodes(); ++node_ind) {
-        const mesh_node_t& face = mesh->get_node(node_ind);
+        const Node& face = mesh->get_node(node_ind);
         file1
             << face.get_position().x << ","
             << face.get_position().y << ","
@@ -123,8 +123,8 @@ int main() {
     }
     file.close();
 
-    TScalarField<5> uc(mesh->num_cells());
-    TScalarField<5> up(mesh->num_cells());
+    tScalarField<5> uc(mesh->num_cells());
+    tScalarField<5> up(mesh->num_cells());
     for (uint_t cell_ind = mesh->begin_cell(0); cell_ind < mesh->end_cell(0); ++cell_ind) {
         /*vec3_t n;
         auto& cell = mesh->get_cell(cell_ind);
@@ -154,7 +154,7 @@ int main() {
         //}
 
         std::array<real_t, 5> q{ d, p, v.x, v.y, v.z };
-        MhdPhysicsIdealGas::TFluidState qq({}, nullptr, q.data());
+        MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;
     }
 
@@ -198,8 +198,8 @@ int main(int argc, char** argv) {
 #if 1
     mesh->read_triangle("mesh/step_.1.");
 
-    TScalarField<5> uc(mesh->num_cells());
-    TScalarField<5> up(mesh->num_cells());
+    tScalarField<5> uc(mesh->num_cells());
+    tScalarField<5> up(mesh->num_cells());
     MhdFvSolverT<MhdPhysicsIdealGas> solver(mesh);
     for (uint_t cell_ind = 0; cell_ind < mesh->num_cells(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
         double y = mesh->get_cell(cell_ind).get_center_position().y;
         d += 0.2*std::sin(M_PI*(x+y));
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
-        MhdPhysicsIdealGas::TFluidState qq({}, nullptr, q.data());
+        MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*double d, p;
@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
             }
         }
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
-        MhdPhysicsIdealGas::TFluidState qq({}, nullptr, q.data());
+        MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*std::array<real_t, 5> q{ 1.4, 1.0, 3.0, 0.0, 0.0 };

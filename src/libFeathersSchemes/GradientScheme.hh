@@ -40,14 +40,14 @@ namespace feathers {
 
 /** Abstract cell-centered gradient scheme. */
 template<int_t num_vars>
-class IGradientScheme : public TObject<IGradientScheme<num_vars>> {
+class iGradientScheme : public tObject<iGradientScheme<num_vars>> {
 public:
     /** Compute cell-centered gradients. */
     /** @{ */
-    virtual void get_gradients(TVectorField<num_vars>& grad_u,
-                               const TScalarField<num_vars>& u) const = 0;
+    virtual void get_gradients(tVectorField<num_vars>& grad_u,
+                               const tScalarField<num_vars>& u) const = 0;
     /** @} */
-};  // class IGradientScheme
+};  // class iGradientScheme
 
 }   // namespace feathers
 
@@ -65,14 +65,14 @@ namespace feathers {
  * Also, this gradient scheme is by far the fastest one.
  */
 template<int_t num_vars>
-class TLeastSquaresGradientScheme final : public IGradientScheme<num_vars> {
+class tLeastSquaresGradientScheme final : public iGradientScheme<num_vars> {
 private:
-    std::shared_ptr<UMesh> m_mesh;
-    TMatrixField<1> m_inverse_matrices;
+    std::shared_ptr<const uMesh> m_mesh;
+    tMatrixField<> m_inverse_matrices;
 
 public:
     /** Initialize the gradient scheme. */
-    explicit TLeastSquaresGradientScheme(std::shared_ptr<UMesh> mesh):
+    explicit tLeastSquaresGradientScheme(std::shared_ptr<const uMesh> mesh):
         m_mesh(std::move(mesh)),
         m_inverse_matrices(m_mesh->num_cells()) {
         init_gradients_();
@@ -80,8 +80,8 @@ public:
 
     /** Compute cell-centered gradients. */
     /** @{ */
-    void get_gradients(TVectorField<num_vars>& grad_u,
-                       const TScalarField<num_vars>& u) const final {
+    void get_gradients(tVectorField<num_vars>& grad_u,
+                       const tScalarField<num_vars>& u) const final {
         get_gradients_(grad_u, u);
     }
     /** @} */
@@ -90,12 +90,12 @@ private:
     /** Compute cell-centered gradients. */
     /** @{ */
     void init_gradients_();
-    template</*template<int_t>*/ class TOutField,
-             /*template<int_t>*/ class TInField>
-    void get_gradients_(TOutField/*<num_vars>*/& grad_u,
-                        const TInField/*<num_vars>*/& u) const;
+    template</*template<int_t>*/ class tInField,
+             /*template<int_t>*/ class tOutField>
+    void get_gradients_(tOutField/*<num_vars>*/& grad_u,
+                        const tInField/*<num_vars>*/& u) const;
     /** @} */
-};  // class TLeastSquaresGradientScheme
+};  // class tLeastSquaresGradientScheme
 
 }   // namespace feathers
 

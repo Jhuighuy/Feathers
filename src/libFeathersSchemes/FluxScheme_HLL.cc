@@ -47,8 +47,8 @@ namespace feathers {
  * @endverbatim
  */
 template<>
-void THLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const TFluidState& ur,
-                                                          const TFluidState& ul,
+void tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur,
+                                                          const tFluidState& ul,
                                                           real_t& sr, real_t& sl) const {
     /*
      * Calculate Roe average sound speed.
@@ -64,7 +64,7 @@ void THLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const TFluidState& ur,
      */
     sr = 0.5*(ur.Vn + ul.Vn) + cs;
     sl = 0.5*(ur.Vn + ul.Vn) - cs;
-}   // THLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
+}   // tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
 
 /**
  * @brief Calculate the Harten-Lax-van Leer-Einfeldt numerical flux.
@@ -75,9 +75,9 @@ void THLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const TFluidState& ur,
  * @endverbatim
  */
 template<typename TPhysics>
-void THLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
-                                                  const TFluidState& ur,
-                                                  const TFluidState& ul,
+void tHLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
+                                                  const tFluidState& ur,
+                                                  const tFluidState& ul,
                                                   std::array<real_t, num_vars>& f) const {
     /*
      * Supersonic cases.
@@ -104,8 +104,8 @@ void THLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
         }
         return;
     }
-    assert(!"Broken signal velocities.");
-}   // THLLFluxScheme::get_numerical_flux
+    FEATHERS_ENSURE(!"Broken signal velocities.");
+}   // tHLLFluxScheme::get_numerical_flux
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -119,8 +119,8 @@ void THLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
  * @endverbatim
  */
 template<>
-void THLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const TFluidState& ur,
-                                                           const TFluidState& ul,
+void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur,
+                                                           const tFluidState& ul,
                                                            real_t& sr, real_t& sl) const {
     /*
      * Calculate average variables.
@@ -151,7 +151,7 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const TFluidState& ur
      */
     sr = ur.Vn + ur.c_snd*gp;
     sl = ul.Vn - ul.c_snd*gm;
-}   // THLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
+}   // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
 
 #define HLLC_VARIATION 0
 
@@ -164,9 +164,9 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const TFluidState& ur
  * @endverbatim
  */
 template<>
-void THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
-                                                             const TFluidState& ur,
-                                                             const TFluidState& ul,
+void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
+                                                             const tFluidState& ur,
+                                                             const tFluidState& ul,
                                                              std::array<real_t, num_vars>& f) const {
     /*
      * Supersonic cases.
@@ -195,7 +195,7 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
      * [1], Eq. (10.38), (10.39).
      */
     if (ss <= 0.0 && 0.0 <= sr) {
-        TFluidState us;
+        tFluidState us;
         us.rho = ur.rho*(sr - ur.Vn)/(sr - ss);
         us.nrg = ur.nrg + (ss - ur.Vn)*(ss + ur.p/ur.rho/(sr - ss));
         us.V   = ur.V - n*(ur.Vn - ss);
@@ -206,7 +206,7 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
         return;
     }
     if (sl <= 0.0 && 0.0 <= ss)  {
-        TFluidState us;
+        tFluidState us;
         us.rho = ul.rho*(sl - ul.Vn)/(sl - ss);
         us.nrg = ul.nrg + (ss - ul.Vn)*(ss + ul.p/ul.rho/(sl - ss));
         us.V   = ul.V - n*(ul.Vn - ss);
@@ -262,7 +262,7 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
     }
 #endif
     assert(!"Broken signal velocities.");
-}   // THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
+}   // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
 
 }   // namespace feathers
 
@@ -270,5 +270,5 @@ void THLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-template class feathers::THLLFluxScheme<MhdPhysicsIdealGas>;
-template class feathers::THLLCFluxScheme<MhdPhysicsIdealGas>;
+template class feathers::tHLLFluxScheme<MhdPhysicsIdealGas>;
+template class feathers::tHLLCFluxScheme<MhdPhysicsIdealGas>;

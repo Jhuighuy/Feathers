@@ -43,23 +43,23 @@ namespace feathers {
  * Abstract numerical flux.
  */
 template<int_t num_vars_t>
-class IFluxScheme : public TObject<IFluxScheme<num_vars_t>> {
+class iFluxScheme : public tObject<iFluxScheme<num_vars_t>> {
 public:
     /** Compute the numerical flux. */
     virtual void get_numerical_flux(const vec3_t& n,
                                     const std::array<real_t, num_vars_t>& ur,
                                     const std::array<real_t, num_vars_t>& ul,
                                     std::array<real_t, num_vars_t>& flux) const = 0;
-};  // class IFluxScheme
+};  // class iFluxScheme
 
 /**
  * Abstract physics-based numerical flux.
  */
-template<typename TPhysics>
-class IPhysicalFluxScheme : public IFluxScheme<TPhysics::num_vars> {
+template<typename tPhysics>
+class iPhysFluxScheme : public iFluxScheme<tPhysics::num_vars> {
 public:
-    static constexpr int_t num_vars = TPhysics::num_vars;
-    using TFluidState = typename TPhysics::MhdFluidStateT;
+    static constexpr int_t num_vars = tPhysics::num_vars;
+    using tFluidState = typename tPhysics::MhdFluidStateT;
 
 public:
     /** Compute the numerical flux. */
@@ -69,15 +69,15 @@ public:
                             const std::array<real_t, num_vars>& ul,
                             std::array<real_t, num_vars>& f) const final {
         get_numerical_flux(n,
-                           TFluidState(n, ur.data()),
-                           TFluidState(n, ul.data()), f);
+                           tFluidState(n, ur.data()),
+                           tFluidState(n, ul.data()), f);
     }
     virtual void get_numerical_flux(const vec3_t& n,
-                                    const TFluidState& ur,
-                                    const TFluidState& ul,
+                                    const tFluidState& ur,
+                                    const tFluidState& ul,
                                     std::array<real_t, num_vars>& f) const = 0;
     /** @} */
-};  // class IPhysicalFluxScheme
+};  // class iPhysFluxScheme
 
 }   // namespace feathers
 
@@ -93,18 +93,18 @@ namespace feathers {
  * Use this numerical flux if all other fails. 
  * It should always work.
  */
-template<typename TPhysics>
-class TLaxFriedrichsFluxScheme final : public IPhysicalFluxScheme<TPhysics> {
+template<typename tPhysics>
+class tLaxFriedrichsFluxScheme final : public iPhysFluxScheme<tPhysics> {
 public:
-    using IPhysicalFluxScheme<TPhysics>::num_vars;
-    using typename IPhysicalFluxScheme<TPhysics>::TFluidState;
+    using iPhysFluxScheme<tPhysics>::num_vars;
+    using typename iPhysFluxScheme<tPhysics>::tFluidState;
 
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
-                            const TFluidState& ur,
-                            const TFluidState& ul,
+                            const tFluidState& ur,
+                            const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const final;
-};  // class TLaxFriedrichsFluxScheme
+};  // class tLaxFriedrichsFluxScheme
 
 }   // namespace feathers
 
@@ -120,23 +120,23 @@ namespace feathers {
  * Use this numerical flux if HLLC fails. 
  * It should (almost) always work.
  */
-template<typename TPhysics>
-class THLLFluxScheme : public IPhysicalFluxScheme<TPhysics> {
+template<typename tPhysics>
+class tHLLFluxScheme : public iPhysFluxScheme<tPhysics> {
 public:
-    using IPhysicalFluxScheme<TPhysics>::num_vars;
-    using typename IPhysicalFluxScheme<TPhysics>::TFluidState;
+    using iPhysFluxScheme<tPhysics>::num_vars;
+    using typename iPhysFluxScheme<tPhysics>::tFluidState;
 
     /** Compute the signal speed. */
-    void get_signal_speed(const TFluidState& ur,
-                          const TFluidState& ul,
+    void get_signal_speed(const tFluidState& ur,
+                          const tFluidState& ul,
                           real_t& sr, real_t& sl) const;
 
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
-                            const TFluidState& ur,
-                            const TFluidState& ul,
+                            const tFluidState& ur,
+                            const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const final;
-};  // class THLLFluxScheme
+};  // class tHLLFluxScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -147,23 +147,23 @@ public:
  * Optimal choice for both gas and plasma physics.
  * In plasma physics case may be a bit more dissipative, but more consistent than HLLD/Roe.
  */
-template<typename TPhysics>
-class THLLCFluxScheme : public IPhysicalFluxScheme<TPhysics> {
+template<typename tPhysics>
+class tHLLCFluxScheme : public iPhysFluxScheme<tPhysics> {
 public:
-    using IPhysicalFluxScheme<TPhysics>::num_vars;
-    using typename IPhysicalFluxScheme<TPhysics>::TFluidState;
+    using iPhysFluxScheme<tPhysics>::num_vars;
+    using typename iPhysFluxScheme<tPhysics>::tFluidState;
 
     /** Compute the signal speed. */
-    void get_signal_speed(const TFluidState& ur,
-                          const TFluidState& ul,
+    void get_signal_speed(const tFluidState& ur,
+                          const tFluidState& ul,
                           real_t& sr, real_t& sl) const;
 
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
-                            const TFluidState& ur,
-                            const TFluidState& ul,
+                            const tFluidState& ur,
+                            const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const override;
-};  // class THLLCFluxScheme
+};  // class tHLLCFluxScheme
 
 }   // namespace feathers
 
@@ -180,18 +180,18 @@ namespace feathers {
  * For plasma physics is significantly slower that the HLLC/HLLD fluxes,
  * but sometimes may produce great results.
  */
-template<typename TPhysics>
-class TRoeFluxScheme : public IPhysicalFluxScheme<TPhysics> {
+template<typename tPhysics>
+class tRoeFluxScheme : public iPhysFluxScheme<tPhysics> {
 public:
-    using IPhysicalFluxScheme<TPhysics>::num_vars;
-    using typename IPhysicalFluxScheme<TPhysics>::TFluidState;
+    using iPhysFluxScheme<tPhysics>::num_vars;
+    using typename iPhysFluxScheme<tPhysics>::tFluidState;
 
     /** Compute the numerical flux. */
     void get_numerical_flux_(const vec3_t& n,
-                             const TFluidState& ur,
-                             const TFluidState& ul,
+                             const tFluidState& ur,
+                             const tFluidState& ul,
                              std::array<real_t, num_vars>& f) const override;
-};  // class TRoeFluxScheme
+};  // class tRoeFluxScheme
 
 }   // namespace feathers
 

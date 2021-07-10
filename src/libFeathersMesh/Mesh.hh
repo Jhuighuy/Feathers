@@ -206,7 +206,7 @@ public:
     /** Erase the face from element.
      ** @warning Element type would be set to unknown. */
     void erase_face(uint_t face_loc) {
-        SKUNK_ASSERT(face_loc < num_faces());
+        FEATHERS_ASSERT(face_loc < num_faces());
         std::rotate(begin_face() + face_loc, begin_face() + face_loc + 1, end_cell());
         m_type = ElementType::null;
         m_num_faces -= 1;
@@ -225,7 +225,7 @@ template<ElementType type_t>
 class mesh_node_struct_t;
 
 /** Generic node element. */
-using mesh_node_t
+using Node
     = mesh_node_struct_t<ElementType::null>;
 
 /** Node element. */
@@ -614,7 +614,7 @@ public:
 namespace feathers {
 
 /** Hybrid unstructured finite element mesh. */
-class UMesh : public TObject<UMesh> {
+class uMesh : public tObject<uMesh> {
 private:
     std::vector<vec3_t> m_nodes;
     std::vector<ElementType> m_edge_types, m_face_types, m_cell_types;
@@ -644,9 +644,9 @@ public:
     // ---------------------------------------------------------------------- //
 
     /** Initialize an empty mesh. */
-    explicit UMesh(uint_t dim = 0)
+    explicit uMesh(uint_t dim = 0)
         : m_dim(dim), m_cell_nodes() {
-        SKUNK_ASSERT(0 <= m_dim && m_dim <= 3);
+        FEATHERS_ASSERT(0 <= m_dim && m_dim <= 3);
     }
 
     // ---------------------------------------------------------------------- //
@@ -682,45 +682,45 @@ public:
 
     /** Get node element at global index. */
     /** @{ */
-    mesh_node_t& get_node(uint_t node_ind) {
-        SKUNK_ASSERT(node_ind < num_nodes());
-        return reinterpret_cast<mesh_node_t&>(m_node_storage[m_node_offsets[node_ind]]);
+    Node& get_node(uint_t node_ind) {
+        FEATHERS_ASSERT(node_ind < num_nodes());
+        return reinterpret_cast<Node&>(m_node_storage[m_node_offsets[node_ind]]);
     }
-    const mesh_node_t& get_node(uint_t node_ind) const {
-        SKUNK_ASSERT(node_ind < num_nodes());
-        return reinterpret_cast<const mesh_node_t&>(m_node_storage[m_node_offsets[node_ind]]);
+    const Node& get_node(uint_t node_ind) const {
+        FEATHERS_ASSERT(node_ind < num_nodes());
+        return reinterpret_cast<const Node&>(m_node_storage[m_node_offsets[node_ind]]);
     }
     /** @} */
     /** Get edge element at global index. */
     /** @{ */
     Edge& get_edge(uint_t edge_ind) {
-        SKUNK_ASSERT(edge_ind < num_edges());
+        FEATHERS_ASSERT(edge_ind < num_edges());
         return reinterpret_cast<Edge&>(m_edge_storage[m_edge_offsets[edge_ind]]);
     }
     const Edge& get_edge(uint_t edge_ind) const {
-        SKUNK_ASSERT(edge_ind < num_edges());
+        FEATHERS_ASSERT(edge_ind < num_edges());
         return reinterpret_cast<const Edge&>(m_edge_storage[m_edge_offsets[edge_ind]]);
     }
     /** @} */
     /** Get face element at global index. */
     /** @{ */
     Face& get_face(uint_t face_ind) {
-        SKUNK_ASSERT(face_ind < num_faces());
+        FEATHERS_ASSERT(face_ind < num_faces());
         return reinterpret_cast<Face&>(m_face_storage[m_face_offsets[face_ind]]);
     }
     const Face& get_face(uint_t face_ind) const {
-        SKUNK_ASSERT(face_ind < num_faces());
+        FEATHERS_ASSERT(face_ind < num_faces());
         return reinterpret_cast<const Face&>(m_face_storage[m_face_offsets[face_ind]]);
     }
     /** @} */
     /** Get cell element at global index. */
     /** @{ */
     Cell& get_cell(uint_t cell_ind) {
-        SKUNK_ASSERT(cell_ind < num_cells());
+        FEATHERS_ASSERT(cell_ind < num_cells());
         return reinterpret_cast<Cell&>(m_cell_storage[m_cell_offsets[cell_ind]]);
     }
     const Cell& get_cell(uint_t cell_ind) const {
-        SKUNK_ASSERT(cell_ind < num_cells());
+        FEATHERS_ASSERT(cell_ind < num_cells());
         return reinterpret_cast<const Cell&>(m_cell_storage[m_cell_offsets[cell_ind]]);
     }
     /** @} */
@@ -747,43 +747,43 @@ public:
 
     /** Index of the first node with a given mark. */
     uint_t begin_node(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_node_marks());
+        FEATHERS_ASSERT(mark < num_node_marks());
         return m_marked_node_ranges[mark];
     }
     /** Index of the first edge with a given mark. */
     uint_t begin_edge(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_edge_marks());
+        FEATHERS_ASSERT(mark < num_edge_marks());
         return m_marked_edge_ranges[mark];
     }
     /** Index of the first face with a given mark. */
     uint_t begin_face(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_face_marks());
+        FEATHERS_ASSERT(mark < num_face_marks());
         return m_marked_face_ranges[mark];
     }
     /** Index of the first cell with a given mark. */
     uint_t begin_cell(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_cell_marks());
+        FEATHERS_ASSERT(mark < num_cell_marks());
         return m_marked_cell_ranges[mark];
     }
 
     /** Index of a node after the last node with a given mark. */
     uint_t end_node(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_node_marks());
+        FEATHERS_ASSERT(mark < num_node_marks());
         return m_marked_node_ranges[mark + 1];
     }
     /** Index of an edge after the last edge with a given mark. */
     uint_t end_edge(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_edge_marks());
+        FEATHERS_ASSERT(mark < num_edge_marks());
         return m_marked_edge_ranges[mark + 1];
     }
     /** Index of a face after the last face with a given mark. */
     uint_t end_face(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_face_marks());
+        FEATHERS_ASSERT(mark < num_face_marks());
         return m_marked_face_ranges[mark + 1];
     }
     /** Index a cell after of the last cell with a given mark. */
     uint_t end_cell(uint_t mark) const {
-        SKUNK_ASSERT(mark < num_cell_marks());
+        FEATHERS_ASSERT(mark < num_cell_marks());
         return m_marked_cell_ranges[mark + 1];
     }
 
@@ -1031,7 +1031,7 @@ protected:
 
     /** Generate boundary cells to complete face connectivity. */
     void generate_boundary_cells();
-};  // class UMesh
+};  // class uMesh
 
 }   // namespace feathers
 
@@ -1040,10 +1040,10 @@ protected:
 // ************************************************************************************ //
 
 /* Include iterators. */
-#include "MeshIterator.hh"
+#include "MeshIterators.hh"
 
 /** @todo Remove me. */
-using UMesh = feathers::UMesh;
+using UMesh = feathers::uMesh;
 #include "libSkunkSparse/SkunkSparseField.hh"
 
 #endif  // ifndef MESH_HH_

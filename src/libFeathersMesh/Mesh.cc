@@ -91,7 +91,7 @@ bool UMesh::read_triangle(const char *path) {
     generate_boundary_cells();
     reorder_faces();
     return true;
-}   // UMesh::read_triangle
+}   // uMesh::read_triangle
 
 bool UMesh::read_tetgen(const char *path) {
     std::string line;
@@ -143,52 +143,52 @@ bool UMesh::read_tetgen(const char *path) {
     generate_boundary_cells();
     reorder_faces();
     return true;
-}   // UMesh::read_tetgen
+}   // uMesh::read_tetgen
 
 namespace feathers {
 
 /** Get minimal edge length. */
-real_t UMesh::get_min_edge_length() const {
+real_t uMesh::get_min_edge_length() const {
     return for_range_min(0u, num_edges(), 1e+6, [&](uint_t edge_ind) {
         return get_edge_length(edge_ind);
     });
-}   // UMesh::get_min_edge_length
+}   // uMesh::get_min_edge_length
 /** Get maximal edge length. */
-real_t UMesh::get_max_edge_length() const {
+real_t uMesh::get_max_edge_length() const {
     return for_range_max(0u, num_edges(), 0e+0, [&](uint_t edge_ind) {
         return get_edge_length(edge_ind);
     });
-}   // UMesh::get_max_edge_length
+}   // uMesh::get_max_edge_length
 
 /** Get minimal face area. */
-real_t UMesh::get_min_face_area() const {
+real_t uMesh::get_min_face_area() const {
     return for_range_min(0u, num_faces(), 1e+6, [&](uint_t face_ind) {
         return get_face_area(face_ind);
     });
-}   // UMesh::get_min_face_area
+}   // uMesh::get_min_face_area
 /** Get maximal face area. */
-real_t UMesh::get_max_face_area() const {
+real_t uMesh::get_max_face_area() const {
     return for_range_max(0u, num_faces(), 0e+0, [&](uint_t face_ind) {
         return get_face_area(face_ind);
     });
-}   // UMesh::get_max_face_area
+}   // uMesh::get_max_face_area
 
 /** Get minimal cell volume. */
-real_t UMesh::get_min_cell_volume() const {
+real_t uMesh::get_min_cell_volume() const {
     return for_range_min(0u, num_cells(), 1e+6, [&](uint_t cell_ind) {
         return get_cell_volume(cell_ind);
     });
-}   // UMesh::get_min_cell_volume
+}   // uMesh::get_min_cell_volume
 /** Get maximal cell volume. */
-real_t UMesh::get_max_cell_volume() const {
+real_t uMesh::get_max_cell_volume() const {
     return for_range_max(0u, num_cells(), 0e+0, [&](uint_t cell_ind) {
         return get_cell_volume(cell_ind);
     });
-}   // UMesh::get_max_cell_volume
+}   // uMesh::get_max_cell_volume
 
 /** Compute mesh orthogonality.
  ** Mesh orthogonality is defined as a. */
-real_t UMesh::get_orthogonality() const {
+real_t uMesh::get_orthogonality() const {
     return for_range_min(begin_face(0), end_face(0), 1e+6, [&](uint_t face_ind) {
         const Face& face = get_face(face_ind);
         const vec3_t direction = get_cell_center_position(face.get_outer_cell()) -
@@ -196,7 +196,7 @@ real_t UMesh::get_orthogonality() const {
         const real_t orth = glm::dot(face.get_normal(), direction)/glm::length(direction);
         return orth;
     });
-}   // UMesh::get_orthogonality
+}   // uMesh::get_orthogonality
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -204,19 +204,19 @@ real_t UMesh::get_orthogonality() const {
 /** Insert a new node into the mesh.
  ** @param node_ Edge nodes.
  ** @returns Index of the inserted node. */
-uint_t UMesh::insert_node(const mesh_node1_t& node_) {
+uint_t uMesh::insert_node(const mesh_node1_t& node_) {
     /** @todo Refactor me! */
     const uint_t node_ind = allocate_node_(node_);
-    const mesh_node_t& node = get_node(node_ind);
+    const Node& node = get_node(node_ind);
     const vec3_t& node_geometry = node.get_position();
     if (m_dim <= 2) {
-        SKUNK_ASSERT(node_geometry.z == 0.0);
+        FEATHERS_ASSERT(node_geometry.z == 0.0);
         if (m_dim == 1) {
-            SKUNK_ASSERT(node_geometry.y == 0.0);
+            FEATHERS_ASSERT(node_geometry.y == 0.0);
         }
     }
     return node_ind;
-}   // UMesh::insert_node
+}   // uMesh::insert_node
 
 /** Insert a new edge into the mesh.
  ** @param edge_ Edge nodes.
@@ -225,19 +225,19 @@ uint_t UMesh::insert_node(const mesh_node1_t& node_) {
 /*
  * Dummy 1D/2D edge.
  */
-uint_t UMesh::insert_edge(const mesh_edge_node1_t& edge_) {
+uint_t uMesh::insert_edge(const mesh_edge_node1_t& edge_) {
     const uint_t edge_ind = allocate_edge_(edge_);
     /** @todo Implement me! */
     return edge_ind;
-}   // UMesh::insert_edge
+}   // uMesh::insert_edge
 /*
  * Segment edge.
  */
-uint_t UMesh::insert_edge(const mesh_edge_segment2_t& edge_) {
+uint_t uMesh::insert_edge(const mesh_edge_segment2_t& edge_) {
     const uint_t edge_ind = allocate_edge_(edge_);
     /** @todo Implement me! */
     return edge_ind;
-}   // UMesh::insert_edge
+}   // uMesh::insert_edge
 /** @} */
 
 /** Insert a new edge into the mesh.
@@ -246,11 +246,11 @@ uint_t UMesh::insert_edge(const mesh_edge_segment2_t& edge_) {
  ** @param mark Boundary mark.
  ** @param dim Overridden dimension.
  ** @returns Index of the inserted edge. */
-uint_t UMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, uint_t dim) {
+uint_t uMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, uint_t dim) {
     if (dim == 0) {
         dim = m_dim;
     }
-    SKUNK_ASSERT(1 <= dim && dim <= 3);
+    FEATHERS_ASSERT(1 <= dim && dim <= 3);
     if (dim <= 2) {
         switch (edge_nodes.size()) {
         /* Dummy 1D/2D edge. */
@@ -266,8 +266,8 @@ uint_t UMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, ui
         default:;
         }
     }
-    SKUNK_ASSERT_FALSE("Invalid edge nodes: cell type cannot be uniquely matched.");
-}   // UMesh::insert_edge
+    FEATHERS_ASSERT_FALSE("Invalid edge nodes: cell type cannot be uniquely matched.");
+}   // uMesh::insert_edge
 
 /** Insert a new face into the mesh.
  ** @param face_ Face nodes.
@@ -276,7 +276,7 @@ uint_t UMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, ui
 /*
  * Dummy 1D face.
  */
-uint_t UMesh::insert_face(const mesh_face_node1_t& face_) {
+uint_t uMesh::insert_face(const mesh_face_node1_t& face_) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_ind = allocate_face_(face_);
@@ -286,11 +286,11 @@ uint_t UMesh::insert_face(const mesh_face_node1_t& face_) {
     face.set_center_position(get_node_position(face.begin_node()[0]));
     face.set_normal({1.0, 0.0, 0.0});
     return face_ind;
-}   // UMesh::insert_face
+}   // uMesh::insert_face
 /*
  * Segment face.
  */
-uint_t UMesh::insert_face(const mesh_face_segment2_t& face_) {
+uint_t uMesh::insert_face(const mesh_face_segment2_t& face_) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_ind = allocate_face_(face_);
@@ -304,11 +304,11 @@ uint_t UMesh::insert_face(const mesh_face_segment2_t& face_) {
     face.set_center_position(vec3_t(0.5*(face_geometry.p1 + face_geometry.p2), 0.0));
     face.set_normal(mhd_seg2_t::normal3(face_geometry));
     return face_ind;
-}   // UMesh::insert_face
+}   // uMesh::insert_face
 /*
  * Triangular face.
  */
-uint_t UMesh::insert_face(const mesh_face_triangle3_t& face_) {
+uint_t uMesh::insert_face(const mesh_face_triangle3_t& face_) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_ind = allocate_face_(face_);
@@ -323,11 +323,11 @@ uint_t UMesh::insert_face(const mesh_face_triangle3_t& face_) {
     face.set_center_position(mhd_tri3_t::barycenter(face_geometry));
     face.set_normal(mhd_tri3_t::normal(face_geometry));
     return face_ind;
-}   // UMesh::insert_face
+}   // uMesh::insert_face
 /*
  * Quadrangular face.
  */
-uint_t UMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
+uint_t uMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_ind = allocate_face_(face_);
@@ -345,9 +345,9 @@ uint_t UMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
     };
     const auto a1 = mhd_tri3_t::area(face_geometry1);
     const auto a2 = mhd_tri3_t::area(face_geometry2);
-    //SKUNK_ASSERT(a1 > 0.0);
-    //SKUNK_ASSERT(a2 > 0.0);
-    //SKUNK_ASSERT((a1 + a2) > 0.0);
+    //FEATHERS_ASSERT(a1 > 0.0);
+    //FEATHERS_ASSERT(a2 > 0.0);
+    //FEATHERS_ASSERT((a1 + a2) > 0.0);
     const auto a = a1 + a2;
     if (a != 0.0) {
         face.set_area(a1 + a2);
@@ -359,9 +359,9 @@ uint_t UMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
                                  0.5*mhd_tri3_t::barycenter(face_geometry2));
     }
     auto nn = a1*mhd_tri3_t::normal(face_geometry1) + a2*mhd_tri3_t::normal(face_geometry2);
-    face.set_normal(nn*safe_inv(glm::length(nn)));
+    face.set_normal(nn * safe_inverse(glm::length(nn)));
     return face_ind;
-}   // UMesh::insert_face
+}   // uMesh::insert_face
 /** @} */
 
 /** Insert a new face into the mesh.
@@ -370,11 +370,11 @@ uint_t UMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
  ** @param mark Boundary mark.
  ** @param dim Overridden dimension.
  ** @returns Index of the inserted face. */
-uint_t UMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, uint_t dim) {
+uint_t uMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, uint_t dim) {
     if (dim == 0) {
         dim = m_dim;
     }
-    SKUNK_ASSERT(1 <= dim && dim <= 3);
+    FEATHERS_ASSERT(1 <= dim && dim <= 3);
     if (dim == 1) {
         switch (face_nodes.size()) {
         /* Dummy 1D face. */
@@ -400,13 +400,13 @@ uint_t UMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, ui
         default:;
         }
     }
-    SKUNK_ASSERT_FALSE("Invalid face nodes: face type cannot be uniquely matched.");
-}   // UMesh::insert_face
+    FEATHERS_ASSERT_FALSE("Invalid face nodes: face type cannot be uniquely matched.");
+}   // uMesh::insert_face
 
 /** Initialize cell geometry. */
 /** @{ */
 template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_2d_(const UMesh& mesh, mesh_cell_t& cell) {
+SKUNK_INLINE void init_cell_geometry_2d_(const uMesh& mesh, mesh_cell_t& cell) {
     geom_t cell_geometry{};
     for (uint_t node_loc = 0; node_loc < cell.num_nodes(); ++node_loc) {
         const uint_t node_ind = cell.begin_node()[node_loc];
@@ -416,7 +416,7 @@ SKUNK_INLINE void init_cell_geometry_2d_(const UMesh& mesh, mesh_cell_t& cell) {
     cell.set_volume(cell_geometry.area());
 }   // init_cell_geometry_
 template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_23d_(const UMesh& mesh, mesh_cell_t& cell) {
+SKUNK_INLINE void init_cell_geometry_23d_(const uMesh& mesh, mesh_cell_t& cell) {
     geom_t cell_geometry{};
     for (uint_t node_loc = 0; node_loc < cell.num_nodes(); ++node_loc) {
         const uint_t node_ind = cell.begin_node()[node_loc];
@@ -426,7 +426,7 @@ SKUNK_INLINE void init_cell_geometry_23d_(const UMesh& mesh, mesh_cell_t& cell) 
     cell.set_volume(cell_geometry.area(cell_geometry));
 }   // init_cell_geometry_
 template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_3d_(const UMesh& mesh, mesh_cell_t& cell) {
+SKUNK_INLINE void init_cell_geometry_3d_(const uMesh& mesh, mesh_cell_t& cell) {
     geom_t cell_geometry{};
     for (uint_t node_loc = 0; node_loc < cell.num_nodes(); ++node_loc) {
         const uint_t node_ind = cell.begin_node()[node_loc];
@@ -444,7 +444,7 @@ SKUNK_INLINE void init_cell_geometry_3d_(const UMesh& mesh, mesh_cell_t& cell) {
 /*
  * Segment cell.
  */
-uint_t UMesh::insert_cell(const mesh_cell_segment2_t& cell_) {
+uint_t uMesh::insert_cell(const mesh_cell_segment2_t& cell_) {
     const uint_t cell_ind = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_ind);
     /*
@@ -457,41 +457,41 @@ uint_t UMesh::insert_cell(const mesh_cell_segment2_t& cell_) {
     cell.set_center_position(vec3_t(0.5*(cell_geometry.p1 + cell_geometry.p2), 0.0));
     cell.set_volume(mhd_seg2_t::len(cell_geometry));
     return cell_ind;
-}   // UMesh::insert_cell
+}   // uMesh::insert_cell
 /*
  * Triangular cell.
  */
-uint_t UMesh::insert_cell(const mesh_cell_triangle3_t& cell_) {
+uint_t uMesh::insert_cell(const mesh_cell_triangle3_t& cell_) {
     const uint_t cell_ind = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_ind);
     /** @todo A 3D triangle? */
     init_cell_geometry_23d_<mhd_tri3d>(*this, cell);
     return cell_ind;
-}   // UMesh::insert_cell
+}   // uMesh::insert_cell
 /*
  * Quadrangular cell.
  */
-uint_t UMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_) {
+uint_t uMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_) {
     const uint_t cell_ind = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_ind);
     /** @todo A 3D quadrangle? */
     init_cell_geometry_2d_<geom_quad2_t>(*this, cell);
     return cell_ind;
-}   // UMesh::insert_cell
+}   // uMesh::insert_cell
 /*
  * Tetrahedral cell.
  */
-uint_t UMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_) {
+uint_t uMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_) {
     const uint_t cell_ind = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_ind);
     /** @todo A 3D triangle? */
     init_cell_geometry_3d_<mhd_tetr3d_t>(*this, cell);
     return cell_ind;
-}   // UMesh::insert_face
+}   // uMesh::insert_face
 /*
  * Pyramidal cell.
  */
-uint_t UMesh::insert_cell(const mesh_cell_pyramid5_t& cell_) {
+uint_t uMesh::insert_cell(const mesh_cell_pyramid5_t& cell_) {
     const uint_t cell_ind = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_ind);
     mhd_pyra3d_t cell_shape{
@@ -508,13 +508,13 @@ uint_t UMesh::insert_cell(const mesh_cell_pyramid5_t& cell_) {
 /*
  * Pentahedral cell.
  */
-uint_t UMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_) {
-    SKUNK_NOT_IMPLEMENTED();
-}   // UMesh::insert_face
+uint_t uMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_) {
+    FEATHERS_NOT_IMPLEMENTED();
+}   // uMesh::insert_face
 /*
  * Hexahedral cell.
  */
-uint_t UMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_) {
+uint_t uMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_) {
     const uint_t cell_ind = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_ind);
     mhd_hexa3d_t cell_shape{
@@ -539,11 +539,11 @@ uint_t UMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_) {
  ** @param mark Boundary mark.
  ** @param dim Overridden dimension.
  ** @returns Index of the inserted cell. */
-uint_t UMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, uint_t dim) {
+uint_t uMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, uint_t dim) {
     if (dim == 0) {
         dim = m_dim;
     }
-    SKUNK_ASSERT(1 <= dim && dim <= 3);
+    FEATHERS_ASSERT(1 <= dim && dim <= 3);
     if (dim == 1) {
         switch (cell_nodes.size()) {
         /* Segment cell. */
@@ -578,15 +578,15 @@ uint_t UMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, ui
         default:;
         }
     }
-    SKUNK_ASSERT(!"Invalid cell nodes: cell type cannot be uniquely matched.");
-}   // UMesh::insert_cell
+    FEATHERS_ASSERT(!"Invalid cell nodes: cell type cannot be uniquely matched.");
+}   // uMesh::insert_cell
 
 /** @internal
  ** Allocate and insert the new element into the storage. */
 template<typename mesh_elem_struct_t>
 SKUNK_INLINE uint_t allocate_element_(const mesh_elem_struct_t& elem, size_t alignment,
                                       std::vector<byte_t>& elem_storage, std::vector<size_t>& elem_offsets) {
-    SKUNK_ASSERT(alignment > 0);
+    FEATHERS_ASSERT(alignment > 0);
     /* Align size of the element. */
     size_t delta_elem = sizeof(elem);
     delta_elem += (alignment - delta_elem%alignment)%alignment;
@@ -600,27 +600,27 @@ SKUNK_INLINE uint_t allocate_element_(const mesh_elem_struct_t& elem, size_t ali
 /** @internal
  ** Allocate and insert a new node into the mesh. */
 template<typename mesh_node_struct_t>
-SKUNK_INLINE uint_t UMesh::allocate_node_(const mesh_node_struct_t& node, size_t alignment) {
+SKUNK_INLINE uint_t uMesh::allocate_node_(const mesh_node_struct_t& node, size_t alignment) {
     return allocate_element_(node, alignment, m_node_storage, m_node_offsets);
-}   // UMesh::allocate_node_
+}   // uMesh::allocate_node_
 /** @internal
  ** Allocate and insert a new edge into the mesh. */
 template<typename mesh_edge_struct_t>
-SKUNK_INLINE uint_t UMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment) {
+SKUNK_INLINE uint_t uMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment) {
     return allocate_element_(edge, alignment, m_edge_storage, m_edge_offsets);
-}   // UMesh::allocate_edge_
+}   // uMesh::allocate_edge_
 /** @internal
  ** Allocate and insert a new face into the mesh. */
 template<typename mesh_face_struct_t>
-SKUNK_INLINE uint_t UMesh::allocate_face_(const mesh_face_struct_t& face, size_t alignment) {
+SKUNK_INLINE uint_t uMesh::allocate_face_(const mesh_face_struct_t& face, size_t alignment) {
     return allocate_element_(face, alignment, m_face_storage, m_face_offsets);
-}   // UMesh::allocate_face_
+}   // uMesh::allocate_face_
 /** @internal
  ** Allocate and insert a new cell into the mesh. */
 template<typename mesh_cell_struct_t>
-SKUNK_INLINE uint_t UMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
+SKUNK_INLINE uint_t uMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
     return allocate_element_(cell, alignment, m_cell_storage, m_cell_offsets);
-}   // UMesh::allocate_cell_
+}   // uMesh::allocate_cell_
 
 /**************************************************************************/
 /**************************************************************************/
@@ -630,13 +630,13 @@ SKUNK_INLINE uint_t UMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t
 SKUNK_INLINE static void swap_elem_bytes_(uint_t first_elem_ind, uint_t second_elem_ind,
                                           std::vector<byte_t>& elem_storage, std::vector<size_t>& elem_offsets) {
     /* Find ranges for element storage. */
-    SKUNK_ASSERT(first_elem_ind <= elem_offsets.size());
+    FEATHERS_ASSERT(first_elem_ind <= elem_offsets.size());
     const size_t first_elem_beg = elem_offsets[first_elem_ind];
     const size_t first_elem_end = elem_offsets.size() > first_elem_ind + 1 ?
                                   elem_offsets[first_elem_ind + 1] : elem_storage.size();
 
     /* Find ranges for new element storage. */
-    SKUNK_ASSERT(second_elem_ind <= elem_offsets.size());
+    FEATHERS_ASSERT(second_elem_ind <= elem_offsets.size());
     const size_t second_elem_beg = elem_offsets[second_elem_ind];
     const size_t second_elem_end = elem_offsets.size() > second_elem_ind + 1 ?
                                    elem_offsets[second_elem_ind + 1] : elem_storage.size();
@@ -654,7 +654,7 @@ SKUNK_INLINE static void swap_elem_bytes_(uint_t first_elem_ind, uint_t second_e
         std::rotate(iter, iter + first_elem_range, elem_storage.begin() + second_elem_end);
         const ptrdiff_t range = second_elem_range - first_elem_range;
         for (; first_elem_ind <= second_elem_ind; ++first_elem_ind) {
-            SKUNK_ASSERT(elem_offsets[first_elem_ind] >= first_elem_beg);
+            FEATHERS_ASSERT(elem_offsets[first_elem_ind] >= first_elem_beg);
             elem_offsets[first_elem_ind] += range;
         }
     }
@@ -679,7 +679,7 @@ public:
 }   // namespace
 
 /** Change order of all nodes. */
-void UMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
+void uMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> node_inv_reordering(node_reordering.size());
     inverse_reordering(node_reordering.begin(), node_reordering.end(), node_inv_reordering.begin());
@@ -700,9 +700,9 @@ void UMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
     });
     /* Reorder nodes bytes. */
     reorder_nodes_bytes_(node_reordering);
-}   // UMesh::reorder_nodes
+}   // uMesh::reorder_nodes
 /** Change order of all edges. */
-void UMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
+void uMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> edge_inv_reordering(edge_reordering.size());
     inverse_reordering(edge_reordering.begin(), edge_reordering.end(), edge_inv_reordering.begin());
@@ -713,9 +713,9 @@ void UMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
     });
     /* Reorder edges bytes. */
     reorder_edges_bytes_(edge_reordering);
-}   // UMesh::reorder_edges
+}   // uMesh::reorder_edges
 /** Change order of all faces. */
-void UMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
+void uMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> face_inv_reordering(face_reordering.size());
     inverse_reordering(face_reordering.begin(), face_reordering.end(), face_inv_reordering.begin());
@@ -726,9 +726,9 @@ void UMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
     });
     /* Reorder faces bytes. */
     reorder_faces_bytes_(face_reordering);
-}   // UMesh::reorder_faces
+}   // uMesh::reorder_faces
 /** Change order of all cells. */
-void UMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
+void uMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> cell_inv_reordering(cell_reordering.size());
     inverse_reordering(cell_reordering.begin(), cell_reordering.end(), cell_inv_reordering.begin());
@@ -739,7 +739,7 @@ void UMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
     });
     /* Reorder cells bytes. */
     reorder_cells_bytes_(cell_reordering);
-}   // UMesh::reorder_cells
+}   // uMesh::reorder_cells
 
 /** @internal
  ** Swap bytes of two elements. */
@@ -751,29 +751,29 @@ SKUNK_INLINE static void reorder_elems_bytes_(std::vector<uint_t> elem_reorderin
 }   // reorder_elems_bytes_
 /** @internal
  ** Change order of bytes of all nodes. */
-SKUNK_INLINE void UMesh::reorder_nodes_bytes_(const std::vector<uint_t>& node_reordering) {
+SKUNK_INLINE void uMesh::reorder_nodes_bytes_(const std::vector<uint_t>& node_reordering) {
     reorder_elems_bytes_(node_reordering, m_node_storage, m_node_offsets);
-}   // UMesh::reorder_nodes_bytes_
+}   // uMesh::reorder_nodes_bytes_
 /** @internal
  ** Change order of bytes of all edges. */
-SKUNK_INLINE void UMesh::reorder_edges_bytes_(const std::vector<uint_t>& edge_reordering) {
+SKUNK_INLINE void uMesh::reorder_edges_bytes_(const std::vector<uint_t>& edge_reordering) {
     reorder_elems_bytes_(edge_reordering, m_edge_storage, m_edge_offsets);
-}   // UMesh::reorder_edges_bytes_
+}   // uMesh::reorder_edges_bytes_
 /** @internal
  ** Change order of bytes of all faces. */
-SKUNK_INLINE void UMesh::reorder_faces_bytes_(const std::vector<uint_t>& face_reordering) {
+SKUNK_INLINE void uMesh::reorder_faces_bytes_(const std::vector<uint_t>& face_reordering) {
     reorder_elems_bytes_(face_reordering, m_face_storage, m_face_offsets);
-}   // UMesh::reorder_faces_bytes_
+}   // uMesh::reorder_faces_bytes_
 /** @internal
  ** Change order of bytes of all cells. */
-SKUNK_INLINE void UMesh::reorder_cells_bytes_(const std::vector<uint_t>& cell_reordering) {
+SKUNK_INLINE void uMesh::reorder_cells_bytes_(const std::vector<uint_t>& cell_reordering) {
     reorder_elems_bytes_(cell_reordering, m_cell_storage, m_cell_offsets);
-}   // UMesh::reorder_cells_bytes_
+}   // uMesh::reorder_cells_bytes_
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-void UMesh::reorder_faces() {
+void uMesh::reorder_faces() {
     /** @todo Refactor me! */
     {
         std::vector<uint_t> node_reordering(num_nodes());
@@ -783,7 +783,7 @@ void UMesh::reorder_faces() {
         });
         reorder_nodes(node_reordering);
         for (uint_t node_ind = 0; node_ind < num_nodes(); ++node_ind) {
-            mesh_node_t& node = get_node(node_ind);
+            Node& node = get_node(node_ind);
             m_marked_node_ranges.resize(node.get_mark() + 2);
             m_marked_node_ranges[node.get_mark() + 1] += 1;
         }
@@ -831,7 +831,7 @@ void UMesh::reorder_faces() {
         }
         std::partial_sum(m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
     }
-}   // UMesh::reorder_faces
+}   // uMesh::reorder_faces
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -840,16 +840,16 @@ void UMesh::reorder_faces() {
  * Insert a node.
  * @returns Index of the inserted node.
  */
-uint_t UMesh::insert_node(const vec3_t& node_position) {
+uint_t uMesh::insert_node(const vec3_t& node_position) {
     m_nodes.push_back(node_position);
     return m_nodes.size() - 1;
-}   // UMesh::insert_node
+}   // uMesh::insert_node
 
 /**
  * Insert an edge.
  * @returns Index of the inserted edge.
  */
-uint_t UMesh::insert_edge(ElementType edge_type,
+uint_t uMesh::insert_edge(ElementType edge_type,
                           const std::vector<uint_t>& edge_nodes, uint_t mark) {
     m_edge_types.push_back(edge_type);
     const uint_t edge_index = m_edge_types.size() - 1;
@@ -860,23 +860,23 @@ uint_t UMesh::insert_edge(ElementType edge_type,
     }
     boost::add_edges(edge_nodes_bgl.begin(), edge_nodes_bgl.end(), m_edge_nodes);
     return edge_index;
-}   // UMesh::insert_edge
+}   // uMesh::insert_edge
 
 /**
  * Insert a face.
  * @returns Index of the inserted face.
  */
-uint_t UMesh::insert_face(ElementType face_type,
+uint_t uMesh::insert_face(ElementType face_type,
                           const std::vector<uint_t>& face_nodes, uint_t mark) {
     m_face_types.push_back(face_type);
     return m_face_types.size() - 1;
-}   // UMesh::insert_face
+}   // uMesh::insert_face
 
 /**
  * Insert a cell.
  * @returns Index of the inserted cell.
  */
-uint_t UMesh::insert_cell(ElementType cell_type,
+uint_t uMesh::insert_cell(ElementType cell_type,
                           const std::vector<uint_t>& cell_nodes, uint_t mark) {
     m_cell_types.push_back(cell_type);
     const uint_t cell_index = m_cell_types.size() - 1;
@@ -887,7 +887,7 @@ uint_t UMesh::insert_cell(ElementType cell_type,
     }
     boost::add_edges(edge_nodes_bgl.begin(), edge_nodes_bgl.end(), m_cell_nodes);
     return cell_index;
-}   // UMesh::insert_cell
+}   // uMesh::insert_cell
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -896,7 +896,7 @@ uint_t UMesh::insert_cell(ElementType cell_type,
  * Generate edges using the face to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
-void UMesh::generate_edges() {
+void uMesh::generate_edges() {
     /* Face edge node index tables for various face types. */
     static const std::map<ElementType, std::vector<std::vector<uint_t>>> face_edge_nodes = {
         /* 1D faces. */
@@ -927,7 +927,7 @@ void UMesh::generate_edges() {
             /* Collect edge nodes using the table. */
             std::vector<uint_t> edge_nodes;
             for (uint_t node_local : face_edge_nodes.at(face.get_type()).at(edge_local)) {
-                SKUNK_ASSERT(node_local < face.num_nodes());
+                FEATHERS_ASSERT(node_local < face.num_nodes());
                 const uint_t node_index = face.begin_node()[node_local];
                 edge_nodes.push_back(node_index);
             }
@@ -951,15 +951,15 @@ void UMesh::generate_edges() {
      * each face should be connected to all edges. */
     for (uint_t face_ind = 0; face_ind < num_faces(); ++face_ind) {
         const Face& face = get_face(face_ind);
-        SKUNK_ASSERT(std::all_of(face.begin_edge(), face.end_edge(), is_not_npos));
+        FEATHERS_ASSERT(std::all_of(face.begin_edge(), face.end_edge(), is_not_npos));
     }
-}   // UMesh::generate_edges
+}   // uMesh::generate_edges
 
 /**
  * Generate faces using the cell to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
-void UMesh::generate_faces() {
+void uMesh::generate_faces() {
     /* Cell face node index tables for various cell types. */
     static const std::map<
             ElementType, std::vector<std::vector<uint_t>>> cell_face_nodes = {
@@ -994,7 +994,7 @@ void UMesh::generate_faces() {
             /* Collect face nodes using the table. */
             std::vector<uint_t> face_nodes;
             for (uint_t node_local : cell_face_nodes.at(cell.get_type()).at(face_local)) {
-                SKUNK_ASSERT(node_local < cell.num_nodes());
+                FEATHERS_ASSERT(node_local < cell.num_nodes());
                 const uint_t node_index = cell.begin_node()[node_local];
                 face_nodes.push_back(node_index);
             }
@@ -1007,10 +1007,10 @@ void UMesh::generate_faces() {
                 face_index = face_iter->second;
                 Face& face = get_face(face_index);
                 if (std::equal(face.begin_node(), face.end_node(), face_nodes.cbegin())) {
-                    SKUNK_ASSERT(face.get_inner_cell() == npos);
+                    FEATHERS_ASSERT(face.get_inner_cell() == npos);
                     face.get_inner_cell() = cell_index;
                 } else {
-                    SKUNK_ASSERT(face.get_outer_cell() == npos);
+                    FEATHERS_ASSERT(face.get_outer_cell() == npos);
                     face.get_outer_cell() = cell_index;
                 }
             } else {
@@ -1028,7 +1028,7 @@ void UMesh::generate_faces() {
      * each cell should be connected to all faces. */
     for (uint_t cell_index = 0; cell_index < num_cells(); ++cell_index) {
         const Cell& cell = get_cell(cell_index);
-        SKUNK_ASSERT(std::all_of(cell.begin_face(), cell.end_face(), is_not_npos));
+        FEATHERS_ASSERT(std::all_of(cell.begin_face(), cell.end_face(), is_not_npos));
     }
     /* Check faces:
      * each internal face should be connected to two cells;
@@ -1036,17 +1036,17 @@ void UMesh::generate_faces() {
     for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
         const Face& face = get_face(face_index);
         if (face.get_mark() == 0) {
-            SKUNK_ASSERT(std::all_of(face.begin_cell(), face.end_cell(), is_not_npos));
+            FEATHERS_ASSERT(std::all_of(face.begin_cell(), face.end_cell(), is_not_npos));
         } else {
-            SKUNK_ASSERT(std::any_of(face.begin_cell(), face.end_cell(), is_not_npos));
+            FEATHERS_ASSERT(std::any_of(face.begin_cell(), face.end_cell(), is_not_npos));
         }
     }
-}   // UMesh::generate_faces
+}   // uMesh::generate_faces
 
 /**
  * Generate boundary cells to complete face connectivity.
  */
-void UMesh::generate_boundary_cells() {
+void uMesh::generate_boundary_cells() {
     /* A node and edge flip table for various face types. */
     static const std::map<ElementType, std::pair<std::vector<uint_t>,
                                                       std::vector<uint_t>>> face_nodes_edges_flip_table {
@@ -1111,7 +1111,7 @@ void UMesh::generate_boundary_cells() {
         boundary_cell.begin_face()[0] = face_index;
         face.get_outer_cell() = boundary_cell_ind;
     }
-}   // UMesh::generate_boundary_cells
+}   // uMesh::generate_boundary_cells
 
 }   // namespace feathers
 

@@ -40,21 +40,38 @@
 namespace feathers {
 
 /**
+ * Gradient cell limiter estimation scheme:
+ * computes cell-centered limiters and averages based on the cell-centered expansion.
+ */
+template<int_t num_vars>
+class iGradientLimiterScheme : public tObject<iGradientLimiterScheme<num_vars>> {
+public:
+    /** Compute cell-centered gradient limiter coefficients and averages. */
+    virtual void get_cell_limiter(tScalarField<num_vars>& lim_u,
+                                  const tPiecewiseLinearFunction<num_vars>& u) const = 0;
+};  // class iGradientLimiterScheme
+
+}   // namespace feathers
+
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
+namespace feathers {
+
+/**
  * Barth-Jespersen (minmod)
  * slope limiter for the limiter estimation scheme.
  *
  * This is a non-differentiable limiter, so it may
  * affect convergence properties of the implicit scheme.
  */
-class MinmodSlopeLimiter {
+class tMinmodSlopeLimiter {
 public:
     /** Compute local slope coefficient. */
     real_t operator()(real_t du_min, real_t du_max,
                       real_t du_face, real_t eps_sqr) const;
-};  // class MinmodSlopeLimiter
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+};  // class tMinmodSlopeLimiter
 
 /**
  * Venkatakrishnan
@@ -62,15 +79,12 @@ public:
  *
  * This is a differentiable limiter.
  */
-class VenkatakrishnanSlopeLimiter {
+class tVenkatakrishnanSlopeLimiter {
 public:
     /** Compute local slope coefficient. */
     real_t operator()(real_t du_min, real_t du_max,
                       real_t du_face, real_t eps_sqr) const;
-};  // class VenkatakrishnanSlopeLimiter
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+};  // class tVenkatakrishnanSlopeLimiter
 
 /**
  * Michalak Ollivier-Gooch (cubic)
@@ -78,20 +92,15 @@ public:
  *
  * This is a differentiable limiter.
  */
-class CubicSlopeLimiter {
+class tCubicSlopeLimiter {
 public:
     /** Compute local slope coefficient. */
     real_t operator()(real_t du_min, real_t du_max,
                       real_t du_face, real_t eps_sqr) const;
-};  // class CubicSlopeLimiter
+};  // class tCubicSlopeLimiter
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /**
  * Dummy
@@ -99,16 +108,13 @@ namespace feathers {
  *
  * This is a differentiable limiter.
  */
-class DummySecondLimiter {
+class tDummySecondLimiter {
 public:
     /** Compute second slope coefficient. */
     real_t operator()(real_t limiter,
                       real_t du_min, real_t du_max,
                       real_t eps_sqr) const;
-};  // class DummySecondLimiter
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+};  // class tDummySecondLimiter
 
 /**
  * Michalak Ollivier-Gooch cubic
@@ -116,66 +122,69 @@ public:
 
  * This is a differentiable limiter.
  */
-class CubicSecondLimiter {
+class tCubicSecondLimiter {
 public:
     /** Compute second slope coefficient. */
     real_t operator()(real_t limiter,
                       real_t du_min, real_t du_max,
                       real_t eps_sqr) const;
-};  // class CubicSecondLimiter
+};  // class tCubicSecondLimiter
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /**
  * Gradient cell limiter estimation scheme:
  * computes cell-centered limiters and averages based on the cell-centered expansion.
  */
-template<int_t num_vars>
-class IGradientLimiterScheme : public TObject<IGradientLimiterScheme<num_vars>> {
+template<int_t num_vars, class tSlopeLimiter, class tSecondLimiter = tDummySecondLimiter>
+class tGradientLimiterScheme final : public iGradientLimiterScheme<num_vars> {
 public:
-    /** Compute cell-centered gradient limiter coefficients and averages. */
-    virtual void get_cell_limiter(TScalarField<num_vars>& lim_u,
-                                  const TPiecewiseLinearFunction<num_vars>& u) const = 0;
-};  // class IGradientLimiterScheme
-
-/**
- * Gradient cell limiter estimation scheme:
- * computes cell-centered limiters and averages based on the cell-centered expansion.
- */
-template<int_t num_vars, typename TSlopeLimiter, typename TSecondLimiter>
-class TGradientLimiterScheme final : public IGradientLimiterScheme<num_vars> {
-public:
-    std::shared_ptr<UMesh> m_mesh;
-    TSlopeLimiter m_slope_limiter;
-    TSecondLimiter m_second_limiter;
+    std::shared_ptr<const uMesh> m_mesh;
+    tSlopeLimiter m_slope_limiter;
+    tSecondLimiter m_second_limiter;
 
 public:
     /** Initialize the limiting scheme. */
-    explicit TGradientLimiterScheme(std::shared_ptr<UMesh> mesh,
-                                    const TSlopeLimiter& slope_limiter = {},
-                                    const TSecondLimiter& second_limiter = {}):
+    explicit tGradientLimiterScheme(std::shared_ptr<const uMesh> mesh,
+                                    const tSlopeLimiter& slope_limiter = {},
+                                    const tSecondLimiter& second_limiter = {}):
         m_mesh(std::move(mesh)),
         m_slope_limiter(slope_limiter), m_second_limiter(second_limiter) {
     }
 
     /** Compute cell-centered gradient limiter coefficients and averages. */
-    void get_cell_limiter(TScalarField<num_vars>& lim_u,
-                          const TPiecewiseLinearFunction<num_vars>& u) const final {
+    void get_cell_limiter(tScalarField<num_vars>& lim_u,
+                          const tPiecewiseLinearFunction<num_vars>& u) const final {
         get_cell_limiter_(lim_u, u);
     }
 
 private:
     /** Compute cell-centered gradient limiter coefficients and averages. */
-    template<template<int_t> class TPiecewiseFunction>
-    void get_cell_limiter_(TScalarField<num_vars>& lim_u,
-                           const TPiecewiseFunction<num_vars>& u) const;
-};  // class IGradientLimiterScheme
+    template<class tPiecewiseFunction>
+    void get_cell_limiter_(tScalarField<num_vars>& lim_u,
+                           const tPiecewiseFunction& u) const;
+};  // class iGradientLimiterScheme
+
+template<int_t num_vars>
+using tMinmodGradientLimiterScheme =
+    tGradientLimiterScheme<num_vars, tMinmodSlopeLimiter>;
+
+template<int_t num_vars>
+using tVenkatakrishnanGradientLimiterScheme =
+    tGradientLimiterScheme<num_vars, tVenkatakrishnanSlopeLimiter>;
+
+template<int_t num_vars>
+using tVenkatakrishnan2GradientLimiterScheme =
+    tGradientLimiterScheme<num_vars, tVenkatakrishnanSlopeLimiter, tCubicSecondLimiter>;
+
+template<int_t num_vars>
+using tCubicGradientLimiterScheme =
+    tGradientLimiterScheme<num_vars, tCubicSlopeLimiter>;
+
+template<int_t num_vars>
+using tCubic2GradientLimiterScheme =
+    tGradientLimiterScheme<num_vars, tCubicSlopeLimiter, tCubicSecondLimiter>;
 
 }   // namespace feathers
 

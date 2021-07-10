@@ -39,8 +39,8 @@ namespace feathers {
  *      Solutions of the Euler Equations" (2008).
  * @endverbatim
  */
-inline real_t MinmodSlopeLimiter::operator()(real_t du_min, real_t du_max,
-                                             real_t du_face, real_t MHD_NOT_USED(eps_sqr)) const {
+inline real_t tMinmodSlopeLimiter::operator()(real_t du_min, real_t du_max,
+                                              real_t du_face, real_t FEATHERS_NOT_USED(eps_sqr)) const {
     /* Compute deltas:
      * [1], page 4. */
     const auto delta_neg = du_face;
@@ -57,10 +57,7 @@ inline real_t MinmodSlopeLimiter::operator()(real_t du_min, real_t du_max,
     const auto y_cur = delta_pos/delta_neg;
     const auto limiter = std::min(1.0, y_cur);
     return limiter;
-}   // MinmodSlopeLimiter::get_limiter_coefficient
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+}   // tMinmodSlopeLimiter::get_limiter_coefficient
 
 /**
  * Compute local slope coefficient.
@@ -70,8 +67,8 @@ inline real_t MinmodSlopeLimiter::operator()(real_t du_min, real_t du_max,
  *      Solutions of the Euler Equations" (2008).
  * @endverbatim
  */
-inline real_t VenkatakrishnanSlopeLimiter::operator()(real_t du_min, real_t du_max,
-                                                      real_t du_face, real_t eps_sqr) const {
+inline real_t tVenkatakrishnanSlopeLimiter::operator()(real_t du_min, real_t du_max,
+                                                       real_t du_face, real_t eps_sqr) const {
     /* Compute deltas:
      * [1], page 4. */
     const auto delta_neg = du_face;
@@ -91,10 +88,7 @@ inline real_t VenkatakrishnanSlopeLimiter::operator()(real_t du_min, real_t du_m
     const auto limiter = (delta_pos_sqr + 2.0*delta_pos_neg + eps_sqr) /
                          (delta_pos_sqr + 2.0*delta_neg_sqr + delta_pos_neg + eps_sqr);
     return limiter;
-}   // VenkatakrishnanSlopeLimiter::operator()
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+}   // tVenkatakrishnanSlopeLimiter::operator()
 
 /**
  * Compute local slope coefficient.
@@ -104,8 +98,8 @@ inline real_t VenkatakrishnanSlopeLimiter::operator()(real_t du_min, real_t du_m
  *      Solutions of the Euler Equations" (2008).
  * @endverbatim
  */
-inline real_t CubicSlopeLimiter::operator()(real_t du_min, real_t du_max,
-                                            real_t du_face, real_t MHD_NOT_USED(eps_sqr)) const {
+inline real_t tCubicSlopeLimiter::operator()(real_t du_min, real_t du_max,
+                                             real_t du_face, real_t FEATHERS_NOT_USED(eps_sqr)) const {
     /* Calculate deltas:
      * [1], page 4. */
     const auto delta_neg = du_face;
@@ -127,26 +121,21 @@ inline real_t CubicSlopeLimiter::operator()(real_t du_min, real_t du_max,
         limiter = y_cur + std::pow(y_div, 2) * (3.0 - 2.0 * y_thr + (y_thr - 2.0) * y_div);
     }
     return limiter;
-}   // CubicSlopeLimiter::operator()
+}   // tCubicSlopeLimiter::operator()
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /**
  * Compute second slope coefficient.
  */
-inline real_t DummySecondLimiter::operator()(real_t limiter,
-                                             real_t MHD_NOT_USED(du_min),
-                                             real_t MHD_NOT_USED(du_max),
-                                             real_t MHD_NOT_USED(eps_sqr)) const {
+inline real_t tDummySecondLimiter::operator()(real_t limiter,
+                                              real_t FEATHERS_NOT_USED(du_min),
+                                              real_t FEATHERS_NOT_USED(du_max),
+                                              real_t FEATHERS_NOT_USED(eps_sqr)) const {
     const auto second_limiter = limiter;
     return second_limiter;
-}   // DummySecondLimiter::operator()
+}   // tDummySecondLimiter::operator()
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -159,9 +148,9 @@ inline real_t DummySecondLimiter::operator()(real_t limiter,
  *      Solutions of the Euler Equations" (2008).
  * @endverbatim
  */
-inline real_t CubicSecondLimiter::operator()(real_t limiter,
-                                             real_t du_min, real_t du_max,
-                                             real_t eps_sqr) const {
+inline real_t tCubicSecondLimiter::operator()(real_t limiter,
+                                              real_t du_min, real_t du_max,
+                                              real_t eps_sqr) const {
     /* Compute weight:
      * [1], page 5. */
     const auto du_sqr = std::pow(du_max - du_min, 2);
@@ -177,7 +166,7 @@ inline real_t CubicSecondLimiter::operator()(real_t limiter,
         return limiter;
     }
     return 0.0;
-}   // CubicSecondLimiter::get_slope_coefficient
+}   // tCubicSecondLimiter::get_slope_coefficient
 
 }   // namespace feathers
 
@@ -190,11 +179,11 @@ namespace feathers {
 /**
  * Compute cell-centered gradient limiter coefficients and averages. 
  */
-template<int_t num_vars, typename TSlopeLimiter, typename TSecondLimiter>
-template<template<int_t> class TPiecewiseFunction>
-void TGradientLimiterScheme<num_vars, TSlopeLimiter, TSecondLimiter>::
-                                    get_cell_limiter_(TScalarField<num_vars>& lim_u,
-                                                      const TPiecewiseFunction<num_vars>& u) const {
+template<int_t num_vars, class tSlopeLimiter, class tSecondLimiter>
+template<class tPiecewiseFunction>
+void tGradientLimiterScheme<
+        num_vars, tSlopeLimiter, tSecondLimiter>::get_cell_limiter_(tScalarField<num_vars>& lim_u,
+                                                                    const tPiecewiseFunction& u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
     for_each_interior_cell(*m_mesh, [&](CellIter cell) {
@@ -237,7 +226,7 @@ void TGradientLimiterScheme<num_vars, TSlopeLimiter, TSecondLimiter>::
             lim_u[cell][i] = limiter;
         }
    });
-}   // IGradientLimiterScheme::get_cell_limiter_
+}   // iGradientLimiterScheme::get_cell_limiter_
 
 }   // namespace feathers
 

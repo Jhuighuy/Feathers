@@ -35,7 +35,7 @@ namespace feathers {
  * Init the gradient scheme.
  */
 template<int_t num_vars>
-void TLeastSquaresGradientScheme<num_vars>::init_gradients_() {
+void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
     /* Compute the least-squares
      * problem matrices for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](CellIter cell) {
@@ -76,22 +76,22 @@ void TLeastSquaresGradientScheme<num_vars>::init_gradients_() {
         mat3_t& mat = m_inverse_matrices[cell][0];
         mat = glm::inverse(mat + eps);
     });
-}   // TLeastSquaresGradientScheme::init_gradients_
+}   // tLeastSquaresGradientScheme::init_gradients_
 
 /**
  * Compute cell-centered gradients using the Weighted Least-Squares, cell-based version.
  */
 template<int_t num_vars>
-template</*template<int_t>*/ class TOutField,
-         /*template<int_t>*/ class TInField>
-void TLeastSquaresGradientScheme<num_vars>::get_gradients_(TOutField/*<num_vars>*/& grad_u,
-                                                           const TInField/*<num_vars>*/& u) const {
+template</*template<int_t>*/ class tInField,
+         /*template<int_t>*/ class tOutField>
+void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>*/& grad_u,
+                                                           const tInField/*<num_vars>*/& u) const {
     /* Compute the least-squares
      * problem right hand statements for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](CellIter cell) {
         cell.for_each_face_cells([&](CellIter cell_inner, CellIter cell_outer) {
-          const vec3_t dr =
-              cell_outer->get_center_position() - cell_inner->get_center_position();
+            const vec3_t dr =
+                cell_outer->get_center_position() - cell_inner->get_center_position();
             for (int_t i = 0; i < num_vars; ++i) {
                 grad_u[cell][i] += (u[cell_outer][i] - u[cell_inner][i])*dr;
             }
@@ -132,7 +132,7 @@ void TLeastSquaresGradientScheme<num_vars>::get_gradients_(TOutField/*<num_vars>
             grad_u[cell][i] = mat*grad_u[cell][i];
         }
     });
-}   // TLeastSquaresGradientScheme::get_gradients_
+}   // tLeastSquaresGradientScheme::get_gradients_
 
 }   // namespace feathers
 

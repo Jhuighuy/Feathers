@@ -45,12 +45,12 @@ template<int_t num_vars_t>
 class MhdFvBcT : public std::enable_shared_from_this<MhdFvBcT<num_vars_t>> {
 public:
     /** Compute the ghost state values. */
-    void get_ghost_state(TScalarField<num_vars_t>& u) const {
+    void get_ghost_state(tScalarField<num_vars_t>& u) const {
         get_ghost_state_(u);
     }
 private:
     /** Compute the ghost state values. */
-    virtual void get_ghost_state_(TScalarField<num_vars_t>& u) const = 0;
+    virtual void get_ghost_state_(tScalarField<num_vars_t>& u) const = 0;
 };  // class MhdFvBcT
 
 // ************************************************************************************ //

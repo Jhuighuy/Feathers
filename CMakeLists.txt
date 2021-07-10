@@ -16,8 +16,8 @@ find_package(Boost 1.74.0 REQUIRED COMPONENTS graph)
 
 # find_package(GLM)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native -DNDEBUG=1")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native -DNDEBUG=1")
 
 file(GLOB_RECURSE SOURCES src/*.cc)
 

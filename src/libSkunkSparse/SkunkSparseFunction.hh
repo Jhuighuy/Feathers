@@ -39,14 +39,14 @@
 namespace feathers {
 
 template<int_t num_vars_t>
-class TPiecewiseLinearFunction {
+class tPiecewiseLinearFunction {
 public:
     using array_t = std::array<real_t, num_vars_t>;
 public:
-    TScalarField<num_vars_t> u;
-    TVectorField<num_vars_t> grad_u;
+    tScalarField<num_vars_t> u;
+    tVectorField<num_vars_t> grad_u;
 
-    TPiecewiseLinearFunction(const TScalarField<num_vars_t>& v)
+    tPiecewiseLinearFunction(const tScalarField<num_vars_t>& v)
         : u(v), grad_u(v.size()) {
     }
 

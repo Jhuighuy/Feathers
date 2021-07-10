@@ -37,12 +37,12 @@
 
 //namespace feathers {
 
-template<int num_vars>
-using TScalarField = std::vector<std::array<feathers::real_t, num_vars>>;
-template<int num_vars>
-using TVectorField = std::vector<std::array<feathers::vec3_t, num_vars>>;
-template<int num_vars>
-using TMatrixField = std::vector<std::array<feathers::mat3_t, num_vars>>;
+template<int num_vars = 1>
+using tScalarField = std::vector<std::array<feathers::real_t, num_vars>>;
+template<int num_vars = 1>
+using tVectorField = std::vector<std::array<feathers::vec3_t, num_vars>>;
+template<int num_vars = 1>
+using tMatrixField = std::vector<std::array<feathers::mat3_t, num_vars>>;
 
 //}   // namespace feathers
 
