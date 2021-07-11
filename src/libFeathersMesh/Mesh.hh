@@ -96,9 +96,8 @@ protected:
     }
     /** @} */
 
-public:
-//private:
-    //friend class cMesh;
+public://private:
+    friend class cMesh;
 
     /**************************************************************************/
     /**************************************************************************/
@@ -383,6 +382,14 @@ using mesh_cell_hexahedron8_t = mesh_cell_struct_t<eElement::hexahedron_8, 8, 6>
 
 namespace feathers {
 
+enum tNodeTag { eNodeTag = 0 };
+enum tEdgeTag { eEdgeTag = 1 };
+enum tFaceTag { eFaceTag = 2 };
+enum tCellTag { eCellTag = 3 };
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
 /** Hybrid unstructured finite element mesh. */
 class cMesh : public tObject<cMesh> {
 private:
@@ -504,6 +511,191 @@ public:
     }
     /** @} */
 
+    /** Pointer to the beginning of the node's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_node();
+    })
+    /** Pointer to the beginning of the node's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_edge();
+    })
+    /** Pointer to the beginning of the node's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_face();
+    })
+    /** Pointer to the beginning of the node's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_cell();
+    })
+    /** Pointer to the end of the node's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_node();
+    })
+    /** Pointer to the end of the node's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_edge();
+    })
+    /** Pointer to the end of the node's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_face();
+    })
+    /** Pointer to the end of the node's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_cell();
+    })
+
+    /** Pointer to the beginning of the edge's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_node();
+    })
+    /** Pointer to the beginning of the edge's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_edge();
+    })
+    /** Pointer to the beginning of the edge's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_face();
+    })
+    /** Pointer to the beginning of the edge's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_cell();
+    })
+    /** Pointer to the end of the edge's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_node();
+    })
+    /** Pointer to the end of the edge's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_edge();
+    })
+    /** Pointer to the end of the edge's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_face();
+    })
+    /** Pointer to the end of the edge's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_cell();
+    })
+
+    /** Pointer to the beginning of the face's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_node();
+    })
+    /** Pointer to the beginning of the face's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_edge();
+    })
+    /** Pointer to the beginning of the face's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_face();
+    })
+    /** Pointer to the beginning of the face's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_cell();
+    })
+    /** Pointer to the end of the face's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_node();
+    })
+    /** Pointer to the end of the face's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_edge();
+    })
+    /** Pointer to the end of the face's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_face();
+    })
+    /** Pointer to the end of the face's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_cell();
+    })
+
+    /** Pointer to the beginning of the cell's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).begin_node();
+    })
+    /** Pointer to the beginning of the cell's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).begin_edge();
+    })
+    /** Pointer to the beginning of the cell's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).begin_face();
+    })
+    /** Pointer to the beginning of the cell's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).begin_cell();
+    })
+    /** Pointer to the end of the cell's connected nodes. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).end_node();
+    })
+    /** Pointer to the end of the cell's connected edges. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).end_edge();
+    })
+    /** Pointer to the end of the cell's connected faces. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).end_face();
+    })
+    /** Pointer to the end of the cell's connected cells. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).end_cell();
+    })
+
+    /** Number of nodes in the element. */
+    template<typename tTag>
+    uint_t num_adjacent_nodes(tTag tag, uint_t index) const {
+        return end_adjacent_node(tag, index) - begin_adjacent_node(tag, index);
+    }
+    /** Number of edges in the element. */
+    template<typename tTag>
+    uint_t num_adjacent_edges(tTag tag, uint_t index) const {
+        return end_adjacent_edge(tag, index) - begin_adjacent_edge(tag, index);
+    }
+    /** Number of faces in the element. */
+    template<typename tTag>
+    uint_t num_adjacent_faces(tTag tag, uint_t index) const {
+        return end_adjacent_face(tag, index) - begin_adjacent_face(tag, index);
+    }
+    /** Number of cells in the element. */
+    template<typename tTag>
+    uint_t num_adjacent_cells(tTag tag, uint_t index) const {
+        return end_adjacent_cell(tag, index) - begin_adjacent_cell(tag, index);
+    }
+    
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
@@ -525,42 +717,42 @@ public:
     }
 
     /** Get node mark. */
-    uint_t get_node_mark(uint_t node_index) const {
+    uint_t get_mark(tNodeTag, uint_t node_index) const {
         FEATHERS_ASSERT(node_index < num_nodes());
         return m_node_marks[node_index];
     }
     /** Set node mark. */
-    void set_node_mark(uint_t node_index, uint_t mark) {
+    void set_mark(tNodeTag, uint_t node_index, uint_t mark) {
         FEATHERS_ASSERT(node_index < num_nodes());
         m_node_marks[node_index] = mark;
     }
     /** Get edge mark. */
-    uint_t get_edge_mark(uint_t edge_index) const {
+    uint_t get_mark(tEdgeTag, uint_t edge_index) const {
         FEATHERS_ASSERT(edge_index < num_edges());
         return m_edge_marks[edge_index];
     }
     /** Set edge mark. */
-    void set_edge_mark(uint_t edge_index, uint_t mark) {
+    void set_mark(tEdgeTag, uint_t edge_index, uint_t mark) {
         FEATHERS_ASSERT(edge_index < num_edges());
         m_edge_marks[edge_index] = mark;
     }
     /** Get face mark. */
-    uint_t get_face_mark(uint_t face_index) const {
+    uint_t get_mark(tFaceTag, uint_t face_index) const {
         FEATHERS_ASSERT(face_index < num_faces());
         return m_face_marks[face_index];
     }
     /** Set face mark. */
-    void set_face_mark(uint_t face_index, uint_t mark) {
+    void set_mark(tFaceTag, uint_t face_index, uint_t mark) {
         FEATHERS_ASSERT(face_index < num_faces());
         m_face_marks[face_index] = mark;
     }
     /** Get cell mark. */
-    uint_t get_cell_mark(uint_t cell_index) const {
+    uint_t get_mark(tCellTag, uint_t cell_index) const {
         FEATHERS_ASSERT(cell_index < num_cells());
         return m_cell_marks[cell_index];
     }
     /** Set cell mark. */
-    void set_cell_mark(uint_t cell_index, uint_t mark) {
+    void set_mark(tCellTag, uint_t cell_index, uint_t mark) {
         FEATHERS_ASSERT(cell_index < num_cells());
         m_cell_marks[cell_index] = mark;
     }
@@ -626,6 +818,11 @@ public:
         m_node_positions[node_index] = node_position;
     }
 
+    /** Get minimal edge length. */
+    real_t get_min_edge_length() const;
+    /** Get maximal edge length. */
+    real_t get_max_edge_length() const;
+
     /** Get edge length. */
     real_t get_edge_length(uint_t edge_index) const {
         FEATHERS_ASSERT(edge_index < num_edges());
@@ -646,6 +843,11 @@ public:
         FEATHERS_ASSERT(edge_index < num_edges());
         m_edge_directions[edge_index] = edge_direction;
     }
+
+    /** Get minimal face area. */
+    real_t get_min_face_area() const;
+    /** Get maximal face area. */
+    real_t get_max_face_area() const;
 
     /** Get face area/length. */
     real_t get_face_area(uint_t face_index) const {
@@ -678,6 +880,11 @@ public:
         m_face_center_positions[face_index] = face_center_position;
     }
 
+    /** Get minimal cell volume. */
+    real_t get_min_cell_volume() const;
+    /** Get maximal cell volume. */
+    real_t get_max_cell_volume() const;
+
     /** Get cell volume/area/length. */
     real_t get_cell_volume(uint_t cell_index) const {
         FEATHERS_ASSERT(cell_index < num_cells());
@@ -698,21 +905,6 @@ public:
         FEATHERS_ASSERT(cell_index < num_cells());
         m_cell_center_positions[cell_index] = cell_center_position;
     }
-
-    /** Get minimal edge length. */
-    real_t get_min_edge_length() const;
-    /** Get maximal edge length. */
-    real_t get_max_edge_length() const;
-
-    /** Get minimal face area. */
-    real_t get_min_face_area() const;
-    /** Get maximal face area. */
-    real_t get_max_face_area() const;
-
-    /** Get minimal cell volume. */
-    real_t get_min_cell_volume() const;
-    /** Get maximal cell volume. */
-    real_t get_max_cell_volume() const;
 
     /** Compute mesh orthogonality.
      ** Mesh orthogonality is defined as a ... */

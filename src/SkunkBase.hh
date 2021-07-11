@@ -218,6 +218,10 @@ namespace feathers {
 /**************************************************************************/
 /**************************************************************************/
 
+#define FEATHERS_CONST_OVERLOAD(tType, name, args, ...) \
+    /** @{ */ tType name args __VA_ARGS__ \
+    const tType name args const __VA_ARGS__ /** @} */
+
 #define FEATHERS_ENSURE(x) do { if(!(x)) { \
         std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
                      __FILE__, __LINE__, __FUNCTION__, FEATHERS_TO_STRING(x)); \

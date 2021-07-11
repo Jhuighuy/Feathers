@@ -51,20 +51,16 @@ class tCellIterBase;
 /**
  * Base element iterator.
  */
-template<typename tIter, class cMesh, typename tElement_>
+template<typename tIter, class cMesh, typename tTag, tTag eTag>
 class tElementIterBase {
 private:
-    using tElement = std::conditional_t<
-        std::is_const<cMesh>::value, std::add_const_t<tElement_>, tElement_>;
     cMesh* m_mesh;
-    tElement* m_element;
-    uint_t  m_element_index;
+    uint_t m_index;
 
 protected:
     template<class cMeshPtr>
-    tElementIterBase(const cMeshPtr& mesh_ptr, uint_t element_index):
-        m_mesh(&*mesh_ptr),
-        m_element(tIter::get_element_(m_mesh, element_index)), m_element_index(element_index) {
+    tElementIterBase(const cMeshPtr& mesh_ptr, uint_t index):
+        m_mesh(&*mesh_ptr), m_index(index) {
     }
 
 public:
@@ -78,23 +74,12 @@ public:
     }
     /** Get associated element index. */
     uint_t get_index() const {
-        return m_element_index;
+        return m_index;
     }
 
     /** Cast to index operator. */
     operator uint_t() const {
-        return m_element_index;
-    }
-
-protected:
-
-    /** Dereference operator. */
-    tElement& operator*() const {
-        return *m_element;
-    }
-    /** Dereference operator. */
-    tElement* operator->() const {
-        return m_element;
+        return m_index;
     }
 
 public:
@@ -105,40 +90,40 @@ public:
     /** Difference operator. */
     int_t operator-(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index - other.m_element_index;
+        return m_index - other.m_index;
     }
 
     /** Equality operator. */
     bool operator==(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index == other.m_element_index;
+        return m_index == other.m_index;
     }
     /** Inequality operator. */
     bool operator!=(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index != other.m_element_index;
+        return m_index != other.m_index;
     }
 
     /** Lexicographical less than operator. */
     bool operator<(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index < other.m_element_index;
+        return m_index < other.m_index;
     }
     /** Lexicographical less than or equal operator. */
     bool operator<=(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index <= other.m_element_index;
+        return m_index <= other.m_index;
     }
 
     /** Lexicographical greater than operator. */
     bool operator>(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index > other.m_element_index;
+        return m_index > other.m_index;
     }
     /** Lexicographical greater than or equal operator. */
     bool operator>=(const tIter& other) const {
         FEATHERS_ASSERT(m_mesh == other.m_mesh);
-        return m_element_index >= other.m_element_index;
+        return m_index >= other.m_index;
     }
 
     // ---------------------------------------------------------------------- //
@@ -147,7 +132,7 @@ public:
     /** Increment operator. */
     /** @{ */
     tIter& operator++() {
-        m_element = tIter::get_element_(m_mesh, ++m_element_index);
+        ++m_index;
         return static_cast<tIter&>(*this);
     }
     const tIter operator++(int_t) {
@@ -159,7 +144,7 @@ public:
     /** Decrement operator. */
     /** @{ */
     tIter& operator--() {
-        m_element = tIter::get_element_(m_mesh, --m_element_index);
+        --m_index;
         return static_cast<tIter&>(*this);
     }
     const tIter operator--(int_t) {
@@ -171,7 +156,7 @@ public:
     /** Addition operator. */
     /** @{ */
     tIter& operator+=(int_t offset) {
-        m_element = tIter::get_element_(m_mesh, m_element_index += offset);
+        m_index += offset;
         return static_cast<tIter&>(*this);
     }
     tIter operator+(int_t offset) const {
@@ -182,7 +167,7 @@ public:
     /** Subtraction operator. */
     /** @{ */
     tIter& operator-=(int_t offset) {
-        m_element = tIter::get_element_(m_mesh, m_element_index -= offset);
+        m_index -= offset;
         return static_cast<tIter&>(*this);
     }
     tIter operator-(int_t offset) const {
@@ -195,23 +180,27 @@ public:
 
     /** Get connected node. */
     auto get_node(uint_t node_local) const {
-        FEATHERS_ASSERT(node_local < m_element->num_nodes());
-        return tNodeIterBase<cMesh>(m_mesh, m_element->begin_node()[node_local]);
+        FEATHERS_ASSERT(node_local < m_mesh->num_adjacent_nodes(eTag, m_index));
+        return tNodeIterBase<cMesh>(
+            m_mesh, m_mesh->begin_adjacent_node(eTag, m_index)[node_local]);
     }
     /** Get connected edge. */
     auto get_edge(uint_t edge_local) const {
-        FEATHERS_ASSERT(edge_local < m_element->num_edges());
-        return tEdgeIterBase<cMesh>(m_mesh, m_element->begin_edge()[edge_local]);
+        FEATHERS_ASSERT(edge_local < m_mesh->num_adjacent_edges(eTag, m_index));
+        return tEdgeIterBase<cMesh>(
+            m_mesh, m_mesh->begin_adjacent_edge(eTag, m_index)[edge_local]);
     }
     /** Get connected face. */
     auto get_face(uint_t face_local) const {
-        FEATHERS_ASSERT(face_local < m_element->num_faces());
-        return tFaceIterBase<cMesh>(m_mesh, m_element->begin_face()[face_local]);
+        FEATHERS_ASSERT(face_local < m_mesh->num_adjacent_faces(eTag, m_index));
+        return tFaceIterBase<cMesh>(
+            m_mesh, m_mesh->begin_adjacent_face(eTag, m_index)[face_local]);
     }
     /** Get connected cell. */
     auto get_cell(uint_t cell_local) const {
-        FEATHERS_ASSERT(cell_local < m_element->num_cells());
-        return tCellIterBase<cMesh>(m_mesh, m_element->begin_cell()[cell_local]);
+        FEATHERS_ASSERT(cell_local < m_mesh->num_adjacent_cells(eTag, m_index));
+        return tCellIterBase<cMesh>(
+            m_mesh, m_mesh->begin_adjacent_cell(eTag, m_index)[cell_local]);
     }
 
     // ---------------------------------------------------------------------- //
@@ -220,8 +209,8 @@ public:
     /** Iterate through all connected nodes. */
     template<typename tFunc>
     tFunc for_each_node(tFunc func) const {
-        tElement& elem = **this;
-        std::for_each(elem.begin_node(), elem.end_node(), [&](int_t node_index) {
+        std::for_each(m_mesh->begin_adjacent_node(eTag, m_index),
+                      m_mesh->end_adjacent_node(eTag, m_index), [&](uint_t node_index) {
             func(tNodeIterBase<cMesh>(m_mesh, node_index));
         });
         return func;
@@ -229,8 +218,8 @@ public:
     /** Iterate through all connected edges. */
     template<typename tFunc>
     tFunc for_each_edge(tFunc func) const {
-        tElement& elem = **this;
-        std::for_each(elem.begin_edge(), elem.end_edge(), [&](int_t edge_index) {
+        std::for_each(m_mesh->begin_adjacent_edge(eTag, m_index),
+                      m_mesh->end_adjacent_edge(eTag, m_index), [&](uint_t edge_index) {
             func(tEdgeIterBase<cMesh>(m_mesh, edge_index));
         });
         return func;
@@ -239,16 +228,16 @@ public:
     /** @{ */
     template<typename tFunc>
     tFunc for_each_face(tFunc func) const {
-        tElement& elem = **this;
-        std::for_each(elem.begin_face(), elem.end_face(), [&](int_t face_index) {
+        std::for_each(m_mesh->begin_adjacent_face(eTag, m_index),
+                      m_mesh->end_adjacent_face(eTag, m_index), [&](uint_t face_index) {
             func(tFaceIterBase<cMesh>(m_mesh, face_index));
         });
         return func;
     }
     template<typename tFunc>
     tFunc for_each_face_cells(tFunc func) const {
-        tElement& elem = **this;
-        std::for_each(elem.begin_face(), elem.end_face(), [&](int_t face_index) {
+        std::for_each(m_mesh->begin_adjacent_face(eTag, m_index),
+                      m_mesh->end_adjacent_face(eTag, m_index), [&](uint_t face_index) {
             tFaceIterBase<cMesh> face(m_mesh, face_index);
             func(face.get_inner_cell(), face.get_outer_cell());
         });
@@ -258,8 +247,8 @@ public:
     /** Iterate through all connected cells. */
     template<typename tFunc>
     tFunc for_each_cell(tFunc func) const {
-        tElement& elem = **this;
-        std::for_each(elem.begin_cell(), elem.end_cell(), [&](int_t cell_index) {
+        std::for_each(m_mesh->begin_adjacent_cell(eTag, m_index),
+                      m_mesh->end_adjacent_cell(eTag, m_index), [&](uint_t cell_index) {
             func(tCellIterBase<cMesh>(m_mesh, cell_index));
         });
         return func;
@@ -273,23 +262,14 @@ public:
  * Base node iterator.
  */
 template<class cMesh>
-class tNodeIterBase final : public tElementIterBase<tNodeIterBase<cMesh>, cMesh, Node> {
-private:
-    friend class tElementIterBase<tNodeIterBase<cMesh>, cMesh, Node>;
-    static auto get_element_(cMesh* mesh_ptr, uint_t node_index) {
-        FEATHERS_ASSERT(mesh_ptr != nullptr);
-        return node_index < mesh_ptr->num_nodes() ? &mesh_ptr->get_node(node_index) : nullptr;
-    }
-
+class tNodeIterBase final :
+    public tElementIterBase<tNodeIterBase<cMesh>, cMesh, tNodeTag, eNodeTag> {
 public:
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
 
     /** Construct base node iterator. */
     template<class cMeshPtr>
     explicit tNodeIterBase(const cMeshPtr& mesh_ptr, uint_t node_index = 0):
-        tElementIterBase<tNodeIterBase<cMesh>, cMesh, Node>(mesh_ptr, node_index) {
+        tElementIterBase<tNodeIterBase<cMesh>, cMesh, tNodeTag, eNodeTag>(mesh_ptr, node_index) {
     }
 
     // ---------------------------------------------------------------------- //
@@ -321,23 +301,14 @@ using tNodeMutableIter = tNodeIterBase<cMesh>;
  * Base edge iterator.
  */
 template<class cMesh>
-class tEdgeIterBase final : public tElementIterBase<tEdgeIterBase<cMesh>, cMesh, Edge> {
-private:
-    friend class tElementIterBase<tEdgeIterBase<cMesh>, cMesh, Edge>;
-    static auto get_element_(cMesh* mesh_ptr, uint_t edge_index) {
-        FEATHERS_ASSERT(mesh_ptr != nullptr);
-        return edge_index < mesh_ptr->num_edges() ? &mesh_ptr->get_edge(edge_index) : nullptr;
-    }
-
+class tEdgeIterBase final :
+    public tElementIterBase<tEdgeIterBase<cMesh>, cMesh, tEdgeTag, eEdgeTag> {
 public:
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
 
     /** Construct base edge iterator. */
     template<class cMeshPtr>
     explicit tEdgeIterBase(const cMeshPtr& mesh_ptr, uint_t edge_index = 0):
-        tElementIterBase<tEdgeIterBase<cMesh>, cMesh, Edge>(mesh_ptr, edge_index) {
+        tElementIterBase<tEdgeIterBase<cMesh>, cMesh, tEdgeTag, eEdgeTag>(mesh_ptr, edge_index) {
     }
 
     // ---------------------------------------------------------------------- //
@@ -379,32 +350,25 @@ using tEdgeMutableIter = tEdgeIterBase<cMesh>;
  * Base face iterator.
  */
 template<class cMesh>
-class tFaceIterBase final : public tElementIterBase<tFaceIterBase<cMesh>, cMesh, Face> {
-private:
-    friend class tElementIterBase<tFaceIterBase<cMesh>, cMesh, Face>;
-    static auto get_element_(cMesh* mesh_ptr, uint_t face_index) {
-        FEATHERS_ASSERT(mesh_ptr != nullptr);
-        return face_index < mesh_ptr->num_faces() ? &mesh_ptr->get_face(face_index) : nullptr;
-    }
-
+class tFaceIterBase final :
+    public tElementIterBase<tFaceIterBase<cMesh>, cMesh, tFaceTag, eFaceTag> {
 public:
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
 
     /** Construct base face iterator. */
     template<class cMeshPtr>
     explicit tFaceIterBase(const cMeshPtr& mesh_ptr, uint_t face_index = 0):
-        tElementIterBase<tFaceIterBase<cMesh>, cMesh, Face>(mesh_ptr, face_index) {
+        tElementIterBase<tFaceIterBase<cMesh>, cMesh, tFaceTag, eFaceTag>(mesh_ptr, face_index) {
     }
 
     /** Get connected inner cell. */
     auto get_inner_cell() const {
-        return tCellIterBase<cMesh>(this->get_mesh(), (*this)->get_inner_cell());
+        // TODO: encapsulate indices!
+        return this->get_cell(0);
     }
     /** Get connected outer cell. */
     auto get_outer_cell() const {
-        return tCellIterBase<cMesh>(this->get_mesh(), (*this)->get_outer_cell());
+        // TODO: encapsulate indices!
+        return this->get_cell(1);
     }
 
     // ---------------------------------------------------------------------- //
@@ -456,23 +420,14 @@ using tFaceMutableIter = tFaceIterBase<cMesh>;
  * Base cell iterator.
  */
 template<class cMesh>
-class tCellIterBase final : public tElementIterBase<tCellIterBase<cMesh>, cMesh, Cell> {
-private:
-    friend class tElementIterBase<tCellIterBase<cMesh>, cMesh, Cell>;
-    static auto get_element_(cMesh* mesh_ptr, uint_t cell_index) {
-        FEATHERS_ASSERT(mesh_ptr != nullptr);
-        return cell_index < mesh_ptr->num_cells() ? &mesh_ptr->get_cell(cell_index) : nullptr;
-    }
-
+class tCellIterBase final :
+    public tElementIterBase<tCellIterBase<cMesh>, cMesh, tCellTag, eCellTag> {
 public:
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
 
     /** Construct base cell iterator. */
     template<class cMeshPtr>
     explicit tCellIterBase(const cMeshPtr& mesh, uint_t cell_index = 0):
-        tElementIterBase<tCellIterBase<cMesh>, cMesh, Cell>(mesh, cell_index) {
+        tElementIterBase<tCellIterBase<cMesh>, cMesh, tCellTag, eCellTag>(mesh, cell_index) {
     }
 
     // ---------------------------------------------------------------------- //
