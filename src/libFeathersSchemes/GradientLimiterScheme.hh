@@ -140,13 +140,13 @@ public:
 template<int_t num_vars, class tSlopeLimiter, class tSecondLimiter = tDummySecondLimiter>
 class tGradientLimiterScheme final : public iGradientLimiterScheme<num_vars> {
 public:
-    std::shared_ptr<const uMesh> m_mesh;
+    std::shared_ptr<const cMesh> m_mesh;
     tSlopeLimiter m_slope_limiter;
     tSecondLimiter m_second_limiter;
 
 public:
     /** Initialize the limiting scheme. */
-    explicit tGradientLimiterScheme(std::shared_ptr<const uMesh> mesh,
+    explicit tGradientLimiterScheme(std::shared_ptr<const cMesh> mesh,
                                     const tSlopeLimiter& slope_limiter = {},
                                     const tSecondLimiter& second_limiter = {}):
         m_mesh(std::move(mesh)),

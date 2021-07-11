@@ -40,7 +40,7 @@
 /** @todo Refactor me! */
 #define assert1(x) do { if(!(x)) {throw std::runtime_error("hui");} } while(false)
 
-bool UMesh::read_triangle(const char *path) {
+bool cMesh::read_triangle(const char *path) {
     std::string line;
 
     std::ifstream node_file(path + std::string("node"));
@@ -68,7 +68,7 @@ bool UMesh::read_triangle(const char *path) {
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> mark;
         std::getline(face_file, line);
-        assert1(insert_face(mesh_face_segment2_t(face_nodes.begin(), face_nodes.end(), mark)) == face_index);
+        assert1(insert_face(mesh_face_segment2_t(face_nodes.begin(), face_nodes.end()), mark) == face_index);
     }
 
     std::ifstream cell_file(path + std::string("ele"));
@@ -88,9 +88,9 @@ bool UMesh::read_triangle(const char *path) {
     generate_boundary_cells();
     reorder_faces();
     return true;
-}   // uMesh::read_triangle
+}   // cMesh::read_triangle
 
-bool UMesh::read_tetgen(const char *path) {
+bool cMesh::read_tetgen(const char *path) {
     std::string line;
 
     std::ifstream node_file(path + std::string("node"));
@@ -117,7 +117,7 @@ bool UMesh::read_tetgen(const char *path) {
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> face_nodes[2] >> mark;
         std::getline(face_file, line);
-        assert1(insert_face(mesh_face_triangle3_t(face_nodes.begin(), face_nodes.end(), mark)) == face_index);
+        assert1(insert_face(mesh_face_triangle3_t(face_nodes.begin(), face_nodes.end()), mark) == face_index);
     }
 
     std::ifstream cell_file(path + std::string("ele"));
@@ -137,52 +137,52 @@ bool UMesh::read_tetgen(const char *path) {
     generate_boundary_cells();
     reorder_faces();
     return true;
-}   // uMesh::read_tetgen
+}   // cMesh::read_tetgen
 
 namespace feathers {
 
 /** Get minimal edge length. */
-real_t uMesh::get_min_edge_length() const {
+real_t cMesh::get_min_edge_length() const {
     return for_range_min(0u, num_edges(), 1e+6, [&](uint_t edge_index) {
         return get_edge_length(edge_index);
     });
-}   // uMesh::get_min_edge_length
+}   // cMesh::get_min_edge_length
 /** Get maximal edge length. */
-real_t uMesh::get_max_edge_length() const {
+real_t cMesh::get_max_edge_length() const {
     return for_range_max(0u, num_edges(), 0e+0, [&](uint_t edge_index) {
         return get_edge_length(edge_index);
     });
-}   // uMesh::get_max_edge_length
+}   // cMesh::get_max_edge_length
 
 /** Get minimal face area. */
-real_t uMesh::get_min_face_area() const {
+real_t cMesh::get_min_face_area() const {
     return for_range_min(0u, num_faces(), 1e+6, [&](uint_t face_index) {
         return get_face_area(face_index);
     });
-}   // uMesh::get_min_face_area
+}   // cMesh::get_min_face_area
 /** Get maximal face area. */
-real_t uMesh::get_max_face_area() const {
+real_t cMesh::get_max_face_area() const {
     return for_range_max(0u, num_faces(), 0e+0, [&](uint_t face_index) {
         return get_face_area(face_index);
     });
-}   // uMesh::get_max_face_area
+}   // cMesh::get_max_face_area
 
 /** Get minimal cell volume. */
-real_t uMesh::get_min_cell_volume() const {
+real_t cMesh::get_min_cell_volume() const {
     return for_range_min(0u, num_cells(), 1e+6, [&](uint_t cell_index) {
         return get_cell_volume(cell_index);
     });
-}   // uMesh::get_min_cell_volume
+}   // cMesh::get_min_cell_volume
 /** Get maximal cell volume. */
-real_t uMesh::get_max_cell_volume() const {
+real_t cMesh::get_max_cell_volume() const {
     return for_range_max(0u, num_cells(), 0e+0, [&](uint_t cell_index) {
         return get_cell_volume(cell_index);
     });
-}   // uMesh::get_max_cell_volume
+}   // cMesh::get_max_cell_volume
 
 /** Compute mesh orthogonality.
  ** Mesh orthogonality is defined as a. */
-real_t uMesh::get_orthogonality() const {
+real_t cMesh::get_orthogonality() const {
     return for_range_min(begin_face(0), end_face(0), 1e+6, [&](uint_t face_index) {
         const Face& face = get_face(face_index);
         const vec3_t direction = get_cell_center_position(face.get_outer_cell()) -
@@ -190,7 +190,7 @@ real_t uMesh::get_orthogonality() const {
         const real_t orth = 0.0;//glm::dot(face.get_normal(), direction)/glm::length(direction);
         return orth;
     });
-}   // uMesh::get_orthogonality
+}   // cMesh::get_orthogonality
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -198,10 +198,10 @@ real_t uMesh::get_orthogonality() const {
 /** Insert a new node into the mesh.
  ** @param node_ Edge nodes.
  ** @returns Index of the inserted node. */
-uint_t uMesh::insert_node(const mesh_node1_t& node_, vec3_t p) {
+uint_t cMesh::insert_node(const mesh_node1_t& node_, vec3_t p, uint_t mark) {
     /** @todo Refactor me! */
     const uint_t node_index = allocate_node_(node_);
-    const Node& node = get_node(node_index);
+    set_node_mark(node_index, mark);
     set_node_position(node_index, p);
     const vec3_t& node_geometry = p;
     if (m_dim <= 2) {
@@ -211,7 +211,7 @@ uint_t uMesh::insert_node(const mesh_node1_t& node_, vec3_t p) {
         }
     }
     return node_index;
-}   // uMesh::insert_node
+}   // cMesh::insert_node
 
 /** Insert a new edge into the mesh.
  ** @param edge_ Edge nodes.
@@ -220,19 +220,21 @@ uint_t uMesh::insert_node(const mesh_node1_t& node_, vec3_t p) {
 /*
  * Dummy 1D/2D edge.
  */
-uint_t uMesh::insert_edge(const mesh_edge_node1_t& edge_) {
+uint_t cMesh::insert_edge(const mesh_edge_node1_t& edge_, uint_t mark) {
     const uint_t edge_index = allocate_edge_(edge_);
     /** @todo Implement me! */
+    set_edge_mark(edge_index, mark);
     return edge_index;
-}   // uMesh::insert_edge
+}   // cMesh::insert_edge
 /*
  * Segment edge.
  */
-uint_t uMesh::insert_edge(const mesh_edge_segment2_t& edge_) {
+uint_t cMesh::insert_edge(const mesh_edge_segment2_t& edge_, uint_t mark) {
     const uint_t edge_index = allocate_edge_(edge_);
     /** @todo Implement me! */
+    set_edge_mark(edge_index, mark);
     return edge_index;
-}   // uMesh::insert_edge
+}   // cMesh::insert_edge
 /** @} */
 
 /** Insert a new edge into the mesh.
@@ -241,7 +243,7 @@ uint_t uMesh::insert_edge(const mesh_edge_segment2_t& edge_) {
  ** @param mark Boundary mark.
  ** @param dim Overridden dimension.
  ** @returns Index of the inserted edge. */
-uint_t uMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, uint_t dim) {
+uint_t cMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, uint_t dim) {
     if (dim == 0) {
         dim = m_dim;
     }
@@ -250,19 +252,19 @@ uint_t uMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, ui
         switch (edge_nodes.size()) {
         /* Dummy 1D/2D edge. */
         case 1:
-            return insert_edge(mesh_edge_node1_t(edge_nodes.cbegin(), edge_nodes.cend(), mark));
+            return insert_edge(mesh_edge_node1_t(edge_nodes.cbegin(), edge_nodes.cend()), mark);
         default:;
         }
     } else if (dim == 3) {
         switch (edge_nodes.size()) {
         /* Segment edge. */
         case 2:
-            return insert_edge(mesh_edge_segment2_t(edge_nodes.cbegin(), edge_nodes.cend(), mark));
+            return insert_edge(mesh_edge_segment2_t(edge_nodes.cbegin(), edge_nodes.cend()), mark);
         default:;
         }
     }
     FEATHERS_ASSERT_FALSE("Invalid edge nodes: cell type cannot be uniquely matched.");
-}   // uMesh::insert_edge
+}   // cMesh::insert_edge
 
 /** Insert a new face into the mesh.
  ** @param face_ Face nodes.
@@ -271,21 +273,22 @@ uint_t uMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, ui
 /*
  * Dummy 1D face.
  */
-uint_t uMesh::insert_face(const mesh_face_node1_t& face_) {
+uint_t cMesh::insert_face(const mesh_face_node1_t& face_, uint_t mark) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
     /* Set up the face geometry. */
     Face& face = get_face(face_index);
+    set_face_mark(face_index, mark);
     set_face_area(face_index, 1.0);
     set_face_center_position(face_index, get_node_position(face.begin_node()[0]));
     set_face_normal(face_index, {1.0, 0.0, 0.0});
     return face_index;
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 /*
  * Segment face.
  */
-uint_t uMesh::insert_face(const mesh_face_segment2_t& face_) {
+uint_t cMesh::insert_face(const mesh_face_segment2_t& face_, uint_t mark) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
@@ -295,15 +298,16 @@ uint_t uMesh::insert_face(const mesh_face_segment2_t& face_) {
         vec2_t(get_node_position(face.begin_node()[0])),
         vec2_t(get_node_position(face.begin_node()[1])),
     };
+    set_face_mark(face_index, mark);
     set_face_area(face_index, mhd_seg2_t::len(face_geometry));
     set_face_normal(face_index, mhd_seg2_t::normal3(face_geometry));
     set_face_center_position(face_index, vec3_t(0.5*(face_geometry.p1 + face_geometry.p2), 0.0));
     return face_index;
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 /*
  * Triangular face.
  */
-uint_t uMesh::insert_face(const mesh_face_triangle3_t& face_) {
+uint_t cMesh::insert_face(const mesh_face_triangle3_t& face_, uint_t mark) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
@@ -314,15 +318,16 @@ uint_t uMesh::insert_face(const mesh_face_triangle3_t& face_) {
         get_node_position(face.begin_node()[1]),
         get_node_position(face.begin_node()[2]),
     };
+    set_face_mark(face_index, mark);
     set_face_area(face_index, mhd_tri3_t::area(face_geometry));
     set_face_normal(face_index, mhd_tri3_t::normal(face_geometry));
     set_face_center_position(face_index, mhd_tri3_t::barycenter(face_geometry));
     return face_index;
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 /*
  * Quadrangular face.
  */
-uint_t uMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
+uint_t cMesh::insert_face(const mesh_face_quadrangle4_t& face_, uint_t mark) {
     /** @todo Refactor me! */
     /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
@@ -354,9 +359,10 @@ uint_t uMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
                                  0.5*mhd_tri3_t::barycenter(face_geometry2));
     }
     auto nn = a1*mhd_tri3_t::normal(face_geometry1) + a2*mhd_tri3_t::normal(face_geometry2);
+    set_face_mark(face_index, mark);
     set_face_normal(face_index, nn * safe_inverse(glm::length(nn)));
     return face_index;
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 /** @} */
 
 /** Insert a new face into the mesh.
@@ -365,7 +371,7 @@ uint_t uMesh::insert_face(const mesh_face_quadrangle4_t& face_) {
  ** @param mark Boundary mark.
  ** @param dim Overridden dimension.
  ** @returns Index of the inserted face. */
-uint_t uMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, uint_t dim) {
+uint_t cMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, uint_t dim) {
     if (dim == 0) {
         dim = m_dim;
     }
@@ -374,34 +380,34 @@ uint_t uMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, ui
         switch (face_nodes.size()) {
         /* Dummy 1D face. */
         case 1:
-            return insert_face(mesh_face_node1_t(face_nodes.cbegin(), face_nodes.cend(), mark));
+            return insert_face(mesh_face_node1_t(face_nodes.cbegin(), face_nodes.cend()), mark);
         default:;
         }
     } else if (dim == 2) {
         switch (face_nodes.size()) {
         /* Segment face. */
         case 2:
-            return insert_face(mesh_face_segment2_t(face_nodes.cbegin(), face_nodes.cend(), mark));
+            return insert_face(mesh_face_segment2_t(face_nodes.cbegin(), face_nodes.cend()), mark);
         default:;
         }
     } else if (dim == 3) {
         switch (face_nodes.size()) {
         /* Triangular face. */
         case 3:
-            return insert_face(mesh_face_triangle3_t(face_nodes.cbegin(), face_nodes.cend(), mark));
+            return insert_face(mesh_face_triangle3_t(face_nodes.cbegin(), face_nodes.cend()), mark);
         /* Quadrangular face. */
         case 4:
-            return insert_face(mesh_face_quadrangle4_t(face_nodes.cbegin(), face_nodes.cend(), mark));
+            return insert_face(mesh_face_quadrangle4_t(face_nodes.cbegin(), face_nodes.cend()), mark);
         default:;
         }
     }
     FEATHERS_ASSERT_FALSE("Invalid face nodes: face type cannot be uniquely matched.");
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 
 /** Initialize cell geometry. */
 /** @{ */
 template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_2d_(uMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
+SKUNK_INLINE void init_cell_geometry_2d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
     geom_t cell_geometry{};
     for (uint_t node_local = 0; node_local < cell.num_nodes(); ++node_local) {
         const uint_t node_index = cell.begin_node()[node_local];
@@ -411,7 +417,7 @@ SKUNK_INLINE void init_cell_geometry_2d_(uMesh& mesh, mesh_cell_t& cell, uint_t 
     mesh.set_cell_volume(cell_index, cell_geometry.area());
 }   // init_cell_geometry_
 template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_23d_(uMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
+SKUNK_INLINE void init_cell_geometry_23d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
     geom_t cell_geometry{};
     for (uint_t node_local = 0; node_local < cell.num_nodes(); ++node_local) {
         const uint_t node_index = cell.begin_node()[node_local];
@@ -421,7 +427,7 @@ SKUNK_INLINE void init_cell_geometry_23d_(uMesh& mesh, mesh_cell_t& cell, uint_t
     mesh.set_cell_volume(cell_index, cell_geometry.area(cell_geometry));
 }   // init_cell_geometry_
 template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_3d_(uMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
+SKUNK_INLINE void init_cell_geometry_3d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
     geom_t cell_geometry{};
     for (uint_t node_local = 0; node_local < cell.num_nodes(); ++node_local) {
         const uint_t node_index = cell.begin_node()[node_local];
@@ -439,7 +445,7 @@ SKUNK_INLINE void init_cell_geometry_3d_(uMesh& mesh, mesh_cell_t& cell, uint_t 
 /*
  * Segment cell.
  */
-uint_t uMesh::insert_cell(const mesh_cell_segment2_t& cell_) {
+uint_t cMesh::insert_cell(const mesh_cell_segment2_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     /*
@@ -449,44 +455,48 @@ uint_t uMesh::insert_cell(const mesh_cell_segment2_t& cell_) {
             vec2_t(get_node_position(cell.begin_node()[0])),
             vec2_t(get_node_position(cell.begin_node()[1])),
     };
+    set_cell_mark(cell_index, mark);
     set_cell_center_position(cell_index, vec3_t(0.5*(cell_geometry.p1 + cell_geometry.p2), 0.0));
     set_cell_volume(cell_index, mhd_seg2_t::len(cell_geometry));
     return cell_index;
-}   // uMesh::insert_cell
+}   // cMesh::insert_cell
 /*
  * Triangular cell.
  */
-uint_t uMesh::insert_cell(const mesh_cell_triangle3_t& cell_) {
+uint_t cMesh::insert_cell(const mesh_cell_triangle3_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     /** @todo A 3D triangle? */
+    set_cell_mark(cell_index, mark);
     init_cell_geometry_23d_<mhd_tri3d>(*this, cell, cell_index);
     return cell_index;
-}   // uMesh::insert_cell
+}   // cMesh::insert_cell
 /*
  * Quadrangular cell.
  */
-uint_t uMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_) {
+uint_t cMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     /** @todo A 3D quadrangle? */
+    set_cell_mark(cell_index, mark);
     init_cell_geometry_2d_<geom_quad2_t>(*this, cell, cell_index);
     return cell_index;
-}   // uMesh::insert_cell
+}   // cMesh::insert_cell
 /*
  * Tetrahedral cell.
  */
-uint_t uMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_) {
+uint_t cMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     /** @todo A 3D triangle? */
+    set_cell_mark(cell_index, mark);
     init_cell_geometry_3d_<mhd_tetr3d_t>(*this, cell, cell_index);
     return cell_index;
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 /*
  * Pyramidal cell.
  */
-uint_t uMesh::insert_cell(const mesh_cell_pyramid5_t& cell_) {
+uint_t cMesh::insert_cell(const mesh_cell_pyramid5_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     mhd_pyra3d_t cell_shape{
@@ -496,6 +506,7 @@ uint_t uMesh::insert_cell(const mesh_cell_pyramid5_t& cell_) {
             get_node_position(cell.begin_node()[3]),
             get_node_position(cell.begin_node()[4]),
     };
+    set_cell_mark(cell_index, mark);
     set_cell_volume(cell_index, cell_shape.volume());
     set_cell_center_position(cell_index, cell_shape.barycenter());
     return cell_index;
@@ -503,13 +514,13 @@ uint_t uMesh::insert_cell(const mesh_cell_pyramid5_t& cell_) {
 /*
  * Pentahedral cell.
  */
-uint_t uMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_) {
+uint_t cMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_, uint_t mark) {
     FEATHERS_NOT_IMPLEMENTED();
-}   // uMesh::insert_face
+}   // cMesh::insert_face
 /*
  * Hexahedral cell.
  */
-uint_t uMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_) {
+uint_t cMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     mhd_hexa3d_t cell_shape{
@@ -522,6 +533,7 @@ uint_t uMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_) {
             get_node_position(cell.begin_node()[6]),
             get_node_position(cell.begin_node()[7]),
     };
+    set_cell_mark(cell_index, mark);
     set_cell_volume(cell_index, cell_shape.volume());
     set_cell_center_position(cell_index, cell_shape.barycenter());
     return cell_index;
@@ -534,7 +546,7 @@ uint_t uMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_) {
  ** @param mark Boundary mark.
  ** @param dim Overridden dimension.
  ** @returns Index of the inserted cell. */
-uint_t uMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, uint_t dim) {
+uint_t cMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, uint_t dim) {
     if (dim == 0) {
         dim = m_dim;
     }
@@ -543,38 +555,38 @@ uint_t uMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, ui
         switch (cell_nodes.size()) {
         /* Segment cell. */
         case 2:
-            return insert_cell(mesh_cell_segment2_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_segment2_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         default:;
         }
     } else if (dim == 2) {
         switch (cell_nodes.size()) {
         /* Triangular cell. */
         case 3:
-            return insert_cell(mesh_cell_triangle3_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_triangle3_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         /* Quadrangular cell. */
         case 4:
-            return insert_cell(mesh_cell_quadrangle4_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_quadrangle4_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         default:;
         }
     } else if (dim == 3) {
         switch (cell_nodes.size()) {
         /* Tetrahedral cell. */
         case 4:
-            return insert_cell(mesh_cell_tetrahedron4_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_tetrahedron4_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         /* Pyramidal cell. */
         case 5:
-            return insert_cell(mesh_cell_pyramid5_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_pyramid5_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         /* Pentahedral cell. */
         case 6:
-            return insert_cell(mesh_cell_pentahedron6_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_pentahedron6_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         /* Hexahedral cell. */
         case 8:
-            return insert_cell(mesh_cell_hexahedron8_t(cell_nodes.cbegin(), cell_nodes.cend(), mark));
+            return insert_cell(mesh_cell_hexahedron8_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
         default:;
         }
     }
     FEATHERS_ASSERT(!"Invalid cell nodes: cell type cannot be uniquely matched.");
-}   // uMesh::insert_cell
+}   // cMesh::insert_cell
 
 /** @internal
  ** Allocate and insert the new element into the storage. */
@@ -595,35 +607,39 @@ SKUNK_INLINE uint_t allocate_element_(const mesh_elem_struct_t& elem, size_t ali
 /** @internal
  ** Allocate and insert a new node into the mesh. */
 template<typename mesh_node_struct_t>
-SKUNK_INLINE uint_t uMesh::allocate_node_(const mesh_node_struct_t& node, size_t alignment) {
+SKUNK_INLINE uint_t cMesh::allocate_node_(const mesh_node_struct_t& node, size_t alignment) {
+    m_node_marks.emplace_back();
     m_node_positions.emplace_back();
     return allocate_element_(node, alignment, m_node_storage, m_node_offsets);
-}   // uMesh::allocate_node_
+}   // cMesh::allocate_node_
 /** @internal
  ** Allocate and insert a new edge into the mesh. */
 template<typename mesh_edge_struct_t>
-SKUNK_INLINE uint_t uMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment) {
+SKUNK_INLINE uint_t cMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment) {
+    m_edge_marks.emplace_back();
     m_edge_lengths.emplace_back();
     m_edge_directions.emplace_back();
     return allocate_element_(edge, alignment, m_edge_storage, m_edge_offsets);
-}   // uMesh::allocate_edge_
+}   // cMesh::allocate_edge_
 /** @internal
  ** Allocate and insert a new face into the mesh. */
 template<typename mesh_face_struct_t>
-SKUNK_INLINE uint_t uMesh::allocate_face_(const mesh_face_struct_t& face, size_t alignment) {
+SKUNK_INLINE uint_t cMesh::allocate_face_(const mesh_face_struct_t& face, size_t alignment) {
+    m_face_marks.emplace_back();
     m_face_areas.emplace_back();
     m_face_normals.emplace_back();
     m_face_center_positions.emplace_back();
     return allocate_element_(face, alignment, m_face_storage, m_face_offsets);
-}   // uMesh::allocate_face_
+}   // cMesh::allocate_face_
 /** @internal
  ** Allocate and insert a new cell into the mesh. */
 template<typename mesh_cell_struct_t>
-SKUNK_INLINE uint_t uMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
+SKUNK_INLINE uint_t cMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
+    m_cell_marks.emplace_back();
     m_cell_volumes.emplace_back();
     m_cell_center_positions.emplace_back();
     return allocate_element_(cell, alignment, m_cell_storage, m_cell_offsets);
-}   // uMesh::allocate_cell_
+}   // cMesh::allocate_cell_
 
 /**************************************************************************/
 /**************************************************************************/
@@ -682,7 +698,7 @@ public:
 }   // namespace
 
 /** Change order of all nodes. */
-void uMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
+void cMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> node_inv_reordering(node_reordering.size());
     inverse_reordering(node_reordering.begin(), node_reordering.end(), node_inv_reordering.begin());
@@ -703,10 +719,11 @@ void uMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
     });
     /* Reorder nodes bytes. */
     reorder_nodes_bytes_(node_reordering);
+    reorder(node_reordering, m_node_marks.begin());
     reorder(node_reordering, m_node_positions.begin());
-}   // uMesh::reorder_nodes
+}   // cMesh::reorder_nodes
 /** Change order of all edges. */
-void uMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
+void cMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> edge_inv_reordering(edge_reordering.size());
     inverse_reordering(edge_reordering.begin(), edge_reordering.end(), edge_inv_reordering.begin());
@@ -717,11 +734,12 @@ void uMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
     });
     /* Reorder edges bytes. */
     reorder_edges_bytes_(edge_reordering);
+    reorder(edge_reordering, m_edge_marks.begin());
     reorder(edge_reordering, m_edge_lengths.begin());
     reorder(edge_reordering, m_edge_directions.begin());
-}   // uMesh::reorder_edges
+}   // cMesh::reorder_edges
 /** Change order of all faces. */
-void uMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
+void cMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> face_inv_reordering(face_reordering.size());
     inverse_reordering(face_reordering.begin(), face_reordering.end(), face_inv_reordering.begin());
@@ -732,12 +750,13 @@ void uMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
     });
     /* Reorder faces bytes. */
     reorder_faces_bytes_(face_reordering);
+    reorder(face_reordering, m_face_marks.begin());
     reorder(face_reordering, m_face_areas.begin());
     reorder(face_reordering, m_face_normals.begin());
     reorder(face_reordering, m_face_center_positions.begin());
-}   // uMesh::reorder_faces
+}   // cMesh::reorder_faces
 /** Change order of all cells. */
-void uMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
+void cMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
     /* Inverse reordering. */
     std::vector<uint_t> cell_inv_reordering(cell_reordering.size());
     inverse_reordering(cell_reordering.begin(), cell_reordering.end(), cell_inv_reordering.begin());
@@ -748,9 +767,10 @@ void uMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
     });
     /* Reorder cells bytes. */
     reorder_cells_bytes_(cell_reordering);
+    reorder(cell_reordering, m_cell_marks.begin());
     reorder(cell_reordering, m_cell_volumes.begin());
     reorder(cell_reordering, m_cell_center_positions.begin());
-}   // uMesh::reorder_cells
+}   // cMesh::reorder_cells
 
 /** @internal
  ** Swap bytes of two elements. */
@@ -762,41 +782,40 @@ SKUNK_INLINE static void reorder_elems_bytes_(std::vector<uint_t> elem_reorderin
 }   // reorder_elems_bytes_
 /** @internal
  ** Change order of bytes of all nodes. */
-SKUNK_INLINE void uMesh::reorder_nodes_bytes_(const std::vector<uint_t>& node_reordering) {
+SKUNK_INLINE void cMesh::reorder_nodes_bytes_(const std::vector<uint_t>& node_reordering) {
     reorder_elems_bytes_(node_reordering, m_node_storage, m_node_offsets);
-}   // uMesh::reorder_nodes_bytes_
+}   // cMesh::reorder_nodes_bytes_
 /** @internal
  ** Change order of bytes of all edges. */
-SKUNK_INLINE void uMesh::reorder_edges_bytes_(const std::vector<uint_t>& edge_reordering) {
+SKUNK_INLINE void cMesh::reorder_edges_bytes_(const std::vector<uint_t>& edge_reordering) {
     reorder_elems_bytes_(edge_reordering, m_edge_storage, m_edge_offsets);
-}   // uMesh::reorder_edges_bytes_
+}   // cMesh::reorder_edges_bytes_
 /** @internal
  ** Change order of bytes of all faces. */
-SKUNK_INLINE void uMesh::reorder_faces_bytes_(const std::vector<uint_t>& face_reordering) {
+SKUNK_INLINE void cMesh::reorder_faces_bytes_(const std::vector<uint_t>& face_reordering) {
     reorder_elems_bytes_(face_reordering, m_face_storage, m_face_offsets);
-}   // uMesh::reorder_faces_bytes_
+}   // cMesh::reorder_faces_bytes_
 /** @internal
  ** Change order of bytes of all cells. */
-SKUNK_INLINE void uMesh::reorder_cells_bytes_(const std::vector<uint_t>& cell_reordering) {
+SKUNK_INLINE void cMesh::reorder_cells_bytes_(const std::vector<uint_t>& cell_reordering) {
     reorder_elems_bytes_(cell_reordering, m_cell_storage, m_cell_offsets);
-}   // uMesh::reorder_cells_bytes_
+}   // cMesh::reorder_cells_bytes_
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-void uMesh::reorder_faces() {
+void cMesh::reorder_faces() {
     /** @todo Refactor me! */
     {
         std::vector<uint_t> node_reordering(num_nodes());
         std::iota(node_reordering.begin(), node_reordering.end(), 0);
         std::stable_sort(node_reordering.begin(), node_reordering.end(), [&](uint_t node_ind_1, uint_t node_ind_2) {
-            return get_node(node_ind_1).get_mark() < get_node(node_ind_2).get_mark();
+            return get_node_mark(node_ind_1) < get_node_mark(node_ind_2);
         });
         reorder_nodes(node_reordering);
         for (uint_t node_index = 0; node_index < num_nodes(); ++node_index) {
-            Node& node = get_node(node_index);
-            m_marked_node_ranges.resize(node.get_mark() + 2);
-            m_marked_node_ranges[node.get_mark() + 1] += 1;
+            m_marked_node_ranges.resize(get_node_mark(node_index) + 2);
+            m_marked_node_ranges[get_node_mark(node_index) + 1] += 1;
         }
         std::partial_sum(m_marked_node_ranges.begin(), m_marked_node_ranges.end(), m_marked_node_ranges.begin());
     }
@@ -804,13 +823,12 @@ void uMesh::reorder_faces() {
         std::vector<uint_t> edge_reordering(num_edges());
         std::iota(edge_reordering.begin(), edge_reordering.end(), 0);
         std::stable_sort(edge_reordering.begin(), edge_reordering.end(), [&](uint_t edge_ind_1, uint_t edge_ind_2) {
-            return get_edge(edge_ind_1).get_mark() < get_edge(edge_ind_2).get_mark();
+            return get_edge_mark(edge_ind_1) < get_edge_mark(edge_ind_2);
         });
         reorder_edges(edge_reordering);
         for (uint_t edge_index = 0; edge_index < num_edges(); ++edge_index) {
-            Edge& edge = get_edge(edge_index);
-            m_marked_edge_ranges.resize(edge.get_mark() + 2);
-            m_marked_edge_ranges[edge.get_mark() + 1] += 1;
+            m_marked_edge_ranges.resize(get_edge_mark(edge_index) + 2);
+            m_marked_edge_ranges[get_edge_mark(edge_index) + 1] += 1;
         }
         std::partial_sum(m_marked_edge_ranges.begin(), m_marked_edge_ranges.end(), m_marked_edge_ranges.begin());
     }
@@ -818,13 +836,12 @@ void uMesh::reorder_faces() {
         std::vector<uint_t> face_reordering(num_faces());
         std::iota(face_reordering.begin(), face_reordering.end(), 0);
         std::stable_sort(face_reordering.begin(), face_reordering.end(), [&](uint_t face_ind_1, uint_t face_ind_2) {
-            return get_face(face_ind_1).get_mark() < get_face(face_ind_2).get_mark();
+            return get_face_mark(face_ind_1) < get_face_mark(face_ind_2);
         });
         reorder_faces(face_reordering);
         for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
-            Face& face = get_face(face_index);
-            m_marked_face_ranges.resize(face.get_mark() + 2);
-            m_marked_face_ranges[face.get_mark() + 1] += 1;
+            m_marked_face_ranges.resize(get_face_mark(face_index) + 2);
+            m_marked_face_ranges[get_face_mark(face_index) + 1] += 1;
         }
         std::partial_sum(m_marked_face_ranges.begin(), m_marked_face_ranges.end(), m_marked_face_ranges.begin());
     }
@@ -832,17 +849,16 @@ void uMesh::reorder_faces() {
         std::vector<uint_t> cell_reordering(num_cells());
         std::iota(cell_reordering.begin(), cell_reordering.end(), 0);
         std::stable_sort(cell_reordering.begin(), cell_reordering.end(), [&](uint_t cell_ind_1, uint_t cell_ind_2) {
-            return get_cell(cell_ind_1).get_mark() < get_cell(cell_ind_2).get_mark();
+            return get_cell_mark(cell_ind_1) < get_cell_mark(cell_ind_2);
         });
         reorder_cells(cell_reordering);
         for (uint_t cell_index = 0; cell_index < num_cells(); ++cell_index) {
-            Cell& cell = get_cell(cell_index);
-            m_marked_cell_ranges.resize(cell.get_mark() + 2);
-            m_marked_cell_ranges[cell.get_mark() + 1] += 1;
+            m_marked_cell_ranges.resize(get_cell_mark(cell_index) + 2);
+            m_marked_cell_ranges[get_cell_mark(cell_index) + 1] += 1;
         }
         std::partial_sum(m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
     }
-}   // uMesh::reorder_faces
+}   // cMesh::reorder_faces
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -851,16 +867,16 @@ void uMesh::reorder_faces() {
  * Generate edges using the face to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
-void uMesh::generate_edges() {
+void cMesh::generate_edges() {
     /* Face edge node index tables for various face types. */
-    static const std::map<ElementType, std::vector<std::vector<uint_t>>> face_edge_nodes = {
+    static const std::map<eElement, std::vector<std::vector<uint_t>>> face_edge_nodes = {
         /* 1D faces. */
-        {ElementType::node,         { {0} } },
+        {eElement::node,         {{0} } },
         /* 2D faces. */
-        {ElementType::segment_2,    { {0}, {1} } },
+        {eElement::segment_2,    {{0},    {1} } },
         /* 3D faces. */
-        {ElementType::triangle_3,   { {1, 2}, {2, 0}, {0, 1} } },
-        {ElementType::quadrangle_4, { {0, 1}, {1, 2}, {2, 3}, {3, 0} } },
+        {eElement::triangle_3,   {{1, 2}, {2, 0}, {0, 1} } },
+        {eElement::quadrangle_4, {{0, 1}, {1, 2}, {2, 3}, {3, 0} } },
     };
 
     /* Build a map of the existing edges.
@@ -896,8 +912,7 @@ void uMesh::generate_edges() {
                 /* Create a brand-new edge. */
                 edge_index = insert_edge(edge_nodes);
                 edge_cache.emplace(edge_nodes_set, edge_index);
-                Edge& edge = get_edge(edge_index);
-                edge.set_mark(face.get_mark());
+                set_edge_mark(edge_index, get_face_mark(face_index));
             }
         }
     }
@@ -908,25 +923,25 @@ void uMesh::generate_edges() {
         const Face& face = get_face(face_index);
         FEATHERS_ASSERT(std::all_of(face.begin_edge(), face.end_edge(), is_not_npos));
     }
-}   // uMesh::generate_edges
+}   // cMesh::generate_edges
 
 /**
  * Generate faces using the cell to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
-void uMesh::generate_faces() {
+void cMesh::generate_faces() {
     /* Cell face node index tables for various cell types. */
     static const std::map<
-            ElementType, std::vector<std::vector<uint_t>>> cell_face_nodes = {
+            eElement, std::vector<std::vector<uint_t>>> cell_face_nodes = {
         /* 1D cells. */
-        {ElementType::segment_2,     {{0},          {1} } },
+        {eElement::segment_2,     {{0},          {1} } },
         /* 2D cells. */
-        {ElementType::triangle_3,    {{1, 2},       {2, 0},       {0, 1} } },
-        {ElementType::quadrangle_4,  {{0, 1},       {1, 2},       {2, 3},       {3, 0} } },
+        {eElement::triangle_3,    {{1, 2},       {2, 0},       {0, 1} } },
+        {eElement::quadrangle_4,  {{0, 1},       {1, 2},       {2, 3},       {3, 0} } },
         /* 3D cells.
          * TODO: Add other cell types! */
-        {ElementType::tetrahedron_4, {{0, 2, 1},    {0, 1, 3},    {1, 2, 3},    {2, 0, 3} } },
-        {ElementType::hexahedron_8,  {{0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4},
+        {eElement::tetrahedron_4, {{0, 2, 1},    {0, 1, 3},    {1, 2, 3},    {2, 0, 3} } },
+        {eElement::hexahedron_8,  {{0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4},
                                       {0, 3, 2, 1}, {4, 5, 6, 7} } },
     };
 
@@ -990,34 +1005,34 @@ void uMesh::generate_faces() {
      * each boundary face should be connected to at least one cell. */
     for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
         const Face& face = get_face(face_index);
-        if (face.get_mark() == 0) {
+        if (get_face_mark(face_index) == 0) {
             FEATHERS_ASSERT(std::all_of(face.begin_cell(), face.end_cell(), is_not_npos));
         } else {
             FEATHERS_ASSERT(std::any_of(face.begin_cell(), face.end_cell(), is_not_npos));
         }
     }
-}   // uMesh::generate_faces
+}   // cMesh::generate_faces
 
 /**
  * Generate boundary cells to complete face connectivity.
  */
-void uMesh::generate_boundary_cells() {
+void cMesh::generate_boundary_cells() {
     /* A node and edge flip table for various face types. */
-    static const std::map<ElementType, std::pair<std::vector<uint_t>,
+    static const std::map<eElement, std::pair<std::vector<uint_t>,
                                                       std::vector<uint_t>>> face_nodes_edges_flip_table {
         /* 1D faces. */
-        {ElementType::node,         {{0},          {0} } },
+        {eElement::node,         {{0},          {0} } },
         /* 2D faces. */
-        {ElementType::segment_2,    {{1, 0},       {1, 0} } },
+        {eElement::segment_2,    {{1, 0},       {1, 0} } },
         /* 3D faces. */
-        {ElementType::triangle_3,   {{0, 2, 1},    {0, 2, 1} } },
-        {ElementType::quadrangle_4, {{0, 3, 2, 1}, {0, 3, 2, 1} } },
+        {eElement::triangle_3,   {{0, 2, 1},    {0, 2, 1} } },
+        {eElement::quadrangle_4, {{0, 3, 2, 1}, {0, 3, 2, 1} } },
     };
 
     /* Generate boundary cells and fix boundary faces orientation. */
     for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
         Face& face = get_face(face_index);
-        if (face.get_mark() == 0) {
+        if (get_face_mark(face_index) == 0) {
             continue;
         }
         /* Boundary faces should be oriented outwards from the mesh. */
@@ -1048,8 +1063,8 @@ void uMesh::generate_boundary_cells() {
                 vec3_t node_pos = get_node_position(node_index);
                 const vec3_t delta = node_pos - get_face_center_position(face_index);
                 node_pos -= 2.0*glm::dot(delta, get_face_normal(face_index))*get_face_normal(face_index);
-                const mesh_node1_t node(face.get_mark());
-                boundary_cell_nodes.push_back(insert_node(node, node_pos));
+                const mesh_node1_t node;
+                boundary_cell_nodes.push_back(insert_node(node, node_pos, get_face_mark(face_index)));
             } else {
                 /* Insert a boundary face node. */
                 boundary_cell_nodes.push_back(node_index);
@@ -1058,7 +1073,7 @@ void uMesh::generate_boundary_cells() {
 #endif
         /* Insert the boundary cell. */
         const uint_t boundary_cell_index =
-            insert_cell(boundary_cell_nodes, face.get_mark(), boundary_cell_dim);
+            insert_cell(boundary_cell_nodes, get_face_mark(face_index), boundary_cell_dim);
         Cell& boundary_cell = get_cell(boundary_cell_index);
         while (boundary_cell.num_faces() != 1) {
             boundary_cell.erase_face(0);
@@ -1066,7 +1081,7 @@ void uMesh::generate_boundary_cells() {
         boundary_cell.begin_face()[0] = face_index;
         face.get_outer_cell() = boundary_cell_index;
     }
-}   // uMesh::generate_boundary_cells
+}   // cMesh::generate_boundary_cells
 
 }   // namespace feathers
 

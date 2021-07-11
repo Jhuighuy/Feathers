@@ -40,7 +40,7 @@
 namespace feathers {
 
 /** Type of the mesh elements. */
-enum class ElementType : byte_t {
+enum class eElement : byte_t {
     null,
     node,
     segment_2,
@@ -50,17 +50,17 @@ enum class ElementType : byte_t {
     pyramid_5,
     pentahedron_6,
     hexahedron_8,
-};  // enum class ElementType
+};  // enum class eElement
 
 /** Mesh element connectivity structure. */
-template<ElementType type_t,
+template<eElement type_t,
          uint_t num_nodes_t, uint_t num_edges_t, uint_t num_faces_t, uint_t num_cells_t>
 class mesh_elem_struct_t {
 private:
     /** @internal
      ** @warning Order of the fields should not be changed! */
     /** @{ */
-    ElementType m_type : 8;
+    eElement m_type : 8;
     uint_t m_num_nodes : 6, m_num_edges : 6, m_num_faces : 6, m_num_cells : 6;
     uint_t m_elem_conn[std::max(1u, num_nodes_t + num_edges_t + num_faces_t + num_cells_t)];
     /** @} */
@@ -97,12 +97,14 @@ protected:
     /** @} */
 
 public:
+//private:
+    //friend class cMesh;
 
     /**************************************************************************/
     /**************************************************************************/
 
     /** Type of the element. */
-    ElementType get_type() const {
+    eElement get_type() const {
         return m_type;
     }
 
@@ -208,7 +210,7 @@ public:
     void erase_face(uint_t face_loc) {
         FEATHERS_ASSERT(face_loc < num_faces());
         std::rotate(begin_face() + face_loc, begin_face() + face_loc + 1, end_cell());
-        m_type = ElementType::null;
+        m_type = eElement::null;
         m_num_faces -= 1;
     }
 };  // class mesh_elem_struct_t
@@ -221,49 +223,16 @@ public:
 
 namespace feathers {
 
-template<ElementType type_t>
-class mesh_node_struct_t;
+/** Node element. */
+template<eElement type_t>
+class mesh_node_struct_t final : public mesh_elem_struct_t<type_t, 0, 0, 0, 0> {
+};  // class mesh_node_struct_t
 
 /** Generic node element. */
-using Node
-    = mesh_node_struct_t<ElementType::null>;
+using Node = mesh_node_struct_t<eElement::null>;
 
 /** Node element. */
-using mesh_node1_t
-    = mesh_node_struct_t<ElementType::node>;
-
-/** Base node element. */
-class mesh_node_struct_base_t {
-private:
-    uint_t m_mark;
-
-protected:
-    /** Construct base node element. */
-    explicit mesh_node_struct_base_t(uint_t mark = 0)
-        : m_mark(mark) {
-    }
-
-public:
-    /** Get node mark. */
-    uint_t get_mark() const {
-        return m_mark;
-    }
-    /** Set node mark. */
-    void set_mark(uint_t mark) {
-        m_mark = mark;
-    }
-};  // class mesh_node_struct_base_t
-
-/** Node element. */
-template<ElementType type_t>
-class mesh_node_struct_t final : public mesh_node_struct_base_t,
-                                 public mesh_elem_struct_t<type_t, 0, 0, 0, 0> {
-public:
-    /** Construct a node element. */
-    explicit mesh_node_struct_t(uint_t mark = 0)
-        : mesh_node_struct_base_t(mark) {
-    }
-};  // class mesh_node_struct_t
+using mesh_node1_t = mesh_node_struct_t<eElement::node>;
 
 }   // namespace feathers
 
@@ -273,67 +242,32 @@ public:
 
 namespace feathers {
 
-template<ElementType type_t, uint_t num_nodes_t>
-class mesh_edge_struct_t;
-
-/** Generic edge element. */
-using Edge
-    = mesh_edge_struct_t<ElementType::null, 0>;
-
-/** Dummy "node" edge element.
- ** Acts as a placeholder fo 1D/2D meshes. */
-using mesh_edge_node1_t
-    = mesh_edge_struct_t<ElementType::node, 1>;
-
-/** Linear segment edge element. */
-using mesh_edge_segment2_t
-    = mesh_edge_struct_t<ElementType::segment_2, 2>;
-
-/** Base edge element. */
-class mesh_edge_struct_base_t {
-private:
-    uint_t m_mark;
-
-protected:
-    /** Construct base edge element. */
-    explicit mesh_edge_struct_base_t(uint_t mark = 0)
-        : m_mark(mark) {
-    }
-
-public:
-    /** Get edge mark. */
-    uint_t get_mark() const {
-        return m_mark;
-    }
-    /** Set edge mark. */
-    void set_mark(uint_t mark) {
-        m_mark = mark;
-    }
-};  // class mesh_edge_struct_base_t
-
 /** Edge element. */
-template<ElementType type_t, uint_t num_nodes_t>
-class mesh_edge_struct_t : public mesh_edge_struct_base_t,
-                           public mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0> {
+template<eElement type_t, uint_t num_nodes_t>
+class mesh_edge_struct_t : public mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0> {
 public:
-    /** Construct an edge element. */
-    explicit mesh_edge_struct_t(uint_t mark = 0)
-        : mesh_edge_struct_base_t(mark) {
-    }
     /** Construct an edge element with nodes connectivity. */
     /** @{ */
-    mesh_edge_struct_t(std::initializer_list<uint_t> nodes, uint_t mark = 0)
-        : mesh_edge_struct_base_t(mark),
-          mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0>(nodes) {
+    mesh_edge_struct_t(std::initializer_list<uint_t> nodes)
+        : mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0>(nodes) {
     }
     template<typename node_iter_t>
-    mesh_edge_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes, uint_t mark = 0)
-        : mesh_edge_struct_base_t(mark),
-          mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0>(begin_nodes, end_nodes) {
+    mesh_edge_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
+        : mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0>(begin_nodes, end_nodes) {
     }
     /** @} */
 };  // class mesh_edge_struct_t
 
+/** Generic edge element. */
+using Edge = mesh_edge_struct_t<eElement::null, 0>;
+
+/** Dummy "node" edge element.
+ ** Acts as a placeholder fo 1D/2D meshes. */
+using mesh_edge_node1_t = mesh_edge_struct_t<eElement::node, 1>;
+
+/** Linear segment edge element. */
+using mesh_edge_segment2_t = mesh_edge_struct_t<eElement::segment_2, 2>;
+
 }   // namespace feathers
 
 // ************************************************************************************ //
@@ -342,76 +276,20 @@ public:
 
 namespace feathers {
 
-template<ElementType type_t, uint_t num_nodes_t, uint_t num_edges_t>
-class mesh_face_struct_t;
-
-/** Generic face element. */
-using Face
-    = mesh_face_struct_t<ElementType::null, 0, 0>;
-
-/** Dummy "node" face element.
- ** Acts as a placeholder for 1D meshes. */
-using mesh_face_node1_t
-    = mesh_face_struct_t<ElementType::node, 1, 1>;
-
-/** Linear segment face element for 2D meshes. */
-using mesh_face_segment2_t
-    = mesh_face_struct_t<ElementType::segment_2, 2, 2>;
-
-/** Linear triangle face element. */
-using mesh_face_triangle3_t
-    = mesh_face_struct_t<ElementType::triangle_3, 3, 3>;
-
-/** Linear quadrangle face element. */
-using mesh_face_quadrangle4_t
-    = mesh_face_struct_t<ElementType::quadrangle_4, 4, 4>;
-
-/** Base face element. */
-class mesh_face_struct_base_t {
-private:
-    uint_t m_mark;
-
-protected:
-    /** Construct base face element. */
-    explicit mesh_face_struct_base_t(uint_t mark = 0)
-        : m_mark(mark) {
-    }
-
-public:
-    /** Get face mark. */
-    uint_t get_mark() const {
-        return m_mark;
-    }
-    /** Set face mark. */
-    void set_mark(uint_t mark) {
-        m_mark = mark;
-    }
-};  // class mesh_face_struct_base_t
-
 /** Face element. */
-template<ElementType type_t, uint_t num_nodes_t, uint_t num_edges_t>
-class mesh_face_struct_t : public mesh_face_struct_base_t,
-                           public mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2> {
+template<eElement type_t, uint_t num_nodes_t, uint_t num_edges_t>
+class mesh_face_struct_t : public mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2> {
 public:
-    /** Construct a face element. */
-    explicit mesh_face_struct_t(uint_t mark = 0)
-        : mesh_face_struct_base_t(mark) {
-    }
     /** Construct a face element with nodes connectivity. */
     /** @{ */
-    mesh_face_struct_t(std::initializer_list<uint_t> nodes, uint_t mark = 0)
-        : mesh_face_struct_base_t(mark),
-          mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2>(nodes) {
+    mesh_face_struct_t(std::initializer_list<uint_t> nodes)
+        : mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2>(nodes) {
     }
     template<typename node_iter_t>
-    mesh_face_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes, uint_t mark = 0)
-        : mesh_face_struct_base_t(mark),
-          mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2>(begin_nodes, end_nodes) {
+    mesh_face_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
+        : mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2>(begin_nodes, end_nodes) {
     }
     /** @} */
-
-    /**************************************************************************/
-    /**************************************************************************/
 
     /** Index of the inner cell. */
     /** @{ */
@@ -433,6 +311,22 @@ public:
     /** @} */
 };  // class mesh_face_struct_t
 
+/** Generic face element. */
+using Face = mesh_face_struct_t<eElement::null, 0, 0>;
+
+/** Dummy "node" face element.
+ ** Acts as a placeholder for 1D meshes. */
+using mesh_face_node1_t = mesh_face_struct_t<eElement::node, 1, 1>;
+
+/** Linear segment face element for 2D meshes. */
+using mesh_face_segment2_t = mesh_face_struct_t<eElement::segment_2, 2, 2>;
+
+/** Linear triangle face element. */
+using mesh_face_triangle3_t = mesh_face_struct_t<eElement::triangle_3, 3, 3>;
+
+/** Linear quadrangle face element. */
+using mesh_face_quadrangle4_t = mesh_face_struct_t<eElement::quadrangle_4, 4, 4>;
+
 }   // namespace feathers
 
 // ************************************************************************************ //
@@ -441,85 +335,45 @@ public:
 
 namespace feathers {
 
-template<ElementType type_t, uint_t num_nodes_t, uint_t num_faces_t>
-class mesh_cell_struct_t;
-
-/** Generic cell element. */
-using Cell
-    = mesh_cell_struct_t<ElementType::null, 0, 0>;
-
-/** Linear segment cell element for 1D meshes. */
-using mesh_cell_segment2_t
-    = mesh_cell_struct_t<ElementType::segment_2, 2, 2>;
-
-/** Linear triangle cell element for 2D meshes. */
-using mesh_cell_triangle3_t
-    = mesh_cell_struct_t<ElementType::triangle_3, 3, 3>;
-
-/** Linear quadrangle cell element for 2D meshes. */
-using mesh_cell_quadrangle4_t
-    = mesh_cell_struct_t<ElementType::quadrangle_4, 4, 4>;
-
-/** Linear tetrahedron cell element. */
-using mesh_cell_tetrahedron4_t
-    = mesh_cell_struct_t<ElementType::tetrahedron_4, 4, 4>;
-
-/** Linear pyramid cell element. */
-using mesh_cell_pyramid5_t
-    = mesh_cell_struct_t<ElementType::pyramid_5, 5, 5>;
-
-/** Linear pentahedron cell element. */
-using mesh_cell_pentahedron6_t
-    = mesh_cell_struct_t<ElementType::pentahedron_6, 6, 5>;
-
-/** Linear hexahedron cell element. */
-using mesh_cell_hexahedron8_t
-    = mesh_cell_struct_t<ElementType::hexahedron_8, 8, 6>;
-
-/** Base cell element. */
-class mesh_cell_struct_base_t {
-private:
-    uint_t m_mark;
-
-protected:
-    /** Construct base cell element. */
-    explicit mesh_cell_struct_base_t(uint_t mark = 0)
-        : m_mark(mark) {
-    }
-
-public:
-    /** Get cell mark. */
-    int_t get_mark() const {
-        return m_mark;
-    }
-    /** Set cell mark. */
-    void set_mark(int_t mark) {
-        m_mark = mark;
-    }
-};  // class mesh_cell_struct_base_t
-
 /** Cell element. */
-template<ElementType type_t, uint_t num_nodes_t, uint_t num_faces_t>
-class mesh_cell_struct_t : public mesh_cell_struct_base_t,
-                           public mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0> {
+template<eElement type_t, uint_t num_nodes_t, uint_t num_faces_t>
+class mesh_cell_struct_t : public mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0> {
 public:
-    /** Construct a cell element. */
-    explicit mesh_cell_struct_t(uint_t mark = 0)
-        : mesh_cell_struct_base_t(mark) {
-    }
     /** Construct a cell element with nodes connectivity. */
     /** @{ */
-    mesh_cell_struct_t(std::initializer_list<uint_t> nodes, uint_t mark = 0)
-        : mesh_cell_struct_base_t(mark),
-          mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0>(nodes) {
+    mesh_cell_struct_t(std::initializer_list<uint_t> nodes)
+        : mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0>(nodes) {
     }
     template<typename node_iter_t>
-    mesh_cell_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes, uint_t mark = 0)
-        : mesh_cell_struct_base_t(mark),
-          mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0>(begin_nodes, end_nodes) {
+    mesh_cell_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
+        : mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0>(begin_nodes, end_nodes) {
     }
     /** @} */
 };  // class mesh_cell_struct_t
+
+/** Generic cell element. */
+using Cell = mesh_cell_struct_t<eElement::null, 0, 0>;
+
+/** Linear segment cell element for 1D meshes. */
+using mesh_cell_segment2_t = mesh_cell_struct_t<eElement::segment_2, 2, 2>;
+
+/** Linear triangle cell element for 2D meshes. */
+using mesh_cell_triangle3_t = mesh_cell_struct_t<eElement::triangle_3, 3, 3>;
+
+/** Linear quadrangle cell element for 2D meshes. */
+using mesh_cell_quadrangle4_t = mesh_cell_struct_t<eElement::quadrangle_4, 4, 4>;
+
+/** Linear tetrahedron cell element. */
+using mesh_cell_tetrahedron4_t = mesh_cell_struct_t<eElement::tetrahedron_4, 4, 4>;
+
+/** Linear pyramid cell element. */
+using mesh_cell_pyramid5_t = mesh_cell_struct_t<eElement::pyramid_5, 5, 5>;
+
+/** Linear pentahedron cell element. */
+using mesh_cell_pentahedron6_t = mesh_cell_struct_t<eElement::pentahedron_6, 6, 5>;
+
+/** Linear hexahedron cell element. */
+using mesh_cell_hexahedron8_t = mesh_cell_struct_t<eElement::hexahedron_8, 8, 6>;
 
 }   // namespace feathers
 
@@ -530,9 +384,9 @@ public:
 namespace feathers {
 
 /** Hybrid unstructured finite element mesh. */
-class uMesh : public tObject<uMesh> {
+class cMesh : public tObject<cMesh> {
 private:
-    std::vector<ElementType> m_edge_types, m_face_types, m_cell_types;
+    std::vector<eElement> m_edge_types, m_face_types, m_cell_types;
 
 private:
     uint_t m_dim;
@@ -546,15 +400,6 @@ private:
     std::vector<size_t> m_face_offsets;
     std::vector<size_t> m_cell_offsets;
 
-    std::vector<vec3_t> m_node_positions;
-    std::vector<real_t> m_edge_lengths;
-    std::vector<vec3_t> m_edge_directions;
-    std::vector<real_t> m_face_areas;
-    std::vector<vec3_t> m_face_normals;
-    std::vector<vec3_t> m_face_center_positions;
-    std::vector<real_t> m_cell_volumes;
-    std::vector<vec3_t> m_cell_center_positions;
-
     std::vector<uint_t> m_node_marks;
     std::vector<uint_t> m_edge_marks;
     std::vector<uint_t> m_face_marks;
@@ -564,13 +409,22 @@ private:
     std::vector<uint_t> m_marked_face_ranges{0};
     std::vector<uint_t> m_marked_cell_ranges{0};
 
+    std::vector<vec3_t> m_node_positions;
+    std::vector<real_t> m_edge_lengths;
+    std::vector<vec3_t> m_edge_directions;
+    std::vector<real_t> m_face_areas;
+    std::vector<vec3_t> m_face_normals;
+    std::vector<vec3_t> m_face_center_positions;
+    std::vector<real_t> m_cell_volumes;
+    std::vector<vec3_t> m_cell_center_positions;
+
 public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
     /** Initialize an empty mesh. */
-    explicit uMesh(uint_t dim = 0) : m_dim(dim) {
+    explicit cMesh(uint_t dim = 0) : m_dim(dim) {
         FEATHERS_ASSERT(0 <= m_dim && m_dim <= 3);
     }
 
@@ -670,6 +524,47 @@ public:
         return m_marked_cell_ranges.size() - 1;
     }
 
+    /** Get node mark. */
+    uint_t get_node_mark(uint_t node_index) const {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_marks[node_index];
+    }
+    /** Set node mark. */
+    void set_node_mark(uint_t node_index, uint_t mark) {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        m_node_marks[node_index] = mark;
+    }
+    /** Get edge mark. */
+    uint_t get_edge_mark(uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_marks[edge_index];
+    }
+    /** Set edge mark. */
+    void set_edge_mark(uint_t edge_index, uint_t mark) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_marks[edge_index] = mark;
+    }
+    /** Get face mark. */
+    uint_t get_face_mark(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_marks[face_index];
+    }
+    /** Set face mark. */
+    void set_face_mark(uint_t face_index, uint_t mark) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_marks[face_index] = mark;
+    }
+    /** Get cell mark. */
+    uint_t get_cell_mark(uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_marks[cell_index];
+    }
+    /** Set cell mark. */
+    void set_cell_mark(uint_t cell_index, uint_t mark) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_marks[cell_index] = mark;
+    }
+
     /** Index of the first node with a given mark. */
     uint_t begin_node(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_node_marks());
@@ -712,19 +607,6 @@ public:
         return m_marked_cell_ranges[mark + 1];
     }
 
-    /** Get face element index at marker index. */
-    uint_t get_marked_face_index(uint_t face_mark_index, uint_t mark) const {
-        return begin_face(mark) + face_mark_index;
-    }
-    /** Get cell element index at marker index. */
-    uint_t get_marked_cell_index(uint_t cell_mark_index, uint_t mark) const {
-        return begin_cell(mark) + cell_mark_index;
-    }
-
-    /** Number of marked faces in the mesh. */
-    uint_t num_marked_faces(uint_t mark) const {
-        return end_face(mark) - begin_face(mark);
-    }
     /** Number of marked cells in the mesh. */
     uint_t num_marked_cells(uint_t mark) const {
         return end_cell(mark) - begin_cell(mark);
@@ -844,14 +726,14 @@ protected:
     /** Insert a new node into the mesh.
      ** @param node Edge nodes.
      ** @returns Index of the inserted node. */
-    uint_t insert_node(const mesh_node1_t& node, vec3_t p);
+    uint_t insert_node(const mesh_node1_t& node, vec3_t p, uint_t mark = 0);
 
     /** Insert a new edge into the mesh.
      ** @param edge Edge nodes.
      ** @returns Index of the inserted edge. */
     /** @{ */
-    uint_t insert_edge(const mesh_edge_node1_t& edge);
-    uint_t insert_edge(const mesh_edge_segment2_t& edge);
+    uint_t insert_edge(const mesh_edge_node1_t& edge, uint_t mark = 0);
+    uint_t insert_edge(const mesh_edge_segment2_t& edge, uint_t mark = 0);
     /** @} */
 
     /** Insert a new edge into the mesh.
@@ -866,10 +748,10 @@ protected:
      ** @param face Face nodes.
      ** @returns Index of the inserted face. */
     /** @{ */
-    uint_t insert_face(const mesh_face_node1_t& face);
-    uint_t insert_face(const mesh_face_segment2_t& face);
-    uint_t insert_face(const mesh_face_triangle3_t& face);
-    uint_t insert_face(const mesh_face_quadrangle4_t& face);
+    uint_t insert_face(const mesh_face_node1_t& face, uint_t mark = 0);
+    uint_t insert_face(const mesh_face_segment2_t& face, uint_t mark = 0);
+    uint_t insert_face(const mesh_face_triangle3_t& face, uint_t mark = 0);
+    uint_t insert_face(const mesh_face_quadrangle4_t& face, uint_t mark = 0);
     /** @} */
 
     /** Insert a new face into the mesh.
@@ -884,13 +766,13 @@ protected:
      ** @param cell Cell nodes.
      ** @returns Index of the inserted face. */
     /** @{ */
-    uint_t insert_cell(const mesh_cell_segment2_t& cell);
-    uint_t insert_cell(const mesh_cell_triangle3_t& cell);
-    uint_t insert_cell(const mesh_cell_quadrangle4_t& cell);
-    uint_t insert_cell(const mesh_cell_tetrahedron4_t& cell);
-    uint_t insert_cell(const mesh_cell_pyramid5_t& cell);
-    uint_t insert_cell(const mesh_cell_pentahedron6_t& cell);
-    uint_t insert_cell(const mesh_cell_hexahedron8_t& cell);
+    uint_t insert_cell(const mesh_cell_segment2_t& cell, uint_t mark = 0);
+    uint_t insert_cell(const mesh_cell_triangle3_t& cell, uint_t mark = 0);
+    uint_t insert_cell(const mesh_cell_quadrangle4_t& cell, uint_t mark = 0);
+    uint_t insert_cell(const mesh_cell_tetrahedron4_t& cell, uint_t mark = 0);
+    uint_t insert_cell(const mesh_cell_pyramid5_t& cell, uint_t mark = 0);
+    uint_t insert_cell(const mesh_cell_pentahedron6_t& cell, uint_t mark = 0);
+    uint_t insert_cell(const mesh_cell_hexahedron8_t& cell, uint_t mark = 0);
     /** @} */
 
     /** Insert a new cell into the mesh.
@@ -974,7 +856,7 @@ protected:
 
     /** Generate boundary cells to complete face connectivity. */
     void generate_boundary_cells();
-};  // class uMesh
+};  // class cMesh
 
 }   // namespace feathers
 
@@ -986,7 +868,7 @@ protected:
 #include "MeshIterators.hh"
 
 /** @todo Remove me. */
-using UMesh = feathers::uMesh;
+using cMesh = feathers::cMesh;
 #include "libSkunkSparse/SkunkSparseField.hh"
 
 #endif  // ifndef MESH_HH_

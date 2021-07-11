@@ -65,11 +65,11 @@ namespace feathers {
 template<int_t num_vars>
 class tUpwindConvectionScheme final : public iConvectionScheme<num_vars> {
 public:
-    std::shared_ptr<const uMesh> m_mesh;
+    std::shared_ptr<const cMesh> m_mesh;
     std::shared_ptr<iFluxScheme<num_vars>> m_flux;
 
 public:
-    explicit tUpwindConvectionScheme(std::shared_ptr<const uMesh> mesh):
+    explicit tUpwindConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
         m_flux(new tHLLCFluxScheme<MhdPhysicsIdealGas>()) {
     }
@@ -89,13 +89,13 @@ public:
 template<int_t num_vars>
 class tUpwind2ConvectionScheme final : public iConvectionScheme<num_vars> {
 public:
-    std::shared_ptr<const uMesh> m_mesh;
+    std::shared_ptr<const cMesh> m_mesh;
     std::shared_ptr<iFluxScheme<num_vars>> m_flux;
     std::shared_ptr<iGradientScheme<num_vars>> m_gradient_scheme;
     std::shared_ptr<iGradientLimiterScheme<num_vars>> m_gradient_limiter_scheme;
 
 public:
-    explicit tUpwind2ConvectionScheme(std::shared_ptr<const uMesh> mesh):
+    explicit tUpwind2ConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
         m_flux(new tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>()),
         m_gradient_scheme(new tLeastSquaresGradientScheme<num_vars>(m_mesh)),

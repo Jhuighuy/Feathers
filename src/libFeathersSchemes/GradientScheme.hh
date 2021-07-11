@@ -67,12 +67,12 @@ namespace feathers {
 template<int_t num_vars>
 class tLeastSquaresGradientScheme final : public iGradientScheme<num_vars> {
 private:
-    std::shared_ptr<const uMesh> m_mesh;
+    std::shared_ptr<const cMesh> m_mesh;
     tMatrixField<> m_inverse_matrices;
 
 public:
     /** Initialize the gradient scheme. */
-    explicit tLeastSquaresGradientScheme(std::shared_ptr<const uMesh> mesh):
+    explicit tLeastSquaresGradientScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
         m_inverse_matrices(m_mesh->num_cells()) {
         init_gradients_();

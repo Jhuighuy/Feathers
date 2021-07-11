@@ -17,14 +17,13 @@ inline std::string my_to_string(feathers::uint_t i) {
 
 static void print(
         feathers::int_t nn,
-        const UMesh & m,
+        const cMesh & m,
         const std::array<real_t, 5>* u) {
     std::cout << nn << std::endl;
     std::ofstream file("out/fields-" + my_to_string(nn) + ".csv");
     file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
     file << "x,y,z,r,p,vx,vy,vz" << std::endl;
-    for (uint_t cell_ind1 = 0; cell_ind1 < m.num_marked_cells(0); ++cell_ind1) {
-        const uint_t cell_ind = m.get_marked_cell_index(cell_ind1, 0);
+    for (uint_t cell_ind = m.begin_cell(0); cell_ind != m.end_cell(0); ++cell_ind) {
         const auto& c = m.get_cell(cell_ind);
         MhdHydroVars v({}, u[cell_ind].data());
         auto p = m.get_cell_center_position(cell_ind);
@@ -37,7 +36,7 @@ static void print(
 
 template<unsigned N>
 static void print_vtk(feathers::uint_t nn,
-                      const UMesh & m,
+                      const cMesh & m,
                       const std::array<real_t, N>* u) {
     using namespace feathers;
     std::ofstream file("out/fields-" + my_to_string(nn) + ".vtk");
@@ -84,15 +83,15 @@ static void print_vtk(feathers::uint_t nn,
 #if 0
 int main() {
     using namespace feathers;
-    std::shared_ptr<uMesh> mesh(new feathers::structured_mesh_t(0.5, 1.0, 50,
+    std::shared_ptr<cMesh> mesh(new feathers::structured_mesh_t(0.5, 1.0, 50,
                                                                -SKUNK_PI/125, +SKUNK_PI/125, 1,
                                                                0.0, SKUNK_PI_2, 200,
                                                                1, 2, 3, 3, 5, 4));
-    //std::shared_ptr<uMesh> mesh(new feathers::structured_mesh_t(0.1, 1.0, 50,
+    //std::shared_ptr<cMesh> mesh(new feathers::structured_mesh_t(0.1, 1.0, 50,
     //                                                           -SKUNK_PI/2 +SKUNK_PI/2, 200,
     //                                                           0.0, 1.0, 1,
     //                                                           1, 2, 3, 3, 5, 4));
-    /*std::shared_ptr<uMesh> mesh(new feathers::structured_mesh_t(0.0, 10.0, 200,
+    /*std::shared_ptr<cMesh> mesh(new feathers::structured_mesh_t(0.0, 10.0, 200,
                                                                0.0, 2.50, 50,
                                                                -0.5, 0.5, 1,
                                                                1, 2, 3, 3, 5, 4));*/
@@ -195,7 +194,7 @@ int main() {
 int main(int argc, char** argv) {
     omp_set_num_threads(20);
 
-    std::shared_ptr<UMesh> mesh(new UMesh(2));
+    std::shared_ptr<cMesh> mesh(new cMesh(2));
 
 #if 1
     mesh->read_triangle("mesh/step_.1.");
