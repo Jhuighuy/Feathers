@@ -51,7 +51,7 @@ class tCellIterBase;
 /**
  * Base element iterator.
  */
-template<typename tIter, class cMesh, typename tTag, tTag eTag>
+template<class tIter, class cMesh, typename tTag, tTag eTag>
 class tElementIterBase {
 private:
     cMesh* m_mesh;
@@ -180,25 +180,29 @@ public:
 
     /** Get connected node. */
     auto get_node(uint_t node_local) const {
-        FEATHERS_ASSERT(node_local < m_mesh->num_adjacent_nodes(eTag, m_index));
+        FEATHERS_ASSERT(
+            node_local < m_mesh->num_adjacent_nodes(eTag, m_index));
         return tNodeIterBase<cMesh>(
             m_mesh, m_mesh->begin_adjacent_node(eTag, m_index)[node_local]);
     }
     /** Get connected edge. */
     auto get_edge(uint_t edge_local) const {
-        FEATHERS_ASSERT(edge_local < m_mesh->num_adjacent_edges(eTag, m_index));
+        FEATHERS_ASSERT(
+            edge_local < m_mesh->num_adjacent_edges(eTag, m_index));
         return tEdgeIterBase<cMesh>(
             m_mesh, m_mesh->begin_adjacent_edge(eTag, m_index)[edge_local]);
     }
     /** Get connected face. */
     auto get_face(uint_t face_local) const {
-        FEATHERS_ASSERT(face_local < m_mesh->num_adjacent_faces(eTag, m_index));
+        FEATHERS_ASSERT(
+            face_local < m_mesh->num_adjacent_faces(eTag, m_index));
         return tFaceIterBase<cMesh>(
             m_mesh, m_mesh->begin_adjacent_face(eTag, m_index)[face_local]);
     }
     /** Get connected cell. */
     auto get_cell(uint_t cell_local) const {
-        FEATHERS_ASSERT(cell_local < m_mesh->num_adjacent_cells(eTag, m_index));
+        FEATHERS_ASSERT(
+            cell_local < m_mesh->num_adjacent_cells(eTag, m_index));
         return tCellIterBase<cMesh>(
             m_mesh, m_mesh->begin_adjacent_cell(eTag, m_index)[cell_local]);
     }

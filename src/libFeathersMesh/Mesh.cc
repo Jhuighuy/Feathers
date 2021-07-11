@@ -31,6 +31,8 @@
 #include <libSkunkMisc/SkunkMiscParallel.hh>
 #include <libSkunkMisc/SkunkMiscReordering.hh>
 
+#include <set>
+#include <map>
 #include <fstream>
 
 // ************************************************************************************ //

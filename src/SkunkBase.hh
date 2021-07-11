@@ -129,6 +129,12 @@ namespace feathers {
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
+// TODO:
+#define FEATHERS_DOXYGEN 0
+
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
 /** Convert token to string. */
 /** @{ */
 #define FEATHERS_TO_STRING_(x) #x
@@ -218,9 +224,15 @@ namespace feathers {
 /**************************************************************************/
 /**************************************************************************/
 
-#define FEATHERS_CONST_OVERLOAD(tType, name, args, ...) \
-    /** @{ */ tType name args __VA_ARGS__ \
-    const tType name args const __VA_ARGS__ /** @} */
+/** @{ */
+#define FEATHERS_CONST_OVERLOAD_T(T, type, name, args, ...) \
+    /** @{ */ \
+    T type name args __VA_ARGS__ \
+    T const type name args const __VA_ARGS__ \
+    /** @} */
+#define FEATHERS_CONST_OVERLOAD(type, name, args, ...) \
+    FEATHERS_CONST_OVERLOAD_T(, type, name, args, __VA_ARGS__)
+/** @} */
 
 #define FEATHERS_ENSURE(x) do { if(!(x)) { \
         std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \

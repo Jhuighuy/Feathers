@@ -31,8 +31,6 @@
 
 #include <SkunkBase.hh>
 
-#include <boost/graph/compressed_sparse_row_graph.hpp>
-
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -511,169 +509,199 @@ public:
     }
     /** @} */
 
-    /** Pointer to the beginning of the node's connected nodes. */
+    /** Pointer to the beginning of the element's adjacent nodes. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_node, (tTag tag, uint_t index), ;)
+#else
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tNodeTag, uint_t node_index), {
         FEATHERS_ASSERT(node_index < num_nodes());
         return get_node(node_index).begin_node();
     })
-    /** Pointer to the beginning of the node's connected edges. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_edge();
-    })
-    /** Pointer to the beginning of the node's connected faces. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_face();
-    })
-    /** Pointer to the beginning of the node's connected cells. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_cell();
-    })
-    /** Pointer to the end of the node's connected nodes. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_node();
-    })
-    /** Pointer to the end of the node's connected edges. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_edge();
-    })
-    /** Pointer to the end of the node's connected faces. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_face();
-    })
-    /** Pointer to the end of the node's connected cells. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_cell();
-    })
-
-    /** Pointer to the beginning of the edge's connected nodes. */
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tEdgeTag, uint_t edge_index), {
         FEATHERS_ASSERT(edge_index < num_edges());
         return get_edge(edge_index).begin_node();
     })
-    /** Pointer to the beginning of the edge's connected edges. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_edge();
-    })
-    /** Pointer to the beginning of the edge's connected faces. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_face();
-    })
-    /** Pointer to the beginning of the edge's connected cells. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_cell();
-    })
-    /** Pointer to the end of the edge's connected nodes. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_node();
-    })
-    /** Pointer to the end of the edge's connected edges. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_edge();
-    })
-    /** Pointer to the end of the edge's connected faces. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_face();
-    })
-    /** Pointer to the end of the edge's connected cells. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_cell();
-    })
-
-    /** Pointer to the beginning of the face's connected nodes. */
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tFaceTag, uint_t face_index), {
         FEATHERS_ASSERT(face_index < num_faces());
         return get_face(face_index).begin_node();
     })
-    /** Pointer to the beginning of the face's connected edges. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_edge();
-    })
-    /** Pointer to the beginning of the face's connected faces. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_face();
-    })
-    /** Pointer to the beginning of the face's connected cells. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_cell();
-    })
-    /** Pointer to the end of the face's connected nodes. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_node();
-    })
-    /** Pointer to the end of the face's connected edges. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_edge();
-    })
-    /** Pointer to the end of the face's connected faces. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_face();
-    })
-    /** Pointer to the end of the face's connected cells. */
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_cell();
-    })
-
-    /** Pointer to the beginning of the cell's connected nodes. */
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).begin_node();
     })
-    /** Pointer to the beginning of the cell's connected edges. */
+#endif
+    /** @} */
+    /** Pointer to the beginning of the element's adjacent edges. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_edge, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_edge();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_edge();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_edge();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).begin_edge();
     })
-    /** Pointer to the beginning of the cell's connected faces. */
+#endif
+    /** @} */
+    /** Pointer to the beginning of the element's adjacent faces. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_face, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_face();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_face();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_face();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).begin_face();
     })
-    /** Pointer to the beginning of the cell's connected cells. */
+#endif
+    /** @} */
+    /** Pointer to the beginning of the element's adjacent cells. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_cell, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).begin_cell();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).begin_cell();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).begin_cell();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).begin_cell();
     })
-    /** Pointer to the end of the cell's connected nodes. */
+#endif
+    /** @} */
+
+    /** Pointer to the end of the element's adjacent nodes. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_node, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_node();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_node();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_node();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).end_node();
     })
-    /** Pointer to the end of the cell's connected edges. */
+#endif
+    /** @} */
+    /** Pointer to the end of the element's adjacent edges. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_edge, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_edge();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_edge();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_edge();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).end_edge();
     })
-    /** Pointer to the end of the cell's connected faces. */
+#endif
+    /** @} */
+    /** Pointer to the end of the element's adjacent faces. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_face, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_face();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_face();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_face();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).end_face();
     })
-    /** Pointer to the end of the cell's connected cells. */
+#endif
+    /** @} */
+    /** Pointer to the end of the element's adjacent cells. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_cell, (tTag tag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return get_node(node_index).end_cell();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).end_cell();
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).end_cell();
+    })
     FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tCellTag, uint_t cell_index), {
         FEATHERS_ASSERT(cell_index < num_cells());
         return get_cell(cell_index).end_cell();
     })
+#endif
+    /** @} */
 
     /** Number of nodes in the element. */
     template<typename tTag>
