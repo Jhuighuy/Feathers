@@ -39,48 +39,50 @@
 
 namespace feathers {
 
-/** Inverse reordering.
- ** Complexity is linear. */
-template<typename TIter, typename TInvIter>
-SKUNK_INLINE void inverse_reordering(TIter index_iter,
-                                     TIter index_iter_end,
-                                     TInvIter inv_index_iter) {
+/**
+ * Inverse reordering. Complexity is linear.
+ */
+template<typename tIter, typename tInverseMutableIter>
+void inverse_reordering(tIter index_iter, tIter index_iter_end,
+                        tInverseMutableIter inverse_index_iter) {
     size_t index = 0;
     for (; index_iter != index_iter_end; ++index_iter, ++index) {
-        *(inv_index_iter + *index_iter) = index;
+        *(inverse_index_iter + *index_iter) = index;
     }
 }   // inverse_reordering
 
-/** Apply reordering.
- ** Index iterators must be mutable. Complexity is linear. */
+/**
+ * Apply reordering.
+ * Index iterators must be mutable. Complexity is linear.
+ */
 /** @{ */
-template<typename TIter, typename TSwapFunc>
-SKUNK_INLINE void reorder_swap(TIter index_iter,
-                               TIter index_iter_end,
-                               TSwapFunc&& swap) {
+template<typename tMutableIter, typename tSwapFunc>
+void reorder_swap(tMutableIter index_iter, tMutableIter index_iter_end, tSwapFunc&& swap) {
     /* For implementation details see
      * https://devblogs.microsoft.com/oldnewthing/20170102-00/?p=95095 */
     size_t index = 0;
     for (; index_iter != index_iter_end; ++index_iter, ++index) {
-        size_t cur_index = index;
-        TIter cur_index_iter = index_iter;
-        while (*cur_index_iter != index) {
-            const size_t new_index = *cur_index_iter;
-            swap(cur_index, new_index);
-            *cur_index_iter = cur_index;
-            cur_index = new_index;
-            cur_index_iter = index_iter + (cur_index - index);
+        size_t current_index = index;
+        tMutableIter current_index_iter = index_iter;
+        while (*current_index_iter != index) {
+            const size_t new_index = *current_index_iter;
+            swap(current_index, new_index);
+            *current_index_iter = current_index;
+            current_index = new_index;
+            current_index_iter = index_iter + (current_index - index);
         }
-        *cur_index_iter = cur_index;
+        *current_index_iter = current_index;
     }
 }   // reorder_swap
-template<typename TIter, typename TValIter>
-SKUNK_INLINE void reorder(TIter ind_iter,
-                          TIter ind_iter_end,
-                          TValIter iter) {
-    reorder_swap(ind_iter, ind_iter_end, [&](auto ind, auto new_ind) {
-        std::iter_swap(iter + ind, iter + new_ind);
+template<typename tMutableIter, typename tValueMutableIter>
+void reorder(tMutableIter index_iter, tMutableIter index_iter_end, tValueMutableIter iter) {
+    reorder_swap(index_iter, index_iter_end, [&](auto index, auto new_index) {
+        std::iter_swap(iter + index, iter + new_index);
     });
+}   // reorder
+template<typename tContainer, typename tValueIter>
+void reorder(tContainer indices, tValueIter iter) {
+    reorder(indices.begin(), indices.end(), iter);
 }   // reorder
 /** @} */
 

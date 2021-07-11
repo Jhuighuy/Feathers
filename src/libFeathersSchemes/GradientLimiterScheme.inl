@@ -186,13 +186,13 @@ void tGradientLimiterScheme<
                                                                     const tPiecewiseFunction& u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
-    for_each_interior_cell(*m_mesh, [&](CellIter cell) {
+    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
         static const real_t k = 0.1;
-        const real_t eps_sqr = std::pow(k*cell->get_volume(), 3);
+        const real_t eps_sqr = std::pow(k*cell.get_volume(), 3);
         /* Find largest negative and positive differences
          * between values of and neighbor cells and the current cell. */
         std::array<real_t, num_vars> du_min(u[cell]), du_max(u[cell]);
-        cell.for_each_face_cells([&](CellIter cell_inner, CellIter cell_outer) {
+        cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             for (int_t i = 0; i < num_vars; ++i) {
                 du_min[i] = std::min(du_min[i],
                                      std::min(u[cell_outer][i], u[cell_inner][i]));
@@ -207,9 +207,9 @@ void tGradientLimiterScheme<
 
         /* Compute the slope limiting coefficients:
          * clamp the node delta with computed local delta extrema. */
-        lim_u[cell].fill(1.0), cell.for_each_face([&](FaceIter face) {
+        lim_u[cell].fill(1.0), cell.for_each_face([&](tFaceIter face) {
             const vec3_t dr =
-                face->get_center_position() - cell->get_center_position();
+                face.get_center_position() - cell.get_center_position();
             for (int_t i = 0; i < num_vars; ++i) {
                 const real_t du_face = u(cell, dr, 0.0)[i];
                 const real_t limiter =

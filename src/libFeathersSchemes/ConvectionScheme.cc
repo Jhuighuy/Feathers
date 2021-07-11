@@ -41,22 +41,22 @@ void tUpwindConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_var
                                                             const tScalarField<num_vars>& u) const {
     /* Compute the first order numerical fluxes. */
     tScalarField<num_vars> flux_u(m_mesh->num_faces());
-    for_each_face(*m_mesh, [&](FaceIter face) {
-        const CellIter cell_outer = face.get_outer_cell();
-        const CellIter cell_inner = face.get_inner_cell();
+    for_each_face(*m_mesh, [&](tFaceIter face) {
+        const tCellIter cell_outer = face.get_outer_cell();
+        const tCellIter cell_inner = face.get_inner_cell();
 
         std::array<real_t, num_vars>& flux = flux_u[face];
-        flux.fill(0.0), m_flux->get_numerical_flux(face->get_normal(),
+        flux.fill(0.0), m_flux->get_numerical_flux(face.get_normal(),
                                                    u[cell_outer], u[cell_inner], flux);
     });
 
     /* Compute the first order convection. */
-    for_each_interior_cell(*m_mesh, [&](CellIter cell) {
+    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
         std::array<real_t, num_vars>& conv = div_f[cell];
-        conv.fill(0.0), cell.for_each_face([&](FaceIter face) {
-            const CellIter cell_outer = face.get_outer_cell();
-            const CellIter cell_inner = face.get_inner_cell();
-            const real_t ds = face->get_area();
+        conv.fill(0.0), cell.for_each_face([&](tFaceIter face) {
+            const tCellIter cell_outer = face.get_outer_cell();
+            const tCellIter cell_inner = face.get_inner_cell();
+            const real_t ds = face.get_area();
             if (cell_outer == cell) {
                 for (int_t i = 0; i < num_vars; ++i) {
                     conv[i] -= flux_u[face][i] * ds;
@@ -67,7 +67,7 @@ void tUpwindConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_var
                 }
             }
         });
-        const real_t inv_dv = 1.0 / cell->get_volume();
+        const real_t inv_dv = 1.0/cell.get_volume();
         for (int_t i = 0; i < num_vars; ++i) {
             conv[i] *= inv_dv;
         }
@@ -91,7 +91,7 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_va
     tScalarField<num_vars> lim_u(m_mesh->num_cells());
     m_gradient_limiter_scheme->get_cell_limiter(lim_u, u_rec);
 
-    for_each_cell(*m_mesh, [&](CellIter cell) {
+    for_each_cell(*m_mesh, [&](tCellIter cell) {
         for (int_t i = 0; i < num_vars; ++i) {
             u_rec.grad_u[cell][i] *= lim_u[cell][i];
         }
@@ -100,27 +100,27 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_va
     /* Compute the second order numerical fluxes:
      * integrate the numerical flux over the face nodes. */
     tScalarField<num_vars> flux_f(m_mesh->num_faces());
-    for_each_face(*m_mesh, [&](FaceIter face) {
-        const CellIter cell_outer = face.get_outer_cell();
-        const CellIter cell_inner = face.get_inner_cell();
+    for_each_face(*m_mesh, [&](tFaceIter face) {
+        const tCellIter cell_outer = face.get_outer_cell();
+        const tCellIter cell_inner = face.get_inner_cell();
         const vec3_t dr_outer =
-            face->get_center_position() - cell_outer->get_center_position();
+            face.get_center_position() - cell_outer.get_center_position();
         const vec3_t dr_inner =
-            face->get_center_position() - cell_inner->get_center_position();
+            face.get_center_position() - cell_inner.get_center_position();
         const auto u_outer = u_rec(cell_outer, dr_outer);
         const auto u_inner = u_rec(cell_inner, dr_inner);
 
         std::array<real_t, num_vars>& flux = flux_f[face];
-        flux.fill(0.0), m_flux->get_numerical_flux(face->get_normal(), u_outer, u_inner, flux);
+        flux.fill(0.0), m_flux->get_numerical_flux(face.get_normal(), u_outer, u_inner, flux);
     });
 
     /* Compute the second order convection. */
-    for_each_interior_cell(*m_mesh, [&](CellIter cell) {
+    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
         std::array<real_t, num_vars>& conv = div_f[cell];
-        conv.fill(0.0), cell.for_each_face([&](FaceIter face) {
-            const CellIter cell_outer = face.get_outer_cell();
-            const CellIter cell_inner = face.get_inner_cell();
-            const real_t ds = face->get_area();
+        conv.fill(0.0), cell.for_each_face([&](tFaceIter face) {
+            const tCellIter cell_outer = face.get_outer_cell();
+            const tCellIter cell_inner = face.get_inner_cell();
+            const real_t ds = face.get_area();
             if (cell_outer == cell) {
                 for (int_t i = 0; i < num_vars; ++i) {
                     conv[i] -= flux_f[face][i] * ds;
@@ -131,7 +131,7 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_va
                 }
             }
         });
-        const real_t inv_dv = 1.0 / cell->get_volume();
+        const real_t inv_dv = 1.0/cell.get_volume();
         for (int_t i = 0; i < num_vars; ++i) {
             conv[i] *= inv_dv;
         }

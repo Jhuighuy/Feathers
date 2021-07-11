@@ -236,7 +236,6 @@ using mesh_node1_t
 class mesh_node_struct_base_t {
 private:
     uint_t m_mark;
-    vec3_t m_position;
 
 protected:
     /** Construct base node element. */
@@ -253,15 +252,6 @@ public:
     void set_mark(uint_t mark) {
         m_mark = mark;
     }
-
-    /** Get node position. */
-    const vec3_t& get_position() const {
-        return m_position;
-    }
-    /** Set node position. */
-    void set_position(const vec3_t& position) {
-        m_position = position;
-    }
 };  // class mesh_node_struct_base_t
 
 /** Node element. */
@@ -272,11 +262,6 @@ public:
     /** Construct a node element. */
     explicit mesh_node_struct_t(uint_t mark = 0)
         : mesh_node_struct_base_t(mark) {
-    }
-    /** Construct a node element with position. */
-    explicit mesh_node_struct_t(const vec3_t& position, uint_t mark = 0)
-        : mesh_node_struct_base_t(mark) {
-        this->set_position(position);
     }
 };  // class mesh_node_struct_t
 
@@ -308,13 +293,11 @@ using mesh_edge_segment2_t
 class mesh_edge_struct_base_t {
 private:
     uint_t m_mark;
-    real_t m_length;
-    vec3_t m_direction;
 
 protected:
     /** Construct base edge element. */
     explicit mesh_edge_struct_base_t(uint_t mark = 0)
-        : m_mark(mark), m_length() {
+        : m_mark(mark) {
     }
 
 public:
@@ -325,24 +308,6 @@ public:
     /** Set edge mark. */
     void set_mark(uint_t mark) {
         m_mark = mark;
-    }
-
-    /** Get edge length. */
-    real_t get_length() const {
-        return m_length;
-    }
-    /** Set edge length. */
-    void set_length(real_t length) {
-        m_length = length;
-    }
-
-    /** Get edge direction. */
-    const vec3_t& get_direction() const {
-        return m_direction;
-    }
-    /** Set edge direction. */
-    void set_direction(const vec3_t& direction) {
-        m_direction = direction;
     }
 };  // class mesh_edge_struct_base_t
 
@@ -405,13 +370,11 @@ using mesh_face_quadrangle4_t
 class mesh_face_struct_base_t {
 private:
     uint_t m_mark;
-    real_t m_area;
-    vec3_t m_normal, m_center;
 
 protected:
     /** Construct base face element. */
     explicit mesh_face_struct_base_t(uint_t mark = 0)
-        : m_mark(mark), m_area() {
+        : m_mark(mark) {
     }
 
 public:
@@ -422,33 +385,6 @@ public:
     /** Set face mark. */
     void set_mark(uint_t mark) {
         m_mark = mark;
-    }
-
-    /** Get face area/length. */
-    real_t get_area() const {
-        return m_area;
-    }
-    /** Set face area/length. */
-    void set_area(real_t area) {
-        m_area = area;
-    }
-
-    /** Get face normal. */
-    const vec3_t& get_normal() const {
-        return m_normal;
-    }
-    /** Set face normal. */
-    void set_normal(const vec3_t& normal) {
-        m_normal = normal;
-    }
-
-    /** Get face barycenter. */
-    const vec3_t& get_center_position() const {
-        return m_center;
-    }
-    /** Set face barycenter. */
-    void set_center_position(const vec3_t& center) {
-        m_center = center;
     }
 };  // class mesh_face_struct_base_t
 
@@ -544,13 +480,11 @@ using mesh_cell_hexahedron8_t
 class mesh_cell_struct_base_t {
 private:
     uint_t m_mark;
-    real_t m_volume;
-    vec3_t m_center;
 
 protected:
     /** Construct base cell element. */
     explicit mesh_cell_struct_base_t(uint_t mark = 0)
-        : m_mark(mark), m_volume() {
+        : m_mark(mark) {
     }
 
 public:
@@ -561,24 +495,6 @@ public:
     /** Set cell mark. */
     void set_mark(int_t mark) {
         m_mark = mark;
-    }
-
-    /** Get cell volume/area/length. */
-    real_t get_volume() const {
-        return m_volume;
-    }
-    /** Set cell volume/area/length. */
-    void set_volume(real_t volume) {
-        m_volume = volume;
-    }
-
-    /** Get cell barycenter. */
-    const vec3_t& get_center_position() const {
-        return m_center;
-    }
-    /** Set cell barycenter. */
-    void set_center_position(const vec3_t& center) {
-        m_center = center;
     }
 };  // class mesh_cell_struct_base_t
 
@@ -616,19 +532,11 @@ namespace feathers {
 /** Hybrid unstructured finite element mesh. */
 class uMesh : public tObject<uMesh> {
 private:
-    std::vector<vec3_t> m_nodes;
     std::vector<ElementType> m_edge_types, m_face_types, m_cell_types;
-    boost::compressed_sparse_row_graph<
-        boost::directedS,
-        boost::no_property, boost::no_property, boost::no_property,
-        uint_t, uint_t> m_edge_nodes, m_face_nodes, m_cell_nodes;
-    std::vector<uint_t> m_marked_node_ranges{0};
-    std::vector<uint_t> m_marked_edge_ranges{0};
-    std::vector<uint_t> m_marked_face_ranges{0};
-    std::vector<uint_t> m_marked_cell_ranges{0};
 
 private:
     uint_t m_dim;
+
     std::vector<byte_t> m_node_storage;
     std::vector<byte_t> m_edge_storage;
     std::vector<byte_t> m_face_storage;
@@ -638,14 +546,31 @@ private:
     std::vector<size_t> m_face_offsets;
     std::vector<size_t> m_cell_offsets;
 
+    std::vector<vec3_t> m_node_positions;
+    std::vector<real_t> m_edge_lengths;
+    std::vector<vec3_t> m_edge_directions;
+    std::vector<real_t> m_face_areas;
+    std::vector<vec3_t> m_face_normals;
+    std::vector<vec3_t> m_face_center_positions;
+    std::vector<real_t> m_cell_volumes;
+    std::vector<vec3_t> m_cell_center_positions;
+
+    std::vector<uint_t> m_node_marks;
+    std::vector<uint_t> m_edge_marks;
+    std::vector<uint_t> m_face_marks;
+    std::vector<uint_t> m_cell_marks;
+    std::vector<uint_t> m_marked_node_ranges{0};
+    std::vector<uint_t> m_marked_edge_ranges{0};
+    std::vector<uint_t> m_marked_face_ranges{0};
+    std::vector<uint_t> m_marked_cell_ranges{0};
+
 public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
     /** Initialize an empty mesh. */
-    explicit uMesh(uint_t dim = 0)
-        : m_dim(dim), m_cell_nodes() {
+    explicit uMesh(uint_t dim = 0) : m_dim(dim) {
         FEATHERS_ASSERT(0 <= m_dim && m_dim <= 3);
     }
 
@@ -682,46 +607,46 @@ public:
 
     /** Get node element at global index. */
     /** @{ */
-    Node& get_node(uint_t node_ind) {
-        FEATHERS_ASSERT(node_ind < num_nodes());
-        return reinterpret_cast<Node&>(m_node_storage[m_node_offsets[node_ind]]);
+    Node& get_node(uint_t node_index) {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return reinterpret_cast<Node&>(m_node_storage[m_node_offsets[node_index]]);
     }
-    const Node& get_node(uint_t node_ind) const {
-        FEATHERS_ASSERT(node_ind < num_nodes());
-        return reinterpret_cast<const Node&>(m_node_storage[m_node_offsets[node_ind]]);
+    const Node& get_node(uint_t node_index) const {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return reinterpret_cast<const Node&>(m_node_storage[m_node_offsets[node_index]]);
     }
     /** @} */
     /** Get edge element at global index. */
     /** @{ */
-    Edge& get_edge(uint_t edge_ind) {
-        FEATHERS_ASSERT(edge_ind < num_edges());
-        return reinterpret_cast<Edge&>(m_edge_storage[m_edge_offsets[edge_ind]]);
+    Edge& get_edge(uint_t edge_index) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return reinterpret_cast<Edge&>(m_edge_storage[m_edge_offsets[edge_index]]);
     }
-    const Edge& get_edge(uint_t edge_ind) const {
-        FEATHERS_ASSERT(edge_ind < num_edges());
-        return reinterpret_cast<const Edge&>(m_edge_storage[m_edge_offsets[edge_ind]]);
+    const Edge& get_edge(uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return reinterpret_cast<const Edge&>(m_edge_storage[m_edge_offsets[edge_index]]);
     }
     /** @} */
     /** Get face element at global index. */
     /** @{ */
-    Face& get_face(uint_t face_ind) {
-        FEATHERS_ASSERT(face_ind < num_faces());
-        return reinterpret_cast<Face&>(m_face_storage[m_face_offsets[face_ind]]);
+    Face& get_face(uint_t face_index) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return reinterpret_cast<Face&>(m_face_storage[m_face_offsets[face_index]]);
     }
-    const Face& get_face(uint_t face_ind) const {
-        FEATHERS_ASSERT(face_ind < num_faces());
-        return reinterpret_cast<const Face&>(m_face_storage[m_face_offsets[face_ind]]);
+    const Face& get_face(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return reinterpret_cast<const Face&>(m_face_storage[m_face_offsets[face_index]]);
     }
     /** @} */
     /** Get cell element at global index. */
     /** @{ */
-    Cell& get_cell(uint_t cell_ind) {
-        FEATHERS_ASSERT(cell_ind < num_cells());
-        return reinterpret_cast<Cell&>(m_cell_storage[m_cell_offsets[cell_ind]]);
+    Cell& get_cell(uint_t cell_index) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return reinterpret_cast<Cell&>(m_cell_storage[m_cell_offsets[cell_index]]);
     }
-    const Cell& get_cell(uint_t cell_ind) const {
-        FEATHERS_ASSERT(cell_ind < num_cells());
-        return reinterpret_cast<const Cell&>(m_cell_storage[m_cell_offsets[cell_ind]]);
+    const Cell& get_cell(uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return reinterpret_cast<const Cell&>(m_cell_storage[m_cell_offsets[cell_index]]);
     }
     /** @} */
 
@@ -788,12 +713,12 @@ public:
     }
 
     /** Get face element index at marker index. */
-    uint_t get_marked_face_index(uint_t face_mark_ind, uint_t mark) const {
-        return begin_face(mark) + face_mark_ind;
+    uint_t get_marked_face_index(uint_t face_mark_index, uint_t mark) const {
+        return begin_face(mark) + face_mark_index;
     }
     /** Get cell element index at marker index. */
-    uint_t get_marked_cell_index(uint_t cell_mark_ind, uint_t mark) const {
-        return begin_cell(mark) + cell_mark_ind;
+    uint_t get_marked_cell_index(uint_t cell_mark_index, uint_t mark) const {
+        return begin_cell(mark) + cell_mark_index;
     }
 
     /** Number of marked faces in the mesh. */
@@ -809,39 +734,87 @@ public:
     // ---------------------------------------------------------------------- //
 
     /** Get node position. */
-    const vec3_t& get_node_position(uint_t node_ind) const {
-        return get_node(node_ind).get_position();
+    const vec3_t& get_node_position(uint_t node_index) const {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_positions[node_index];
+    }
+    /** Set node position. */
+    void set_node_position(uint_t node_index, const vec3_t& node_position) {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        m_node_positions[node_index] = node_position;
     }
 
     /** Get edge length. */
-    real_t get_edge_length(uint_t edge_ind) const {
-        return get_edge(edge_ind).get_length();
+    real_t get_edge_length(uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_lengths[edge_index];
+    }
+    /** Set edge length. */
+    void set_edge_length(uint_t edge_index, real_t edge_length) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_lengths[edge_index] = edge_length;
     }
     /** Get edge direction. */
-    const vec3_t& get_edge_direction(uint_t edge_ind) const {
-        return get_edge(edge_ind).get_direction();
+    const vec3_t& get_edge_direction(uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_directions[edge_index];
+    }
+    /** Set edge direction. */
+    void set_edge_direction(uint_t edge_index, const vec3_t& edge_direction) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_directions[edge_index] = edge_direction;
     }
 
     /** Get face area/length. */
-    real_t get_face_area(uint_t face_ind) const {
-        return get_face(face_ind).get_area();
+    real_t get_face_area(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_areas[face_index];
+    }
+    /** Set face area/length. */
+    void set_face_area(uint_t face_index, real_t face_area) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_areas[face_index] = face_area;
     }
     /** Get face normal. */
-    const vec3_t& get_face_normal(uint_t face_ind) const {
-        return get_face(face_ind).get_normal();
+    const vec3_t& get_face_normal(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_normals[face_index];
+    }
+    /** Set face normal. */
+    void set_face_normal(uint_t face_index, const vec3_t& face_normal) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_normals[face_index] = face_normal;
     }
     /** Get face barycenter. */
-    const vec3_t& get_face_center_position(uint_t face_ind) const {
-        return get_face(face_ind).get_center_position();
+    const vec3_t& get_face_center_position(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_center_positions[face_index];
+    }
+    /** Set face barycenter. */
+    void set_face_center_position(uint_t face_index, const vec3_t& face_center_position) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_center_positions[face_index] = face_center_position;
     }
 
     /** Get cell volume/area/length. */
-    real_t get_cell_volume(uint_t cell_ind) const {
-        return get_cell(cell_ind).get_volume();
+    real_t get_cell_volume(uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_volumes[cell_index];
+    }
+    /** Set cell volume/area/length. */
+    void set_cell_volume(uint_t cell_index, real_t cell_volume) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_volumes[cell_index] = cell_volume;
     }
     /** Get cell barycenter. */
-    const vec3_t& get_cell_center_position(uint_t cell_ind) const {
-        return get_cell(cell_ind).get_center_position();
+    const vec3_t& get_cell_center_position(uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_center_positions[cell_index];
+    }
+    /** Get cell barycenter. */
+    void set_cell_center_position(uint_t cell_index, const vec3_t& cell_center_position) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_center_positions[cell_index] = cell_center_position;
     }
 
     /** Get minimal edge length. */
@@ -871,7 +844,7 @@ protected:
     /** Insert a new node into the mesh.
      ** @param node Edge nodes.
      ** @returns Index of the inserted node. */
-    uint_t insert_node(const mesh_node1_t& node);
+    uint_t insert_node(const mesh_node1_t& node, vec3_t p);
 
     /** Insert a new edge into the mesh.
      ** @param edge Edge nodes.
@@ -983,36 +956,6 @@ private:
 protected:
 
     void reorder_faces();
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
-
-    /**
-     * Insert a node.
-     * @returns Index of the inserted node.
-     */
-    uint_t insert_node(const vec3_t& node_position);
-
-    /**
-     * Insert an edge.
-     * @returns Index of the inserted edge.
-     */
-    uint_t insert_edge(ElementType edge_type,
-                       const std::vector<uint_t>& edge_nodes, uint_t mark = 0);
-
-    /**
-     * Insert a face.
-     * @returns Index of the inserted face.
-     */
-    uint_t insert_face(ElementType face_type,
-                       const std::vector<uint_t>& face_nodes, uint_t mark = 0);
-
-    /**
-     * Insert a cell.
-     * @returns Index of the inserted cell.
-     */
-    uint_t insert_cell(ElementType cell_type,
-                       const std::vector<uint_t>& cell_nodes, uint_t mark = 0);
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //

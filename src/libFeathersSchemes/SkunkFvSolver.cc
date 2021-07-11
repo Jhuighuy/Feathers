@@ -38,7 +38,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(tScalarField<num_vars>& u,
         for (uint_t face_mind = 0; face_mind < m_mesh->num_marked_faces(mark); ++face_mind) {
             const uint_t face_ind = m_mesh->get_marked_face_index(face_mind, mark);
             const auto& face = m_mesh->get_face(face_ind);
-            m_bcs.at(mark)->get_ghost_state(face.get_normal(),
+            m_bcs.at(mark)->get_ghost_state(m_mesh->get_face_normal(face_ind),
                                             m_mesh->get_cell_center_position(face.get_inner_cell()),
                                             m_mesh->get_cell_center_position(face.get_outer_cell()),
                                             u[face.get_inner_cell()],

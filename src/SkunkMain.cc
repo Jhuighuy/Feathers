@@ -27,7 +27,8 @@ static void print(
         const uint_t cell_ind = m.get_marked_cell_index(cell_ind1, 0);
         const auto& c = m.get_cell(cell_ind);
         MhdHydroVars v({}, u[cell_ind].data());
-        file << c.get_center_position().x << ',' << c.get_center_position().y << ',' << c.get_center_position().z-0.5 << ','
+        auto p = m.get_cell_center_position(cell_ind);
+        file << p.x << ',' << p.y << ',' << p.z-0.5 << ','
              << v.rho << ',' << v.p << ','
              << v.V.x << ',' << v.V.y << ',' << v.V.z << ','
              << std::endl;
@@ -49,7 +50,7 @@ static void print_vtk(feathers::uint_t nn,
     file << "POINTS " << m.num_nodes() << " double" << std::endl;
     for (uint_t node_ind = 0; node_ind < m.num_nodes(); ++node_ind) {
         const Node& node = m.get_node(node_ind);
-        const vec3_t& p = node.get_position();
+        const vec3_t& p = m.get_node_position(node_ind);
         file << p.x << " " << p.y << " " << p.z << std::endl;
     }
 
@@ -74,6 +75,7 @@ static void print_vtk(feathers::uint_t nn,
         file << "LOOKUP_TABLE default" << std::endl;
         for (uint_t cell_ind = m.begin_cell(0); cell_ind < m.end_cell(0); ++cell_ind) {
             MhdHydroVars v({}, u[cell_ind].data());
+            //file << m.get_cell_volume(cell_ind) << std::endl;
             file << v.prim/*u[cell_ind]*/[i] << std::endl;
         }
     }

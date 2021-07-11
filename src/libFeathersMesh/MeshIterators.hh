@@ -39,19 +39,19 @@
 
 namespace feathers {
 
-template<typename uMesh>
+template<class uMesh>
 class tNodeIterBase;
-template<typename uMesh>
+template<class uMesh>
 class tEdgeIterBase;
-template<typename uMesh>
+template<class uMesh>
 class tFaceIterBase;
-template<typename uMesh>
+template<class uMesh>
 class tCellIterBase;
 
 /**
  * Base element iterator.
  */
-template<typename tIter, typename uMesh, typename tElement_>
+template<typename tIter, class uMesh, typename tElement_>
 class tElementIterBase {
 private:
     using tElement = std::conditional_t<
@@ -60,14 +60,8 @@ private:
     tElement* m_element;
     uint_t  m_element_index;
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
-
 protected:
-
-    /** @internal
-     ** Construct base element iterator. */
-    template<typename uMeshPtr>
+    template<class uMeshPtr>
     tElementIterBase(const uMeshPtr& mesh_ptr, uint_t element_index):
         m_mesh(&*mesh_ptr),
         m_element(tIter::get_element_(m_mesh, element_index)), m_element_index(element_index) {
@@ -82,11 +76,18 @@ public:
     uMesh* get_mesh() const {
         return m_mesh;
     }
+    /** Get associated element index. */
+    uint_t get_index() const {
+        return m_element_index;
+    }
 
     /** Cast to index operator. */
     operator uint_t() const {
         return m_element_index;
     }
+
+protected:
+
     /** Dereference operator. */
     tElement& operator*() const {
         return *m_element;
@@ -95,6 +96,8 @@ public:
     tElement* operator->() const {
         return m_element;
     }
+
+public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -269,7 +272,7 @@ public:
 /**
  * Base node iterator.
  */
-template<typename uMesh>
+template<class uMesh>
 class tNodeIterBase final : public tElementIterBase<tNodeIterBase<uMesh>, uMesh, Node> {
 private:
     friend class tElementIterBase<tNodeIterBase<uMesh>, uMesh, Node>;
@@ -279,10 +282,27 @@ private:
     }
 
 public:
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
     /** Construct base node iterator. */
-    template<typename uMeshPtr>
+    template<class uMeshPtr>
     explicit tNodeIterBase(const uMeshPtr& mesh_ptr, uint_t node_index = 0):
         tElementIterBase<tNodeIterBase<uMesh>, uMesh, Node>(mesh_ptr, node_index) {
+    }
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Get node position. */
+    const vec3_t& get_position() const {
+        return this->get_mesh()->get_node_position(this->get_index());
+    }
+    /** Set node position. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_position(const vec3_t& node_position) {
+        this->get_mesh()->set_node_position(this->get_index(), node_position);
     }
 };  // class tNodeIterBase
 
@@ -290,8 +310,8 @@ public:
  * Mesh nodes random-access iterator.
  */
 /** @{ */
-using NodeIter = tNodeIterBase<const uMesh>;
-using NodeMutableIter = tNodeIterBase<uMesh>;
+using tNodeIter = tNodeIterBase<const uMesh>;
+using tNodeMutableIter = tNodeIterBase<uMesh>;
 /** @} */
 
 // ------------------------------------------------------------------------------------ //
@@ -300,7 +320,7 @@ using NodeMutableIter = tNodeIterBase<uMesh>;
 /**
  * Base edge iterator.
  */
-template<typename uMesh>
+template<class uMesh>
 class tEdgeIterBase final : public tElementIterBase<tEdgeIterBase<uMesh>, uMesh, Edge> {
 private:
     friend class tElementIterBase<tEdgeIterBase<uMesh>, uMesh, Edge>;
@@ -310,10 +330,37 @@ private:
     }
 
 public:
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
     /** Construct base edge iterator. */
-    template<typename uMeshPtr>
+    template<class uMeshPtr>
     explicit tEdgeIterBase(const uMeshPtr& mesh_ptr, uint_t edge_index = 0):
         tElementIterBase<tEdgeIterBase<uMesh>, uMesh, Edge>(mesh_ptr, edge_index) {
+    }
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Get edge length. */
+    real_t get_length() const {
+        return this->get_mesh()->get_edge_length(this->get_index());
+    }
+    /** Set edge length. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_length(real_t edge_length) {
+        this->get_mesh()->set_edge_length(this->get_index(), edge_length);
+    }
+
+    /** Get edge direction. */
+    const vec3_t& get_direction() const {
+        return this->get_mesh()->get_edge_direction(this->get_index());
+    }
+    /** Set edge direction. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_direction(const vec3_t& edge_direction) {
+        this->get_mesh()->set_edge_direction(this->get_index(), edge_direction);
     }
 };  // class tEdgeIterBase
 
@@ -321,8 +368,8 @@ public:
  * Mesh edges random-access iterator.
  */
 /** @{ */
-using EdgeIter = tEdgeIterBase<const uMesh>;
-using EdgeMutableIter = tEdgeIterBase<uMesh>;
+using tEdgeIter = tEdgeIterBase<const uMesh>;
+using tEdgeMutableIter = tEdgeIterBase<uMesh>;
 /** @} */
 
 // ------------------------------------------------------------------------------------ //
@@ -331,7 +378,7 @@ using EdgeMutableIter = tEdgeIterBase<uMesh>;
 /**
  * Base face iterator.
  */
-template<typename uMesh>
+template<class uMesh>
 class tFaceIterBase final : public tElementIterBase<tFaceIterBase<uMesh>, uMesh, Face> {
 private:
     friend class tElementIterBase<tFaceIterBase<uMesh>, uMesh, Face>;
@@ -341,8 +388,12 @@ private:
     }
 
 public:
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
     /** Construct base face iterator. */
-    template<typename uMeshPtr>
+    template<class uMeshPtr>
     explicit tFaceIterBase(const uMeshPtr& mesh_ptr, uint_t face_index = 0):
         tElementIterBase<tFaceIterBase<uMesh>, uMesh, Face>(mesh_ptr, face_index) {
     }
@@ -355,14 +406,47 @@ public:
     auto get_outer_cell() const {
         return tCellIterBase<uMesh>(this->get_mesh(), (*this)->get_outer_cell());
     }
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Get face area/length. */
+    real_t get_area() const {
+        return this->get_mesh()->get_face_area(this->get_index());
+    }
+    /** Set face area/length. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_area(real_t face_area) {
+        this->get_mesh()->set_face_area(this->get_index(), face_area);
+    }
+
+    /** Get face normal. */
+    const vec3_t& get_normal() const {
+        return this->get_mesh()->get_face_normal(this->get_index());
+    }
+    /** Set face normal. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_normal(const vec3_t& face_normal) {
+        this->get_mesh()->set_face_normal(this->get_index(), face_normal);
+    }
+
+    /** Get face barycenter. */
+    const vec3_t& get_center_position() const {
+        return this->get_mesh()->get_face_center_position(this->get_index());
+    }
+    /** Set face barycenter. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_center_position(const vec3_t& face_center_position) {
+        this->get_mesh()->set_face_center_position(this->get_index(), face_center_position);
+    }
 };  // class tFaceIterBase
 
 /**
  * Mesh faces random-access iterator.
  */
 /** @{ */
-using FaceIter = tFaceIterBase<const uMesh>;
-using FaceMutableIter = tFaceIterBase<uMesh>;
+using tFaceIter = tFaceIterBase<const uMesh>;
+using tFaceMutableIter = tFaceIterBase<uMesh>;
 /** @} */
 
 // ------------------------------------------------------------------------------------ //
@@ -371,7 +455,7 @@ using FaceMutableIter = tFaceIterBase<uMesh>;
 /**
  * Base cell iterator.
  */
-template<typename uMesh>
+template<class uMesh>
 class tCellIterBase final : public tElementIterBase<tCellIterBase<uMesh>, uMesh, Cell> {
 private:
     friend class tElementIterBase<tCellIterBase<uMesh>, uMesh, Cell>;
@@ -381,10 +465,37 @@ private:
     }
 
 public:
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
     /** Construct base cell iterator. */
-    template<typename uMeshPtr>
+    template<class uMeshPtr>
     explicit tCellIterBase(const uMeshPtr& mesh, uint_t cell_index = 0):
         tElementIterBase<tCellIterBase<uMesh>, uMesh, Cell>(mesh, cell_index) {
+    }
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Get cell volume/area/length. */
+    real_t get_volume() const {
+        return this->get_mesh()->get_cell_volume(this->get_index());
+    }
+    /** Set cell volume/area/length. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_volume(real_t cell_volume) {
+        this->get_mesh()->set_cell_volume(this->get_index(), cell_volume);
+    }
+
+    /** Get cell barycenter. */
+    const vec3_t& get_center_position() const {
+        return this->get_mesh()->get_cell_center_position(this->get_index());
+    }
+    /** Set cell barycenter. */
+    template<class tMesh = uMesh>
+    std::enable_if_t<!std::is_const_v<tMesh>> set_center_position(const vec3_t& cell_center_position) {
+        this->get_mesh()->set_cell_center_position(this->get_index(), cell_center_position);
     }
 };  // class tCellIterBase
 
@@ -392,8 +503,8 @@ public:
  * Mesh cells random-access iterator.
  */
 /** @{ */
-using CellIter = tCellIterBase<const uMesh>;
-using CellMutableIter = tCellIterBase<uMesh>;
+using tCellIter = tCellIterBase<const uMesh>;
+using tCellMutableIter = tCellIterBase<uMesh>;
 /** @} */
 
 } // namespace feathers
@@ -408,70 +519,70 @@ namespace feathers {
     ([&](tFaceIterBase<uMesh> face) { func(face.get_inner_cell(), face.get_outer_cell()); })
 
 /** Iterator pointing to the first node with a given mark or the first mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_node(uMesh& mesh, uint_t mark = 0) {
     return tNodeIterBase<uMesh>(&mesh, mesh.begin_node(mark));
 }
 /** Iterator pointing to the first edge with a given mark or the first mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_edge(uMesh& mesh, uint_t mark = 0) {
     return tEdgeIterBase<uMesh>(&mesh, mesh.begin_edge(mark));
 }
 /** Iterator pointing to the first face with a given mark or the first mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_face(uMesh& mesh, uint_t mark = 0) {
     return tFaceIterBase<uMesh>(&mesh, mesh.begin_face(mark));
 }
 /** Iterator pointing to the first cell with a given mark or the first mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_cell(uMesh& mesh, uint_t mark = 0) {
     return tCellIterBase<uMesh>(&mesh, mesh.begin_cell(mark));
 }
 
 /** Iterator pointing to a node after the last node with a given mark or the last mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_node(uMesh& mesh) {
     const uint_t mark = mesh.num_node_marks() - 1;
     return tNodeIterBase<uMesh>(&mesh, mesh.end_node(mark));
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_node(uMesh& mesh, uint_t mark) {
     return tNodeIterBase<uMesh>(&mesh, mesh.end_node(mark));
 }
 /** @} */
 /** Iterator pointing to an edge after the last edge with a given mark or the last mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_edge(uMesh& mesh) {
     const uint_t mark = mesh.num_edge_marks() - 1;
     return tEdgeIterBase<uMesh>(&mesh, mesh.end_edge(mark));
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_edge(uMesh& mesh, uint_t mark) {
     return tEdgeIterBase<uMesh>(&mesh, mesh.end_edge(mark));
 }
 /** @} */
 /** Iterator pointing to a face after the last face with a given mark or the last mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_face(uMesh& mesh) {
     const uint_t mark = mesh.num_face_marks() - 1;
     return tFaceIterBase<uMesh>(&mesh, mesh.end_face(mark));
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_face(uMesh& mesh, uint_t mark) {
     return tFaceIterBase<uMesh>(&mesh, mesh.end_face(mark));
 }
 /** @} */
 /** Iterator pointing to a cell after the last cell with a given mark or the last mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_cell(uMesh& mesh) {
     const uint_t mark = mesh.num_cell_marks() - 1;
     return tCellIterBase<uMesh>(&mesh, mesh.end_cell(mark));
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_cell(uMesh& mesh, uint_t mark) {
     return tCellIterBase<uMesh>(&mesh, mesh.end_cell(mark));
 }
@@ -479,52 +590,52 @@ auto end_cell(uMesh& mesh, uint_t mark) {
 
 /** Iterate through all nodes with a given mark or all marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_node(uMesh& mesh, tFunc func) {
     return for_range(begin_node(mesh), end_node(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_node(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_node(mesh, mark), end_node(mesh, mark), func);
 }
 /** @} */
 /** Iterate through all edges with a given mark or all marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_edge(uMesh& mesh, tFunc func) {
     return for_range(begin_edge(mesh), end_edge(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_edge(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_edge(mesh, mark), end_edge(mesh, mark), func);
 }
 /** @} */
 /** Iterate through all faces with a given mark or all marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_face(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_face(mesh, mark), end_face(mesh, mark), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_face(uMesh& mesh, tFunc func) {
     return for_range(begin_face(mesh), end_face(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_face_cells(uMesh& mesh, tFunc func) {
     return for_range(begin_face(mesh), end_face(mesh), FACE_CELL_FUNC_), func;
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_face_cells(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_face(mesh, mark), end_face(mesh, mark), FACE_CELL_FUNC_), func;
 }
 /** @} */
 /** Iterate through all cells with a given mark or all marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_cell(uMesh& mesh, tFunc func) {
     return for_range(begin_cell(mesh), end_cell(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_cell(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_cell(mesh, mark), end_cell(mesh, mark), func);
 }
@@ -534,70 +645,70 @@ tFunc for_each_cell(uMesh& mesh, uint_t mark, tFunc func) {
 // ------------------------------------------------------------------------------------ //
 
 /** Iterator pointing to the first interior node. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_interior_node(uMesh& mesh) {
     return begin_node(mesh, 0);
 }
 /** Iterator pointing to the first interior edge. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_interior_edge(uMesh& mesh) {
     return begin_edge(mesh, 0);
 }
 /** Iterator pointing to the first interior face. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_interior_face(uMesh& mesh) {
     return begin_face(mesh, 0);
 }
 /** Iterator pointing to the first interior cell. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_interior_cell(uMesh& mesh) {
     return begin_cell(mesh, 0);
 }
 
 /** Iterator pointing to a node after the last node. */
-template<typename uMesh>
+template<class uMesh>
 auto end_interior_node(uMesh& mesh) {
     return end_node(mesh, 0);
 }
 /** Iterator pointing to an edge after the last node. */
-template<typename uMesh>
+template<class uMesh>
 auto end_interior_edge(uMesh& mesh) {
     return end_edge(mesh, 0);
 }
 /** Iterator pointing to a face after the last node. */
-template<typename uMesh>
+template<class uMesh>
 auto end_interior_face(uMesh& mesh) {
     return end_face(mesh, 0);
 }
 /** Iterator pointing to a cell after the last node. */
-template<typename uMesh>
+template<class uMesh>
 auto end_interior_cell(uMesh& mesh) {
     return end_cell(mesh, 0);
 }
 
 /** Iterate through all interior nodes. */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_interior_node(uMesh& mesh, tFunc func) {
     return for_range(begin_interior_node(mesh), end_interior_node(mesh), func);
 }
 /** Iterate through all interior edges. */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_interior_edge(uMesh& mesh, tFunc func) {
     return for_range(begin_interior_edge(mesh), end_interior_edge(mesh), func);
 }
 /** Iterate through all interior faces. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_interior_face(uMesh& mesh, tFunc func) {
     return for_range(begin_interior_face(mesh), end_interior_face(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_interior_face_cells(uMesh& mesh, tFunc func) {
     return for_range(begin_interior_face(mesh), end_interior_face(mesh), FACE_CELL_FUNC_), func;
 }
 /** @} */
 /** Iterate through all interior cells. */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_interior_cell(uMesh& mesh, tFunc func) {
     return for_range(begin_interior_cell(mesh), end_interior_cell(mesh), func);
 }
@@ -606,25 +717,25 @@ tFunc for_each_interior_cell(uMesh& mesh, tFunc func) {
 // ------------------------------------------------------------------------------------ //
 
 /** Iterator pointing to the boundary first node with a given mark or the first boundary mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_boundary_node(uMesh& mesh, uint_t mark = 1) {
     FEATHERS_ASSERT(mark >= 1);
     return begin_node(mesh, mark);
 }
 /** Iterator pointing to the boundary first edge with a given mark or the first boundary mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_boundary_edge(uMesh& mesh, uint_t mark = 1) {
     FEATHERS_ASSERT(mark >= 1);
     return begin_edge(mesh, mark);
 }
 /** Iterator pointing to the boundary first face with a given mark or the first boundary mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_boundary_face(uMesh& mesh, uint_t mark = 1) {
     FEATHERS_ASSERT(mark >= 1);
     return begin_face(mesh, mark);
 }
 /** Iterator pointing to the boundary first cell with a given mark or the first boundary mark. */
-template<typename uMesh>
+template<class uMesh>
 auto begin_boundary_cell(uMesh& mesh, uint_t mark = 1) {
     FEATHERS_ASSERT(mark >= 1);
     return begin_cell(mesh, mark);
@@ -632,11 +743,11 @@ auto begin_boundary_cell(uMesh& mesh, uint_t mark = 1) {
 
 /** Iterator pointing to a node after the last node with a given or the last boundary mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_node(uMesh& mesh) {
     return end_node(mesh);
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_node(uMesh& mesh, uint_t mark) {
     FEATHERS_ASSERT(mark >= 1);
     return end_node(mesh, mark);
@@ -644,11 +755,11 @@ auto end_boundary_node(uMesh& mesh, uint_t mark) {
 /** @} */
 /** Iterator pointing to an edge after the last edge with a given or the last boundary mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_edge(uMesh& mesh) {
     return end_edge(mesh);
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_edge(uMesh& mesh, uint_t mark) {
     FEATHERS_ASSERT(mark >= 1);
     return end_edge(mesh, mark);
@@ -656,11 +767,11 @@ auto end_boundary_edge(uMesh& mesh, uint_t mark) {
 /** @} */
 /** Iterator pointing to a face after the last face with a given or the last boundary mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_face(uMesh& mesh) {
     return end_face(mesh);
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_face(uMesh& mesh, uint_t mark) {
     FEATHERS_ASSERT(mark >= 1);
     return end_face(mesh, mark);
@@ -668,11 +779,11 @@ auto end_boundary_face(uMesh& mesh, uint_t mark) {
 /** @} */
 /** Iterator pointing to a cell after the last cell with a given or the last boundary mark. */
 /** @{ */
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_cell(uMesh& mesh) {
     return end_cell(mesh);
 }
-template<typename uMesh>
+template<class uMesh>
 auto end_boundary_cell(uMesh& mesh, uint_t mark) {
     FEATHERS_ASSERT(mark >= 1);
     return end_cell(mesh, mark);
@@ -681,52 +792,52 @@ auto end_boundary_cell(uMesh& mesh, uint_t mark) {
 
 /** Iterate through all boundary nodes with a given mark or all boundary marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_node(uMesh& mesh, tFunc func) {
     return for_range(begin_boundary_node(mesh), end_boundary_node(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_node(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_boundary_node(mesh, mark), end_boundary_node(mesh, mark), func);
 }
 /** @} */
 /** Iterate through all boundary edges with a given mark or all boundary marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_edge(uMesh& mesh, tFunc func) {
     return for_range(begin_boundary_edge(mesh), end_boundary_edge(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_edge(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_boundary_edge(mesh, mark), end_boundary_edge(mesh, mark), func);
 }
 /** @} */
 /** Iterate through all boundary faces with a given mark or all boundary marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_face(uMesh& mesh, tFunc func) {
     return for_range(begin_boundary_face(mesh), end_boundary_face(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_face(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_boundary_face(mesh, mark), end_boundary_face(mesh, mark), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_face_cells(uMesh& mesh, tFunc func) {
     return for_range(begin_boundary_face(mesh), end_boundary_face(mesh), FACE_CELL_FUNC_), func;
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_face_cells(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_boundary_face(mesh, mark), end_boundary_face(mesh, mark), FACE_CELL_FUNC_), func;
 }
 /** @} */
 /** Iterate through all boundary cells with a given mark or all boundary marks. */
 /** @{ */
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_cell(uMesh& mesh, tFunc func) {
     return for_range(begin_boundary_cell(mesh), end_boundary_cell(mesh), func);
 }
-template<typename uMesh, typename tFunc>
+template<class uMesh, typename tFunc>
 tFunc for_each_boundary_cell(uMesh& mesh, uint_t mark, tFunc func) {
     return for_range(begin_boundary_cell(mesh, mark), end_boundary_cell(mesh, mark), func);
 }

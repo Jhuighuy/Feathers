@@ -51,9 +51,8 @@
 #include <algorithm>
 #include <type_traits>
 
+//#define GLM_FORCE_CTOR_INIT 1
 #include <glm/glm.hpp>
-
-#include <boost/graph/compressed_sparse_row_graph.hpp>
 
 // ************************************************************************************ //
 // ************************************************************************************ //
