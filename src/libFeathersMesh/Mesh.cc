@@ -27,7 +27,6 @@
 
 #include "Mesh.hh"
 #include <libFeathersMesh/Shape.hh>
-#include <libSkunkGeom/SkunkGeomTriangle.hh>
 #include <libSkunkMisc/SkunkMiscParallel.hh>
 #include <libSkunkMisc/SkunkMiscReordering.hh>
 
@@ -88,6 +87,7 @@ bool cMesh::read_triangle(const char *path) {
     generate_faces();
     generate_boundary_cells();
     reorder_faces();
+    compute_all_shape_properties();
     return true;
 }   // cMesh::read_triangle
 
@@ -137,21 +137,60 @@ bool cMesh::read_tetgen(const char *path) {
     generate_faces();
     generate_boundary_cells();
     reorder_faces();
+    compute_all_shape_properties();
     return true;
 }   // cMesh::read_tetgen
 
+// ************************************************************************************ //
+// ************************************************************************************ //
+// ************************************************************************************ //
+
 namespace feathers {
 
-/** Get minimal edge length. */
+/** Compute edge shape properties. */
+void cMesh::compute_edge_shape_properties() {
+    for_each_edge(*this, [&](tEdgeMutableIter edge) {
+        iShapePtr edge_shape = edge.get_shape_ptr();
+        edge.set_length(edge_shape->get_length_or_area_or_volume());
+        edge.set_direction(edge_shape->get_direction());
+    });
+}   // cMesh::compute_edge_shape_properties
+
+/** Compute face shape properties. */
+void cMesh::compute_face_shape_properties() {
+    for_each_face(*this, [&](tFaceMutableIter face) {
+        iShapePtr face_shape = face.get_shape_ptr();
+        face.set_area(face_shape->get_length_or_area_or_volume());
+        face.set_normal(face_shape->get_normal());
+        face.set_center_coords(face_shape->get_center_coords());
+    });
+}   // cMesh::compute_face_shape_properties
+
+/** Compute cell shape properties. */
+void cMesh::compute_cell_shape_properties() {
+    for_each_cell(*this, [&](tCellMutableIter cell) {
+        iShapePtr cell_shape = cell.get_shape_ptr();
+        cell.set_volume(cell_shape->get_length_or_area_or_volume());
+        cell.set_center_coords(cell_shape->get_center_coords());
+    });
+}   // cMesh::compute_cell_shape_properties
+
+/**
+ * Get minimal edge length.
+ */
 real_t cMesh::get_min_edge_length() const {
+    // TODO: refactor with mesh iterators!
     return
         m_min_edge_length > 0.0 ? m_min_edge_length :
         (m_min_edge_length = for_range_min(0u, num_edges(), huge, [&](uint_t edge_index) {
             return get_edge_length(edge_index);
         }));
 }   // cMesh::get_min_edge_length
-/** Get maximal edge length. */
+/**
+ * Get maximal edge length.
+ */
 real_t cMesh::get_max_edge_length() const {
+    // TODO: refactor with mesh iterators!
     return
         m_max_edge_length > 0.0 ? m_max_edge_length :
         (m_max_edge_length = for_range_max(0u, num_edges(), 0.0, [&](uint_t edge_index) {
@@ -159,16 +198,22 @@ real_t cMesh::get_max_edge_length() const {
         }));
 }   // cMesh::get_max_edge_length
 
-/** Get minimal face area. */
+/**
+ * Get minimal face area.
+ */
 real_t cMesh::get_min_face_area() const {
+    // TODO: refactor with mesh iterators!
     return
         m_min_face_area > 0.0 ? m_min_face_area :
         (m_min_face_area = for_range_min(0u, num_faces(), huge, [&](uint_t face_index) {
             return get_face_area(face_index);
         }));
 }   // cMesh::get_min_face_area
-/** Get maximal face area. */
+/**
+ * Get maximal face area.
+ */
 real_t cMesh::get_max_face_area() const {
+    // TODO: refactor with mesh iterators!
     return
         m_max_face_area > 0.0 ? m_max_face_area :
         (m_max_face_area = for_range_max(0u, num_faces(), 0.0, [&](uint_t face_index) {
@@ -176,16 +221,22 @@ real_t cMesh::get_max_face_area() const {
         }));
 }   // cMesh::get_max_face_area
 
-/** Get minimal cell volume. */
+/**
+ * Get minimal cell volume.
+ */
 real_t cMesh::get_min_cell_volume() const {
+    // TODO: refactor with mesh iterators!
     return
         m_min_cell_volume > 0.0 ? m_min_cell_volume :
         (m_min_cell_volume = for_range_min(0u, num_cells(), huge, [&](uint_t cell_index) {
             return get_cell_volume(cell_index);
         }));
 }   // cMesh::get_min_cell_volume
-/** Get maximal cell volume. */
+/**
+ * Get maximal cell volume.
+ */
 real_t cMesh::get_max_cell_volume() const {
+    // TODO: refactor with mesh iterators!
     return
         m_max_cell_volume > 0.0 ? m_max_cell_volume :
         (m_max_cell_volume = for_range_max(0u, num_cells(), 0.0, [&](uint_t cell_index) {
@@ -193,16 +244,20 @@ real_t cMesh::get_max_cell_volume() const {
         }));
 }   // cMesh::get_max_cell_volume
 
-/** Compute mesh orthogonality.
- ** Mesh orthogonality is defined as a. */
+/**
+ * Compute mesh orthogonality.
+ * Mesh orthogonality is defined as a...
+ */
 real_t cMesh::get_orthogonality() const {
-    /*return for_range_min(begin_face(0), end_face(0), 1e+6, [&](uint_t face_index) {
-        const Face& face = get_face(face_index);
-        const vec3_t direction = get_cell_center_coords(face.get_outer_cell()) -
-                                 get_cell_center_coords(face.get_inner_cell());
-        const real_t orth = glm::dot(face.get_normal(), direction)/glm::length(direction);
+    // TODO: refactor with mesh iterators!
+    return for_range_min(begin_face(0), end_face(0), huge, [&](uint_t face_index) {
+        tFaceIter face(this, face_index);
+        const vec3_t delta =
+            face.get_outer_cell().get_center_coords() -
+            face.get_inner_cell().get_center_coords();
+        const real_t orth = glm::dot(face.get_normal(), glm::normalize(delta));
         return orth;
-    });*/
+    });
     return huge;
 }   // cMesh::get_orthogonality
 
@@ -231,21 +286,13 @@ uint_t cMesh::insert_node(const mesh_node1_t& node_, vec3_t p, uint_t mark) {
  ** @param edge_ Edge nodes.
  ** @returns Index of the inserted edge. */
 /** @{ */
-/*
- * Dummy 1D/2D edge.
- */
 uint_t cMesh::insert_edge(const mesh_edge_node1_t& edge_, uint_t mark) {
     const uint_t edge_index = allocate_edge_(edge_);
-    /** @todo Implement me! */
     set_mark(eEdgeTag, edge_index, mark);
     return edge_index;
 }   // cMesh::insert_edge
-/*
- * Segment edge.
- */
 uint_t cMesh::insert_edge(const mesh_edge_segment2_t& edge_, uint_t mark) {
     const uint_t edge_index = allocate_edge_(edge_);
-    /** @todo Implement me! */
     set_mark(eEdgeTag, edge_index, mark);
     return edge_index;
 }   // cMesh::insert_edge
@@ -284,97 +331,24 @@ uint_t cMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, ui
  ** @param face_ Face nodes.
  ** @returns Index of the inserted face. */
 /** @{ */
-/*
- * Dummy 1D face.
- */
 uint_t cMesh::insert_face(const mesh_face_node1_t& face_, uint_t mark) {
-    /** @todo Refactor me! */
-    /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
-    /* Set up the face geometry. */
-    Face& face = get_face(face_index);
     set_mark(eFaceTag, face_index, mark);
-    set_face_area(face_index, 1.0);
-    set_face_center_coords(face_index, get_node_coords(face.begin_node()[0]));
-    set_face_normal(face_index, {1.0, 0.0, 0.0});
     return face_index;
 }   // cMesh::insert_face
-/*
- * Segment face.
- */
 uint_t cMesh::insert_face(const mesh_face_segment2_t& face_, uint_t mark) {
-    /** @todo Refactor me! */
-    /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
-    /* Set up the face geometry. */
-    Face& face = get_face(face_index);
-    const mhd_seg2_t face_geometry = {
-        vec2_t(get_node_coords(face.begin_node()[0])),
-        vec2_t(get_node_coords(face.begin_node()[1])),
-    };
     set_mark(eFaceTag, face_index, mark);
-    set_face_area(face_index, mhd_seg2_t::len(face_geometry));
-    set_face_normal(face_index, mhd_seg2_t::normal3(face_geometry));
-    set_face_center_coords(face_index, vec3_t(0.5 * (face_geometry.p1 + face_geometry.p2), 0.0));
     return face_index;
 }   // cMesh::insert_face
-/*
- * Triangular face.
- */
 uint_t cMesh::insert_face(const mesh_face_triangle3_t& face_, uint_t mark) {
-    /** @todo Refactor me! */
-    /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
-    /* Set up the face geometry. */
-    Face& face = get_face(face_index);
-    const mhd_tri3_t face_geometry = {
-        get_node_coords(face.begin_node()[0]),
-        get_node_coords(face.begin_node()[1]),
-        get_node_coords(face.begin_node()[2]),
-    };
     set_mark(eFaceTag, face_index, mark);
-    set_face_area(face_index, mhd_tri3_t::area(face_geometry));
-    set_face_normal(face_index, mhd_tri3_t::normal(face_geometry));
-    set_face_center_coords(face_index, mhd_tri3_t::barycenter(face_geometry));
     return face_index;
 }   // cMesh::insert_face
-/*
- * Quadrangular face.
- */
 uint_t cMesh::insert_face(const mesh_face_quadrangle4_t& face_, uint_t mark) {
-    /** @todo Refactor me! */
-    /* Insert the face. */
     const uint_t face_index = allocate_face_(face_);
-    /* Set up the face geometry. */
-    Face& face = get_face(face_index);
-    const mhd_tri3_t face_geometry1 = {
-        get_node_coords(face.begin_node()[0]),
-        get_node_coords(face.begin_node()[1]),
-        get_node_coords(face.begin_node()[2]),
-    };
-    const mhd_tri3_t face_geometry2 = {
-        get_node_coords(face.begin_node()[2]),
-        get_node_coords(face.begin_node()[3]),
-        get_node_coords(face.begin_node()[0]),
-    };
-    const auto a1 = mhd_tri3_t::area(face_geometry1);
-    const auto a2 = mhd_tri3_t::area(face_geometry2);
-    //FEATHERS_ASSERT(a1 > 0.0);
-    //FEATHERS_ASSERT(a2 > 0.0);
-    //FEATHERS_ASSERT((a1 + a2) > 0.0);
-    const auto a = a1 + a2;
-    if (a != 0.0) {
-        set_face_area(face_index, a1 + a2);
-        set_face_center_coords(face_index, a1 / (a1 + a2) * mhd_tri3_t::barycenter(face_geometry1) +
-                                           a2 / (a1 + a2) * mhd_tri3_t::barycenter(face_geometry2));
-    } else {
-        set_face_area(face_index, 0.0);
-        set_face_center_coords(face_index, 0.5 * mhd_tri3_t::barycenter(face_geometry1) +
-                                           0.5 * mhd_tri3_t::barycenter(face_geometry2));
-    }
-    auto nn = a1*mhd_tri3_t::normal(face_geometry1) + a2*mhd_tri3_t::normal(face_geometry2);
     set_mark(eFaceTag, face_index, mark);
-    set_face_normal(face_index, nn * safe_inverse(glm::length(nn)));
     return face_index;
 }   // cMesh::insert_face
 /** @} */
@@ -418,138 +392,43 @@ uint_t cMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, ui
     FEATHERS_ASSERT_FALSE("Invalid face nodes: face type cannot be uniquely matched.");
 }   // cMesh::insert_face
 
-/** Initialize cell geometry. */
-/** @{ */
-template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_2d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
-    geom_t cell_geometry{};
-    for (uint_t node_local = 0; node_local < cell._num_nodes(); ++node_local) {
-        const uint_t node_index = cell.begin_node()[node_local];
-        cell_geometry.node(node_local) = vec2_t(mesh.get_node_coords(node_index));
-    }
-    mesh.set_cell_center_coords(cell_index, cell_geometry.barycenter());
-    mesh.set_cell_volume(cell_index, cell_geometry.area());
-}   // init_cell_geometry_
-template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_23d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
-    geom_t cell_geometry{};
-    for (uint_t node_local = 0; node_local < cell._num_nodes(); ++node_local) {
-        const uint_t node_index = cell.begin_node()[node_local];
-        cell_geometry.node(node_local) = (mesh.get_node_coords(node_index));
-    }
-    mesh.set_cell_center_coords(cell_index, cell_geometry.barycenter(cell_geometry));
-    mesh.set_cell_volume(cell_index, cell_geometry.area(cell_geometry));
-}   // init_cell_geometry_
-template<typename geom_t, typename mesh_cell_t>
-SKUNK_INLINE void init_cell_geometry_3d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
-    geom_t cell_geometry{};
-    for (uint_t node_local = 0; node_local < cell._num_nodes(); ++node_local) {
-        const uint_t node_index = cell.begin_node()[node_local];
-        cell_geometry.node(node_local) = mesh.get_node_coords(node_index);
-    }
-    mesh.set_cell_center_coords(cell_index, cell_geometry.barycenter());
-    mesh.set_cell_volume(cell_index, cell_geometry.volume());
-}   // init_cell_geometry_
-/** @} */
-
 /** Insert a new cell into the mesh.
  ** @param cell_ Cell nodes.
  ** @returns Index of the inserted face. */
 /** @{ */
-/*
- * Segment cell.
- */
 uint_t cMesh::insert_cell(const mesh_cell_segment2_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
-    Cell& cell = get_cell(cell_index);
-    /*
-     * Calculate cell area and verify orientation.
-     */
-    const mhd_seg2_t cell_geometry = {
-            vec2_t(get_node_coords(cell.begin_node()[0])),
-            vec2_t(get_node_coords(cell.begin_node()[1])),
-    };
     set_mark(eCellTag, cell_index, mark);
-    set_cell_center_coords(cell_index, vec3_t(0.5 * (cell_geometry.p1 + cell_geometry.p2), 0.0));
-    set_cell_volume(cell_index, mhd_seg2_t::len(cell_geometry));
     return cell_index;
 }   // cMesh::insert_cell
-/*
- * Triangular cell.
- */
 uint_t cMesh::insert_cell(const mesh_cell_triangle3_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
-    Cell& cell = get_cell(cell_index);
-    /** @todo A 3D triangle? */
     set_mark(eCellTag, cell_index, mark);
-    init_cell_geometry_23d_<mhd_tri3d>(*this, cell, cell_index);
     return cell_index;
 }   // cMesh::insert_cell
-/*
- * Quadrangular cell.
- */
 uint_t cMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
-    Cell& cell = get_cell(cell_index);
-    /** @todo A 3D quadrangle? */
     set_mark(eCellTag, cell_index, mark);
-    init_cell_geometry_2d_<geom_quad2_t>(*this, cell, cell_index);
     return cell_index;
 }   // cMesh::insert_cell
-/*
- * Tetrahedral cell.
- */
 uint_t cMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
-    Cell& cell = get_cell(cell_index);
-    /** @todo A 3D triangle? */
     set_mark(eCellTag, cell_index, mark);
-    init_cell_geometry_3d_<mhd_tetr3d_t>(*this, cell, cell_index);
     return cell_index;
 }   // cMesh::insert_face
-/*
- * Pyramidal cell.
- */
 uint_t cMesh::insert_cell(const mesh_cell_pyramid5_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
-    Cell& cell = get_cell(cell_index);
-    mhd_pyra3d_t cell_shape{
-            get_node_coords(cell.begin_node()[0]),
-            get_node_coords(cell.begin_node()[1]),
-            get_node_coords(cell.begin_node()[2]),
-            get_node_coords(cell.begin_node()[3]),
-            get_node_coords(cell.begin_node()[4]),
-    };
     set_mark(eCellTag, cell_index, mark);
-    set_cell_volume(cell_index, cell_shape.volume());
-    set_cell_center_coords(cell_index, cell_shape.barycenter());
     return cell_index;
 }
-/*
- * Pentahedral cell.
- */
 uint_t cMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_, uint_t mark) {
-    FEATHERS_NOT_IMPLEMENTED();
+    const uint_t cell_index = allocate_cell_(cell_);
+    set_mark(eCellTag, cell_index, mark);
+    return cell_index;
 }   // cMesh::insert_face
-/*
- * Hexahedral cell.
- */
 uint_t cMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
-    Cell& cell = get_cell(cell_index);
-    mhd_hexa3d_t cell_shape{
-            get_node_coords(cell.begin_node()[0]),
-            get_node_coords(cell.begin_node()[1]),
-            get_node_coords(cell.begin_node()[2]),
-            get_node_coords(cell.begin_node()[3]),
-            get_node_coords(cell.begin_node()[4]),
-            get_node_coords(cell.begin_node()[5]),
-            get_node_coords(cell.begin_node()[6]),
-            get_node_coords(cell.begin_node()[7]),
-    };
     set_mark(eCellTag, cell_index, mark);
-    set_cell_volume(cell_index, cell_shape.volume());
-    set_cell_center_coords(cell_index, cell_shape.barycenter());
     return cell_index;
 }
 /** @} */

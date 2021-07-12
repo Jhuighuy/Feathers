@@ -178,6 +178,19 @@ public:
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
+    /** Get mark. */
+    uint_t get_mark() const {
+        return m_mesh->get_mark(eTag, m_index);
+    }
+
+    /** Get shape. */
+    eShape get_shape() const {
+        return m_mesh->get_shape(eTag, m_index);
+    }
+    iShapePtr get_shape_ptr() const {
+        return m_mesh->get_shape_ptr(eTag, m_index);
+    }
+
     /** Get connected node. */
     auto get_node(uint_t node_local) const {
         FEATHERS_ASSERT(

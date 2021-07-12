@@ -36,24 +36,31 @@ namespace feathers {
 /**
  * Construct the shape.
  */
-std::unique_ptr<iShape> iShape::construct(eShape shape_type) {
+iShapePtr::iShapePtr(eShape shape_type) {
     switch (shape_type) {
-        case eShape::segment_2:
-            return std::make_unique<cSegmentShape>();
-        case eShape::triangle_3:
-            return std::make_unique<cTriangleShape>();
-        case eShape::quadrangle_4:
-            return std::make_unique<cQuadrangleShape>();
-        case eShape::tetrahedron_4:
-            return std::make_unique<cTetrahedronShape>();
-        case eShape::pyramid_5:
-            return std::make_unique<cPyramidShape>();
-        case eShape::pentahedron_6:
-            return std::make_unique<cPentahedronShape>();
-        case eShape::hexahedron_8:
-            return std::make_unique<cHexahedronShape>();
-        default:
-            return nullptr;
+    case eShape::segment_2:
+        reset(new cSegmentShape());
+        break;
+    case eShape::triangle_3:
+        reset(new cTriangleShape());
+        break;
+    case eShape::quadrangle_4:
+        reset(new cQuadrangleShape());
+        break;
+    case eShape::tetrahedron_4:
+        reset(new cTetrahedronShape());
+        break;
+    case eShape::pyramid_5:
+        reset(new cPyramidShape());
+        break;
+    case eShape::pentahedron_6:
+        reset(new cPentahedronShape());
+        break;
+    case eShape::hexahedron_8:
+        reset(new cHexahedronShape());
+        break;
+    default:
+        FEATHERS_NOT_REACHABLE();
     }
 }   // iShape::construct
 
@@ -132,7 +139,7 @@ vec3_t cTetrahedronShape::get_center_coords() const {
 template<typename tFunc>
 void iSplittableShape::for_each_part_(tFunc func) const {
     tSplittingScheme scheme(simplex_split());
-    std::unique_ptr<iShape> part_shape(iShape::construct(scheme.part_shape));
+    iShapePtr part_shape(scheme.part_shape);
     for (const auto& part : scheme.part_nodes) {
         part_shape->assign_node_coords(m_node_coords, part.begin(), part.end());
         func(*part_shape);

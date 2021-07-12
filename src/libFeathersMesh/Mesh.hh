@@ -195,7 +195,6 @@ public://private:
     void erase_face(uint_t face_loc) {
         FEATHERS_ASSERT(face_loc < _num_faces());
         std::rotate(begin_face() + face_loc, begin_face() + face_loc + 1, end_cell());
-        m_type = eShape::null;
         m_num_faces -= 1;
     }
 };  // class mesh_elem_struct_t
@@ -459,6 +458,9 @@ public:
         return m_cell_offsets.size();
     }
 
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
     /** Get node element at global index. */
     /** @{ */
     Node& get_node(uint_t node_index) {
@@ -503,6 +505,9 @@ public:
         return reinterpret_cast<const Cell&>(m_cell_storage[m_cell_offsets[cell_index]]);
     }
     /** @} */
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
 
     /** Pointer to the beginning of the element adjacent nodes. */
     /** @{ */
@@ -718,7 +723,7 @@ public:
     uint_t num_adjacent_cells(tTag tag, uint_t index) const {
         return end_adjacent_cell(tag, index) - begin_adjacent_cell(tag, index);
     }
-    
+
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
@@ -837,6 +842,54 @@ public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
+
+    /** Get element shape. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    template<typename tTag>
+    uint_t get_mark(tTag, uint_t index) const;
+#else
+    eShape get_shape(tNodeTag, uint_t node_index) const {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return eShape::node;
+    }
+    eShape get_shape(tEdgeTag, uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return get_edge(edge_index).get_type();
+    }
+    eShape get_shape(tFaceTag, uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return get_face(face_index).get_type();
+    }
+    eShape get_shape(tCellTag, uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return get_cell(cell_index).get_type();
+    }
+#endif
+    /** @} */
+
+    template<typename tTag>
+    iShapePtr get_shape_ptr(tTag tag, uint_t index) const {
+        iShapePtr shape_ptr(get_shape(tag, index));
+        shape_ptr->assign_node_coords(m_node_coords.data(),
+                                      begin_adjacent_node(tag, index),
+                                      end_adjacent_node(tag, index));
+        return shape_ptr;
+    }
+
+    /** Compute edge shape properties. */
+    void compute_edge_shape_properties();
+    /** Compute face shape properties. */
+    void compute_face_shape_properties();
+    /** Compute cell shape properties. */
+    void compute_cell_shape_properties();
+    /** Compute all elements shape properties. */
+    void compute_all_shape_properties() {
+        // TODO:
+        //compute_edge_shape_properties();
+        compute_face_shape_properties();
+        compute_cell_shape_properties();
+    }
 
     /** Get node position. */
     const vec3_t& get_node_coords(uint_t node_index) const {
