@@ -26,7 +26,7 @@ static void print(
     for (uint_t cell_ind = m.begin_cell(0); cell_ind != m.end_cell(0); ++cell_ind) {
         const auto& c = m.get_cell(cell_ind);
         MhdHydroVars v({}, u[cell_ind].data());
-        auto p = m.get_cell_center_position(cell_ind);
+        auto p = m.get_cell_center_coords(cell_ind);
         file << p.x << ',' << p.y << ',' << p.z-0.5 << ','
              << v.rho << ',' << v.p << ','
              << v.V.x << ',' << v.V.y << ',' << v.V.z << ','
@@ -49,7 +49,7 @@ static void print_vtk(feathers::uint_t nn,
     file << "POINTS " << m.num_nodes() << " double" << std::endl;
     for (uint_t node_ind = 0; node_ind < m.num_nodes(); ++node_ind) {
         const Node& node = m.get_node(node_ind);
-        const vec3_t& p = m.get_node_position(node_ind);
+        const vec3_t& p = m.get_node_coords(node_ind);
         file << p.x << " " << p.y << " " << p.z << std::endl;
     }
 
@@ -101,22 +101,22 @@ int main() {
     for (uint_t node_ind = 0; node_ind != mesh->num_nodes(); ++node_ind) {
         const Node& face = mesh->get_node(node_ind);
         file1
-            << face.get_position().x << ","
-            << face.get_position().y << ","
-            << face.get_position().z << std::endl;
+            << face.get_coords().x << ","
+            << face.get_coords().y << ","
+            << face.get_coords().z << std::endl;
     }
     file1.close();
     std::ofstream file("../results/_normals.csv");
     file << "x,y,z,nx,ny,nz,dx,dy,dz" << std::endl;
     for (uint_t face_ind = 0; face_ind != mesh->num_faces(); ++face_ind) {
         const Face& face = mesh->get_face(face_ind);
-        vec3_t direction = mesh->get_cell_center_position(face.get_outer_cell()) -
-                           mesh->get_cell_center_position(face.get_inner_cell());
+        vec3_t direction = mesh->get_cell_center_coords(face.get_outer_cell()) -
+                           mesh->get_cell_center_coords(face.get_inner_cell());
         direction *= safe_inv(direction.len());
         file
-                << face.get_center_position().x << ","
-                << face.get_center_position().y << ","
-                << face.get_center_position().z << ","
+                << face.get_center_coords().x << ","
+                << face.get_center_coords().y << ","
+                << face.get_center_coords().z << ","
                 << face.get_normal().x << ","
                 << face.get_normal().y << ","
                 << face.get_normal().z << ","
@@ -142,13 +142,13 @@ int main() {
         std::array<real_t, 5> q{ n.len(), 1.0, 0.0, 0.0, 0 };
         uc[cell_ind] = q;*/
 
-        auto r = mesh->get_cell(cell_ind).get_center_position();
+        auto r = mesh->get_cell(cell_ind).get_center_coords();
         auto v = 0.0*mhd_vec3_t({0.0, 0.0, 0.5}).cross(r);
         auto p = 0.0*Gamma*(r.x*r.x + r.y*r.y) + 1.0;
         auto d = Gamma;
-        //auto v = mhd_vec3_t({0.0, 0.0, 0.0});//.cross(mesh->get_cell(cell_ind).get_center_position());
+        //auto v = mhd_vec3_t({0.0, 0.0, 0.0});//.cross(mesh->get_cell(cell_ind).get_center_coords());
 
-        //if (mesh->get_cell(cell_ind).get_center_position().x < 5.0) {
+        //if (mesh->get_cell(cell_ind).get_center_coords().x < 5.0) {
         //    d = 2.0, p = 5.0;
         //} else {
         //    d = 1.0, p = 1.0;
@@ -204,15 +204,15 @@ int main(int argc, char** argv) {
     MhdFvSolverT<MhdPhysicsIdealGas> solver(mesh);
     for (uint_t cell_ind = 0; cell_ind < mesh->num_cells(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
-        double x = mesh->get_cell(cell_ind).get_center_position().x;
-        double y = mesh->get_cell(cell_ind).get_center_position().y;
+        double x = mesh->get_cell(cell_ind).get_center_coords().x;
+        double y = mesh->get_cell(cell_ind).get_center_coords().y;
         d += 0.2*std::sin(M_PI*(x+y));
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
         MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*double d, p;
-        if (mesh->get_cell(cell_ind).get_center_position().x < 1.0) {
+        if (mesh->get_cell(cell_ind).get_center_coords().x < 1.0) {
             d = 1.0, p = 1.0;
         } else {
             d = 0.125, p = 0.1;
@@ -222,10 +222,10 @@ int main(int argc, char** argv) {
         uc[cell_ind] = v.cons;*/
 
         /*double d, p, w;
-        if (mesh->get_cell(cell_ind).get_center_position().x < 1.0) {
+        if (mesh->get_cell(cell_ind).get_center_coords().x < 1.0) {
             d = 3.857134, p = 10.33333, w = 2.629369;
         } else {
-            auto x = mesh->get_cell(cell_ind).get_center_position().x;
+            auto x = mesh->get_cell(cell_ind).get_center_coords().x;
             d = 1.0 + 0.2*std::sin(5.0*x);
             p = 1, w = 0;
         }
@@ -234,8 +234,8 @@ int main(int argc, char** argv) {
         uc[cell_ind] = v.cons;*/
 
         /*double d, p, u, v;
-        double X = mesh->get_cell(cell_ind).get_center_position().x;
-        double Y = mesh->get_cell(cell_ind).get_center_position().y;
+        double X = mesh->get_cell(cell_ind).get_center_coords().x;
+        double Y = mesh->get_cell(cell_ind).get_center_coords().y;
         if (X < 0.5) {
             if (Y < 0.5) {
                 //LB

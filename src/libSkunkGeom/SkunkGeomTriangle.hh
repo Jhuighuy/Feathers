@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SkunkGeomEdge.hh"
+#include "libFeathersMesh/Shape.hh"
 
 /**
  * Triangle in 2D space.

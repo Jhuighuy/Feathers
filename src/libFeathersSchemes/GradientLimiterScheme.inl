@@ -209,7 +209,7 @@ void tGradientLimiterScheme<
          * clamp the node delta with computed local delta extrema. */
         lim_u[cell].fill(1.0), cell.for_each_face([&](tFaceIter face) {
             const vec3_t dr =
-                face.get_center_position() - cell.get_center_position();
+                face.get_center_coords() - cell.get_center_coords();
             for (int_t i = 0; i < num_vars; ++i) {
                 const real_t du_face = u(cell, dr, 0.0)[i];
                 const real_t limiter =

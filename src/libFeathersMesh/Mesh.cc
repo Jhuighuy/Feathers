@@ -26,7 +26,7 @@
  */
 
 #include "Mesh.hh"
-#include <libSkunkGeom/SkunkGeomEdge.hh>
+#include <libFeathersMesh/Shape.hh>
 #include <libSkunkGeom/SkunkGeomTriangle.hh>
 #include <libSkunkMisc/SkunkMiscParallel.hh>
 #include <libSkunkMisc/SkunkMiscReordering.hh>
@@ -48,8 +48,7 @@ bool cMesh::read_triangle(const char *path) {
     std::ifstream node_file(path + std::string("node"));
     assert1(node_file.is_open());
     uint_t num_nodes = 0;
-    node_file >> num_nodes;
-    node_file >> m_dim;
+    node_file >> num_nodes >> m_dim;
     std::getline(node_file, line);
     for (uint_t i = 0; i < num_nodes; ++i) {
         uint_t node_index = 0;
@@ -145,53 +144,66 @@ namespace feathers {
 
 /** Get minimal edge length. */
 real_t cMesh::get_min_edge_length() const {
-    return for_range_min(0u, num_edges(), 1e+6, [&](uint_t edge_index) {
-        return get_edge_length(edge_index);
-    });
+    return
+        m_min_edge_length > 0.0 ? m_min_edge_length :
+        (m_min_edge_length = for_range_min(0u, num_edges(), huge, [&](uint_t edge_index) {
+            return get_edge_length(edge_index);
+        }));
 }   // cMesh::get_min_edge_length
 /** Get maximal edge length. */
 real_t cMesh::get_max_edge_length() const {
-    return for_range_max(0u, num_edges(), 0e+0, [&](uint_t edge_index) {
-        return get_edge_length(edge_index);
-    });
+    return
+        m_max_edge_length > 0.0 ? m_max_edge_length :
+        (m_max_edge_length = for_range_max(0u, num_edges(), 0.0, [&](uint_t edge_index) {
+            return get_edge_length(edge_index);
+        }));
 }   // cMesh::get_max_edge_length
 
 /** Get minimal face area. */
 real_t cMesh::get_min_face_area() const {
-    return for_range_min(0u, num_faces(), 1e+6, [&](uint_t face_index) {
-        return get_face_area(face_index);
-    });
+    return
+        m_min_face_area > 0.0 ? m_min_face_area :
+        (m_min_face_area = for_range_min(0u, num_faces(), huge, [&](uint_t face_index) {
+            return get_face_area(face_index);
+        }));
 }   // cMesh::get_min_face_area
 /** Get maximal face area. */
 real_t cMesh::get_max_face_area() const {
-    return for_range_max(0u, num_faces(), 0e+0, [&](uint_t face_index) {
-        return get_face_area(face_index);
-    });
+    return
+        m_max_face_area > 0.0 ? m_max_face_area :
+        (m_max_face_area = for_range_max(0u, num_faces(), 0.0, [&](uint_t face_index) {
+            return get_face_area(face_index);
+        }));
 }   // cMesh::get_max_face_area
 
 /** Get minimal cell volume. */
 real_t cMesh::get_min_cell_volume() const {
-    return for_range_min(0u, num_cells(), 1e+6, [&](uint_t cell_index) {
-        return get_cell_volume(cell_index);
-    });
+    return
+        m_min_cell_volume > 0.0 ? m_min_cell_volume :
+        (m_min_cell_volume = for_range_min(0u, num_cells(), huge, [&](uint_t cell_index) {
+            return get_cell_volume(cell_index);
+        }));
 }   // cMesh::get_min_cell_volume
 /** Get maximal cell volume. */
 real_t cMesh::get_max_cell_volume() const {
-    return for_range_max(0u, num_cells(), 0e+0, [&](uint_t cell_index) {
-        return get_cell_volume(cell_index);
-    });
+    return
+        m_max_cell_volume > 0.0 ? m_max_cell_volume :
+        (m_max_cell_volume = for_range_max(0u, num_cells(), 0.0, [&](uint_t cell_index) {
+            return get_cell_volume(cell_index);
+        }));
 }   // cMesh::get_max_cell_volume
 
 /** Compute mesh orthogonality.
  ** Mesh orthogonality is defined as a. */
 real_t cMesh::get_orthogonality() const {
-    return for_range_min(begin_face(0), end_face(0), 1e+6, [&](uint_t face_index) {
+    /*return for_range_min(begin_face(0), end_face(0), 1e+6, [&](uint_t face_index) {
         const Face& face = get_face(face_index);
-        const vec3_t direction = get_cell_center_position(face.get_outer_cell()) -
-                                 get_cell_center_position(face.get_inner_cell());
-        const real_t orth = 0.0;//glm::dot(face.get_normal(), direction)/glm::length(direction);
+        const vec3_t direction = get_cell_center_coords(face.get_outer_cell()) -
+                                 get_cell_center_coords(face.get_inner_cell());
+        const real_t orth = glm::dot(face.get_normal(), direction)/glm::length(direction);
         return orth;
-    });
+    });*/
+    return huge;
 }   // cMesh::get_orthogonality
 
 // ------------------------------------------------------------------------------------ //
@@ -204,7 +216,7 @@ uint_t cMesh::insert_node(const mesh_node1_t& node_, vec3_t p, uint_t mark) {
     /** @todo Refactor me! */
     const uint_t node_index = allocate_node_(node_);
     set_mark(eNodeTag, node_index, mark);
-    set_node_position(node_index, p);
+    set_node_coords(node_index, p);
     const vec3_t& node_geometry = p;
     if (m_dim <= 2) {
         FEATHERS_ASSERT(node_geometry.z == 0.0);
@@ -283,7 +295,7 @@ uint_t cMesh::insert_face(const mesh_face_node1_t& face_, uint_t mark) {
     Face& face = get_face(face_index);
     set_mark(eFaceTag, face_index, mark);
     set_face_area(face_index, 1.0);
-    set_face_center_position(face_index, get_node_position(face.begin_node()[0]));
+    set_face_center_coords(face_index, get_node_coords(face.begin_node()[0]));
     set_face_normal(face_index, {1.0, 0.0, 0.0});
     return face_index;
 }   // cMesh::insert_face
@@ -297,13 +309,13 @@ uint_t cMesh::insert_face(const mesh_face_segment2_t& face_, uint_t mark) {
     /* Set up the face geometry. */
     Face& face = get_face(face_index);
     const mhd_seg2_t face_geometry = {
-        vec2_t(get_node_position(face.begin_node()[0])),
-        vec2_t(get_node_position(face.begin_node()[1])),
+        vec2_t(get_node_coords(face.begin_node()[0])),
+        vec2_t(get_node_coords(face.begin_node()[1])),
     };
     set_mark(eFaceTag, face_index, mark);
     set_face_area(face_index, mhd_seg2_t::len(face_geometry));
     set_face_normal(face_index, mhd_seg2_t::normal3(face_geometry));
-    set_face_center_position(face_index, vec3_t(0.5*(face_geometry.p1 + face_geometry.p2), 0.0));
+    set_face_center_coords(face_index, vec3_t(0.5 * (face_geometry.p1 + face_geometry.p2), 0.0));
     return face_index;
 }   // cMesh::insert_face
 /*
@@ -316,14 +328,14 @@ uint_t cMesh::insert_face(const mesh_face_triangle3_t& face_, uint_t mark) {
     /* Set up the face geometry. */
     Face& face = get_face(face_index);
     const mhd_tri3_t face_geometry = {
-        get_node_position(face.begin_node()[0]),
-        get_node_position(face.begin_node()[1]),
-        get_node_position(face.begin_node()[2]),
+        get_node_coords(face.begin_node()[0]),
+        get_node_coords(face.begin_node()[1]),
+        get_node_coords(face.begin_node()[2]),
     };
     set_mark(eFaceTag, face_index, mark);
     set_face_area(face_index, mhd_tri3_t::area(face_geometry));
     set_face_normal(face_index, mhd_tri3_t::normal(face_geometry));
-    set_face_center_position(face_index, mhd_tri3_t::barycenter(face_geometry));
+    set_face_center_coords(face_index, mhd_tri3_t::barycenter(face_geometry));
     return face_index;
 }   // cMesh::insert_face
 /*
@@ -336,14 +348,14 @@ uint_t cMesh::insert_face(const mesh_face_quadrangle4_t& face_, uint_t mark) {
     /* Set up the face geometry. */
     Face& face = get_face(face_index);
     const mhd_tri3_t face_geometry1 = {
-        get_node_position(face.begin_node()[0]),
-        get_node_position(face.begin_node()[1]),
-        get_node_position(face.begin_node()[2]),
+        get_node_coords(face.begin_node()[0]),
+        get_node_coords(face.begin_node()[1]),
+        get_node_coords(face.begin_node()[2]),
     };
     const mhd_tri3_t face_geometry2 = {
-        get_node_position(face.begin_node()[2]),
-        get_node_position(face.begin_node()[3]),
-        get_node_position(face.begin_node()[0]),
+        get_node_coords(face.begin_node()[2]),
+        get_node_coords(face.begin_node()[3]),
+        get_node_coords(face.begin_node()[0]),
     };
     const auto a1 = mhd_tri3_t::area(face_geometry1);
     const auto a2 = mhd_tri3_t::area(face_geometry2);
@@ -353,12 +365,12 @@ uint_t cMesh::insert_face(const mesh_face_quadrangle4_t& face_, uint_t mark) {
     const auto a = a1 + a2;
     if (a != 0.0) {
         set_face_area(face_index, a1 + a2);
-        set_face_center_position(face_index, a1/(a1 + a2)*mhd_tri3_t::barycenter(face_geometry1) +
-                                 a2/(a1 + a2)*mhd_tri3_t::barycenter(face_geometry2));
+        set_face_center_coords(face_index, a1 / (a1 + a2) * mhd_tri3_t::barycenter(face_geometry1) +
+                                           a2 / (a1 + a2) * mhd_tri3_t::barycenter(face_geometry2));
     } else {
         set_face_area(face_index, 0.0);
-        set_face_center_position(face_index, 0.5*mhd_tri3_t::barycenter(face_geometry1) +
-                                 0.5*mhd_tri3_t::barycenter(face_geometry2));
+        set_face_center_coords(face_index, 0.5 * mhd_tri3_t::barycenter(face_geometry1) +
+                                           0.5 * mhd_tri3_t::barycenter(face_geometry2));
     }
     auto nn = a1*mhd_tri3_t::normal(face_geometry1) + a2*mhd_tri3_t::normal(face_geometry2);
     set_mark(eFaceTag, face_index, mark);
@@ -411,31 +423,31 @@ uint_t cMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, ui
 template<typename geom_t, typename mesh_cell_t>
 SKUNK_INLINE void init_cell_geometry_2d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
     geom_t cell_geometry{};
-    for (uint_t node_local = 0; node_local < cell.num_nodes(); ++node_local) {
+    for (uint_t node_local = 0; node_local < cell._num_nodes(); ++node_local) {
         const uint_t node_index = cell.begin_node()[node_local];
-        cell_geometry.node(node_local) = vec2_t(mesh.get_node_position(node_index));
+        cell_geometry.node(node_local) = vec2_t(mesh.get_node_coords(node_index));
     }
-    mesh.set_cell_center_position(cell_index, cell_geometry.barycenter());
+    mesh.set_cell_center_coords(cell_index, cell_geometry.barycenter());
     mesh.set_cell_volume(cell_index, cell_geometry.area());
 }   // init_cell_geometry_
 template<typename geom_t, typename mesh_cell_t>
 SKUNK_INLINE void init_cell_geometry_23d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
     geom_t cell_geometry{};
-    for (uint_t node_local = 0; node_local < cell.num_nodes(); ++node_local) {
+    for (uint_t node_local = 0; node_local < cell._num_nodes(); ++node_local) {
         const uint_t node_index = cell.begin_node()[node_local];
-        cell_geometry.node(node_local) = (mesh.get_node_position(node_index));
+        cell_geometry.node(node_local) = (mesh.get_node_coords(node_index));
     }
-    mesh.set_cell_center_position(cell_index, cell_geometry.barycenter(cell_geometry));
+    mesh.set_cell_center_coords(cell_index, cell_geometry.barycenter(cell_geometry));
     mesh.set_cell_volume(cell_index, cell_geometry.area(cell_geometry));
 }   // init_cell_geometry_
 template<typename geom_t, typename mesh_cell_t>
 SKUNK_INLINE void init_cell_geometry_3d_(cMesh& mesh, mesh_cell_t& cell, uint_t cell_index) {
     geom_t cell_geometry{};
-    for (uint_t node_local = 0; node_local < cell.num_nodes(); ++node_local) {
+    for (uint_t node_local = 0; node_local < cell._num_nodes(); ++node_local) {
         const uint_t node_index = cell.begin_node()[node_local];
-        cell_geometry.node(node_local) = mesh.get_node_position(node_index);
+        cell_geometry.node(node_local) = mesh.get_node_coords(node_index);
     }
-    mesh.set_cell_center_position(cell_index, cell_geometry.barycenter());
+    mesh.set_cell_center_coords(cell_index, cell_geometry.barycenter());
     mesh.set_cell_volume(cell_index, cell_geometry.volume());
 }   // init_cell_geometry_
 /** @} */
@@ -454,11 +466,11 @@ uint_t cMesh::insert_cell(const mesh_cell_segment2_t& cell_, uint_t mark) {
      * Calculate cell area and verify orientation.
      */
     const mhd_seg2_t cell_geometry = {
-            vec2_t(get_node_position(cell.begin_node()[0])),
-            vec2_t(get_node_position(cell.begin_node()[1])),
+            vec2_t(get_node_coords(cell.begin_node()[0])),
+            vec2_t(get_node_coords(cell.begin_node()[1])),
     };
     set_mark(eCellTag, cell_index, mark);
-    set_cell_center_position(cell_index, vec3_t(0.5*(cell_geometry.p1 + cell_geometry.p2), 0.0));
+    set_cell_center_coords(cell_index, vec3_t(0.5 * (cell_geometry.p1 + cell_geometry.p2), 0.0));
     set_cell_volume(cell_index, mhd_seg2_t::len(cell_geometry));
     return cell_index;
 }   // cMesh::insert_cell
@@ -502,15 +514,15 @@ uint_t cMesh::insert_cell(const mesh_cell_pyramid5_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     mhd_pyra3d_t cell_shape{
-            get_node_position(cell.begin_node()[0]),
-            get_node_position(cell.begin_node()[1]),
-            get_node_position(cell.begin_node()[2]),
-            get_node_position(cell.begin_node()[3]),
-            get_node_position(cell.begin_node()[4]),
+            get_node_coords(cell.begin_node()[0]),
+            get_node_coords(cell.begin_node()[1]),
+            get_node_coords(cell.begin_node()[2]),
+            get_node_coords(cell.begin_node()[3]),
+            get_node_coords(cell.begin_node()[4]),
     };
     set_mark(eCellTag, cell_index, mark);
     set_cell_volume(cell_index, cell_shape.volume());
-    set_cell_center_position(cell_index, cell_shape.barycenter());
+    set_cell_center_coords(cell_index, cell_shape.barycenter());
     return cell_index;
 }
 /*
@@ -526,18 +538,18 @@ uint_t cMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_, uint_t
     const uint_t cell_index = allocate_cell_(cell_);
     Cell& cell = get_cell(cell_index);
     mhd_hexa3d_t cell_shape{
-            get_node_position(cell.begin_node()[0]),
-            get_node_position(cell.begin_node()[1]),
-            get_node_position(cell.begin_node()[2]),
-            get_node_position(cell.begin_node()[3]),
-            get_node_position(cell.begin_node()[4]),
-            get_node_position(cell.begin_node()[5]),
-            get_node_position(cell.begin_node()[6]),
-            get_node_position(cell.begin_node()[7]),
+            get_node_coords(cell.begin_node()[0]),
+            get_node_coords(cell.begin_node()[1]),
+            get_node_coords(cell.begin_node()[2]),
+            get_node_coords(cell.begin_node()[3]),
+            get_node_coords(cell.begin_node()[4]),
+            get_node_coords(cell.begin_node()[5]),
+            get_node_coords(cell.begin_node()[6]),
+            get_node_coords(cell.begin_node()[7]),
     };
     set_mark(eCellTag, cell_index, mark);
     set_cell_volume(cell_index, cell_shape.volume());
-    set_cell_center_position(cell_index, cell_shape.barycenter());
+    set_cell_center_coords(cell_index, cell_shape.barycenter());
     return cell_index;
 }
 /** @} */
@@ -611,7 +623,7 @@ SKUNK_INLINE uint_t allocate_element_(const mesh_elem_struct_t& elem, size_t ali
 template<typename mesh_node_struct_t>
 SKUNK_INLINE uint_t cMesh::allocate_node_(const mesh_node_struct_t& node, size_t alignment) {
     m_node_marks.emplace_back();
-    m_node_positions.emplace_back();
+    m_node_coords.emplace_back();
     return allocate_element_(node, alignment, m_node_storage, m_node_offsets);
 }   // cMesh::allocate_node_
 /** @internal
@@ -630,7 +642,7 @@ SKUNK_INLINE uint_t cMesh::allocate_face_(const mesh_face_struct_t& face, size_t
     m_face_marks.emplace_back();
     m_face_areas.emplace_back();
     m_face_normals.emplace_back();
-    m_face_center_positions.emplace_back();
+    m_face_center_coords.emplace_back();
     return allocate_element_(face, alignment, m_face_storage, m_face_offsets);
 }   // cMesh::allocate_face_
 /** @internal
@@ -639,7 +651,7 @@ template<typename mesh_cell_struct_t>
 SKUNK_INLINE uint_t cMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
     m_cell_marks.emplace_back();
     m_cell_volumes.emplace_back();
-    m_cell_center_positions.emplace_back();
+    m_cell_center_coords.emplace_back();
     return allocate_element_(cell, alignment, m_cell_storage, m_cell_offsets);
 }   // cMesh::allocate_cell_
 
@@ -722,7 +734,7 @@ void cMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
     /* Reorder nodes bytes. */
     reorder_nodes_bytes_(node_reordering);
     reorder(node_reordering, m_node_marks.begin());
-    reorder(node_reordering, m_node_positions.begin());
+    reorder(node_reordering, m_node_coords.begin());
 }   // cMesh::reorder_nodes
 /** Change order of all edges. */
 void cMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
@@ -755,7 +767,7 @@ void cMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
     reorder(face_reordering, m_face_marks.begin());
     reorder(face_reordering, m_face_areas.begin());
     reorder(face_reordering, m_face_normals.begin());
-    reorder(face_reordering, m_face_center_positions.begin());
+    reorder(face_reordering, m_face_center_coords.begin());
 }   // cMesh::reorder_faces
 /** Change order of all cells. */
 void cMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
@@ -771,7 +783,7 @@ void cMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
     reorder_cells_bytes_(cell_reordering);
     reorder(cell_reordering, m_cell_marks.begin());
     reorder(cell_reordering, m_cell_volumes.begin());
-    reorder(cell_reordering, m_cell_center_positions.begin());
+    reorder(cell_reordering, m_cell_center_coords.begin());
 }   // cMesh::reorder_cells
 
 /** @internal
@@ -871,14 +883,14 @@ void cMesh::reorder_faces() {
  */
 void cMesh::generate_edges() {
     /* Face edge node index tables for various face types. */
-    static const std::map<eElement, std::vector<std::vector<uint_t>>> face_edge_nodes = {
+    static const std::map<eShape, std::vector<std::vector<uint_t>>> face_edge_nodes = {
         /* 1D faces. */
-        {eElement::node,         {{0} } },
+        {eShape::node,         {{0} } },
         /* 2D faces. */
-        {eElement::segment_2,    {{0},    {1} } },
+        {eShape::segment_2,    {{0},    {1} } },
         /* 3D faces. */
-        {eElement::triangle_3,   {{1, 2}, {2, 0}, {0, 1} } },
-        {eElement::quadrangle_4, {{0, 1}, {1, 2}, {2, 3}, {3, 0} } },
+        {eShape::triangle_3,   {{1, 2}, {2, 0}, {0, 1} } },
+        {eShape::quadrangle_4, {{0, 1}, {1, 2}, {2, 3}, {3, 0} } },
     };
 
     /* Build a map of the existing edges.
@@ -892,7 +904,7 @@ void cMesh::generate_edges() {
     /* Generate missing edges. */
     for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
         Face& face = get_face(face_index);
-        for (uint_t edge_local = 0; edge_local < face.num_edges(); ++edge_local) {
+        for (uint_t edge_local = 0; edge_local < face._num_edges(); ++edge_local) {
             uint_t& edge_index = face.begin_edge()[edge_local];
             if (edge_index != npos) {
                 continue;
@@ -900,7 +912,7 @@ void cMesh::generate_edges() {
             /* Collect edge nodes using the table. */
             std::vector<uint_t> edge_nodes;
             for (uint_t node_local : face_edge_nodes.at(face.get_type()).at(edge_local)) {
-                FEATHERS_ASSERT(node_local < face.num_nodes());
+                FEATHERS_ASSERT(node_local < face._num_nodes());
                 const uint_t node_index = face.begin_node()[node_local];
                 edge_nodes.push_back(node_index);
             }
@@ -934,16 +946,16 @@ void cMesh::generate_edges() {
 void cMesh::generate_faces() {
     /* Cell face node index tables for various cell types. */
     static const std::map<
-            eElement, std::vector<std::vector<uint_t>>> cell_face_nodes = {
+            eShape, std::vector<std::vector<uint_t>>> cell_face_nodes = {
         /* 1D cells. */
-        {eElement::segment_2,     {{0},          {1} } },
+        {eShape::segment_2,     {{0},          {1} } },
         /* 2D cells. */
-        {eElement::triangle_3,    {{1, 2},       {2, 0},       {0, 1} } },
-        {eElement::quadrangle_4,  {{0, 1},       {1, 2},       {2, 3},       {3, 0} } },
+        {eShape::triangle_3,    {{1, 2},       {2, 0},       {0, 1} } },
+        {eShape::quadrangle_4,  {{0, 1},       {1, 2},       {2, 3},       {3, 0} } },
         /* 3D cells.
          * TODO: Add other cell types! */
-        {eElement::tetrahedron_4, {{0, 2, 1},    {0, 1, 3},    {1, 2, 3},    {2, 0, 3} } },
-        {eElement::hexahedron_8,  {{0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4},
+        {eShape::tetrahedron_4, {{0, 2, 1},    {0, 1, 3},    {1, 2, 3},    {2, 0, 3} } },
+        {eShape::hexahedron_8,  {{0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4},
                                       {0, 3, 2, 1}, {4, 5, 6, 7} } },
     };
 
@@ -958,7 +970,7 @@ void cMesh::generate_faces() {
     /* Generate missing faces. */
     for (uint_t cell_index = 0; cell_index < num_cells(); ++cell_index) {
         Cell& cell = get_cell(cell_index);
-        for (uint_t face_local = 0; face_local < cell.num_faces(); ++face_local) {
+        for (uint_t face_local = 0; face_local < cell._num_faces(); ++face_local) {
             uint_t& face_index = cell.begin_face()[face_local];
             if (face_index != npos) {
                 continue;
@@ -966,7 +978,7 @@ void cMesh::generate_faces() {
             /* Collect face nodes using the table. */
             std::vector<uint_t> face_nodes;
             for (uint_t node_local : cell_face_nodes.at(cell.get_type()).at(face_local)) {
-                FEATHERS_ASSERT(node_local < cell.num_nodes());
+                FEATHERS_ASSERT(node_local < cell._num_nodes());
                 const uint_t node_index = cell.begin_node()[node_local];
                 face_nodes.push_back(node_index);
             }
@@ -1020,15 +1032,15 @@ void cMesh::generate_faces() {
  */
 void cMesh::generate_boundary_cells() {
     /* A node and edge flip table for various face types. */
-    static const std::map<eElement, std::pair<std::vector<uint_t>,
+    static const std::map<eShape, std::pair<std::vector<uint_t>,
                                                       std::vector<uint_t>>> face_nodes_edges_flip_table {
         /* 1D faces. */
-        {eElement::node,         {{0},          {0} } },
+        {eShape::node,         {{0},          {0} } },
         /* 2D faces. */
-        {eElement::segment_2,    {{1, 0},       {1, 0} } },
+        {eShape::segment_2,    {{1, 0},       {1, 0} } },
         /* 3D faces. */
-        {eElement::triangle_3,   {{0, 2, 1},    {0, 2, 1} } },
-        {eElement::quadrangle_4, {{0, 3, 2, 1}, {0, 3, 2, 1} } },
+        {eShape::triangle_3,   {{0, 2, 1},    {0, 2, 1} } },
+        {eShape::quadrangle_4, {{0, 3, 2, 1}, {0, 3, 2, 1} } },
     };
 
     /* Generate boundary cells and fix boundary faces orientation. */
@@ -1062,8 +1074,8 @@ void cMesh::generate_boundary_cells() {
             const auto node_iter = std::find(face.begin_node(), face.end_node(), node_index);
             if (node_iter == face.end_node()) {
                 /* Reflect an interior cell node. */
-                vec3_t node_pos = get_node_position(node_index);
-                const vec3_t delta = node_pos - get_face_center_position(face_index);
+                vec3_t node_pos = get_node_coords(node_index);
+                const vec3_t delta = node_pos - get_face_center_coords(face_index);
                 node_pos -= 2.0*glm::dot(delta, get_face_normal(face_index))*get_face_normal(face_index);
                 const mesh_node1_t node;
                 boundary_cell_nodes.push_back(
@@ -1078,7 +1090,7 @@ void cMesh::generate_boundary_cells() {
         const uint_t boundary_cell_index =
             insert_cell(boundary_cell_nodes, get_mark(eFaceTag, face_index), boundary_cell_dim);
         Cell& boundary_cell = get_cell(boundary_cell_index);
-        while (boundary_cell.num_faces() != 1) {
+        while (boundary_cell._num_faces() != 1) {
             boundary_cell.erase_face(0);
         }
         boundary_cell.begin_face()[0] = face_index;

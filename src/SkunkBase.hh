@@ -51,7 +51,7 @@
 #include <algorithm>
 #include <type_traits>
 
-//#define GLM_FORCE_CTOR_INIT 1
+#define GLM_FORCE_CTOR_INIT 1
 #include <glm/glm.hpp>
 
 // ************************************************************************************ //
@@ -225,13 +225,13 @@ namespace feathers {
 /**************************************************************************/
 
 /** @{ */
-#define FEATHERS_CONST_OVERLOAD_T(T, type, name, args, ...) \
+#define FEATHERS_CONST_OVERLOAD_T(T, return_type, method_name, arguments, ...) \
     /** @{ */ \
-    T type name args __VA_ARGS__ \
-    T const type name args const __VA_ARGS__ \
+    T return_type method_name arguments __VA_ARGS__ \
+    T const return_type method_name arguments const __VA_ARGS__ \
     /** @} */
-#define FEATHERS_CONST_OVERLOAD(type, name, args, ...) \
-    FEATHERS_CONST_OVERLOAD_T(, type, name, args, __VA_ARGS__)
+#define FEATHERS_CONST_OVERLOAD(return_type, method_name, arguments, ...) \
+    FEATHERS_CONST_OVERLOAD_T(, return_type, method_name, arguments, __VA_ARGS__)
 /** @} */
 
 #define FEATHERS_ENSURE(x) do { if(!(x)) { \
@@ -319,6 +319,9 @@ using vec2_t = glm::vec2; using vec3_t = glm::vec3; using vec4_t = glm::vec4;
 using mat2_t = glm::mat2; using mat3_t = glm::mat3; using mat4_t = glm::mat4;
 #endif
 /** @} */
+
+static constexpr real_t huge(1e+16);
+static constexpr real_t qnan = std::numeric_limits<real_t>::quiet_NaN();
 
 /** A @f$e@f$ constant. */
 /** @{ */
@@ -446,7 +449,7 @@ template<typename type_t>
 using tObject = std::enable_shared_from_this<type_t>;
 
 template<typename obj_t, typename obj_ptr_t>
-SKUNK_INLINE auto shared_from_this(const obj_ptr_t& obj) {
+auto shared_from_this(const obj_ptr_t& obj) {
     return std::static_pointer_cast<obj_t>(obj->shared_from_this());
 }   // shared_from_this
 

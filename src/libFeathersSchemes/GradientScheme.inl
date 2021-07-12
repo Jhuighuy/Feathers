@@ -42,7 +42,7 @@ void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
         mat3_t& mat = m_inverse_matrices[cell][0];
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             const vec3_t dr =
-                cell_outer.get_center_position() - cell_inner.get_center_position();
+                cell_outer.get_center_coords() - cell_inner.get_center_coords();
             mat += glm::outerProduct(dr, dr);
         });
     });
@@ -53,17 +53,17 @@ void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
     for_each_boundary_face_cells(*m_mesh, [&](tCellIter cell_inner, tCellIter cell_outer) {
         mat3_t& mat = m_inverse_matrices[cell_outer][0];
         const vec3_t dr =
-            cell_outer.get_center_position() - cell_inner.get_center_position();
+            cell_outer.get_center_coords() - cell_inner.get_center_coords();
         mat += glm::outerProduct(dr, dr);
         cell_inner.for_each_face_cells([&](tCellIter cell_inner_inner,
                                            tCellIter cell_inner_outer) {
             if (cell_inner_inner == cell_inner) {
                 const vec3_t dr_inner =
-                    cell_inner_outer.get_center_position() - cell_inner.get_center_position();
+                    cell_inner_outer.get_center_coords() - cell_inner.get_center_coords();
                 mat += glm::outerProduct(dr_inner, dr_inner);
             } else if (cell_inner_outer == cell_inner) {
                 const vec3_t dr_inner =
-                    cell_inner_inner.get_center_position() - cell_inner.get_center_position();
+                    cell_inner_inner.get_center_coords() - cell_inner.get_center_coords();
                 mat += glm::outerProduct(dr_inner, dr_inner);
             }
         });
@@ -91,7 +91,7 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             const vec3_t dr =
-                cell_outer.get_center_position() - cell_inner.get_center_position();
+                cell_outer.get_center_coords() - cell_inner.get_center_coords();
             for (int_t i = 0; i < num_vars; ++i) {
                 grad_u[cell][i] += (u[cell_outer][i] - u[cell_inner][i])*dr;
             }
@@ -103,7 +103,7 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
     for_each_boundary_face_cells(*m_mesh, [&](tCellIter cell_inner, tCellIter cell_outer) {
       const vec3_t dr =
-          cell_outer.get_center_position() - cell_inner.get_center_position();
+          cell_outer.get_center_coords() - cell_inner.get_center_coords();
         for (int_t i = 0; i < num_vars; ++i) {
             grad_u[cell_outer][i] += (u[cell_outer][i] - u[cell_inner][i])*dr;
         }
@@ -111,13 +111,13 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
                                            tCellIter cell_inner_outer) {
             if (cell_inner_inner == cell_inner) {
                 const vec3_t dr_inner =
-                    cell_inner_outer.get_center_position() - cell_inner.get_center_position();
+                    cell_inner_outer.get_center_coords() - cell_inner.get_center_coords();
                 for (int_t i = 0; i < num_vars; ++i) {
                     grad_u[cell_outer][i] += (u[cell_inner_outer][i] - u[cell_inner][i])*dr_inner;
                 }
             } else if (cell_inner_outer == cell_inner) {
                 const vec3_t dr_inner =
-                    cell_inner_inner.get_center_position() - cell_inner.get_center_position();
+                    cell_inner_inner.get_center_coords() - cell_inner.get_center_coords();
                 for (int_t i = 0; i < num_vars; ++i) {
                     grad_u[cell_outer][i] += (u[cell_inner_inner][i] - u[cell_inner][i])*dr_inner;
                 }

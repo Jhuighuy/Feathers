@@ -280,13 +280,13 @@ public:
     // ---------------------------------------------------------------------- //
 
     /** Get node position. */
-    const vec3_t& get_position() const {
-        return this->get_mesh()->get_node_position(this->get_index());
+    const vec3_t& get_coords() const {
+        return this->get_mesh()->get_node_coords(this->get_index());
     }
     /** Set node position. */
     template<class tMesh = cMesh>
-    std::enable_if_t<!std::is_const_v<tMesh>> set_position(const vec3_t& node_position) {
-        this->get_mesh()->set_node_position(this->get_index(), node_position);
+    std::enable_if_t<!std::is_const_v<tMesh>> set_coords(const vec3_t& node_coords) {
+        this->get_mesh()->set_node_coords(this->get_index(), node_coords);
     }
 };  // class tNodeIterBase
 
@@ -399,13 +399,13 @@ public:
     }
 
     /** Get face barycenter. */
-    const vec3_t& get_center_position() const {
-        return this->get_mesh()->get_face_center_position(this->get_index());
+    const vec3_t& get_center_coords() const {
+        return this->get_mesh()->get_face_center_coords(this->get_index());
     }
     /** Set face barycenter. */
     template<class tMesh = cMesh>
-    std::enable_if_t<!std::is_const_v<tMesh>> set_center_position(const vec3_t& face_center_position) {
-        this->get_mesh()->set_face_center_position(this->get_index(), face_center_position);
+    std::enable_if_t<!std::is_const_v<tMesh>> set_center_coords(const vec3_t& face_center_coords) {
+        this->get_mesh()->set_face_center_coords(this->get_index(), face_center_coords);
     }
 };  // class tFaceIterBase
 
@@ -448,13 +448,13 @@ public:
     }
 
     /** Get cell barycenter. */
-    const vec3_t& get_center_position() const {
-        return this->get_mesh()->get_cell_center_position(this->get_index());
+    const vec3_t& get_center_coords() const {
+        return this->get_mesh()->get_cell_center_coords(this->get_index());
     }
     /** Set cell barycenter. */
     template<class tMesh = cMesh>
-    std::enable_if_t<!std::is_const_v<tMesh>> set_center_position(const vec3_t& cell_center_position) {
-        this->get_mesh()->set_cell_center_position(this->get_index(), cell_center_position);
+    std::enable_if_t<!std::is_const_v<tMesh>> set_center_coords(const vec3_t& cell_center_coords) {
+        this->get_mesh()->set_cell_center_coords(this->get_index(), cell_center_coords);
     }
 };  // class tCellIterBase
 

@@ -104,9 +104,9 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_va
         const tCellIter cell_outer = face.get_outer_cell();
         const tCellIter cell_inner = face.get_inner_cell();
         const vec3_t dr_outer =
-            face.get_center_position() - cell_outer.get_center_position();
+            face.get_center_coords() - cell_outer.get_center_coords();
         const vec3_t dr_inner =
-            face.get_center_position() - cell_inner.get_center_position();
+            face.get_center_coords() - cell_inner.get_center_coords();
         const auto u_outer = u_rec(cell_outer, dr_outer);
         const auto u_inner = u_rec(cell_inner, dr_inner);
 
