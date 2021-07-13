@@ -45,16 +45,16 @@ bool cMesh::read_triangle(const char *path) {
     std::string line;
 
     std::ifstream node_file(path + std::string("node"));
-    assert1(node_file.is_open());
+    FEATHERS_ENSURE(node_file.is_open());
     uint_t num_nodes = 0;
     node_file >> num_nodes >> m_dim;
     std::getline(node_file, line);
     for (uint_t i = 0; i < num_nodes; ++i) {
         uint_t node_index = 0;
-        vec3_t node_pos{};
+        vec3_t node_pos;
         node_file >> node_index >> node_pos.x >> node_pos.y;
         std::getline(node_file, line);
-        assert1(insert_node(mesh_node1_t(), node_pos) == node_index);
+        FEATHERS_ENSURE(node_index == insert_node(mesh_node1_t(), node_pos));
     }
 
     std::ifstream face_file(path + std::string("edge"));
@@ -64,11 +64,12 @@ bool cMesh::read_triangle(const char *path) {
     std::getline(face_file, line);
     for (uint_t i = 0; i < num_faces; ++i) {
         uint_t face_index = 0;
-        std::vector<uint_t> face_nodes(2);
+        std::array<uint_t, 2> face_nodes{npos};
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> mark;
+        FEATHERS_ENSURE(
+            face_index == insert_face(mesh_face_segment2_t(face_nodes.begin(), face_nodes.end()), mark));
         std::getline(face_file, line);
-        assert1(insert_face(mesh_face_segment2_t(face_nodes.begin(), face_nodes.end()), mark) == face_index);
     }
 
     std::ifstream cell_file(path + std::string("ele"));
@@ -78,10 +79,11 @@ bool cMesh::read_triangle(const char *path) {
     std::getline(cell_file, line);
     for (uint_t i = 0; i < num_cells; ++i) {
         uint_t cell_index = 0;
-        std::vector<uint_t> cell_nodes(3);
+        std::array<uint_t, 3> cell_nodes{npos};
         cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2];
+        FEATHERS_ENSURE(
+            cell_index == insert_cell(mesh_cell_triangle3_t(cell_nodes.begin(), cell_nodes.end())));
         std::getline(cell_file, line);
-        assert1(insert_cell(mesh_cell_triangle3_t(cell_nodes.begin(), cell_nodes.end())) == cell_index);
     }
 
     generate_faces();
@@ -95,7 +97,7 @@ bool cMesh::read_tetgen(const char *path) {
     std::string line;
 
     std::ifstream node_file(path + std::string("node"));
-    assert1(node_file.is_open());
+    FEATHERS_ENSURE(node_file.is_open());
     uint_t num_nodes = 0;
     node_file >> num_nodes >> m_dim;
     std::getline(node_file, line);
@@ -103,8 +105,9 @@ bool cMesh::read_tetgen(const char *path) {
         uint_t node_index = 0;
         vec3_t node_pos;
         node_file >> node_index >> node_pos.x >> node_pos.y >> node_pos.z;
+        FEATHERS_ENSURE(
+            node_index == insert_node(mesh_node1_t(), node_pos));
         std::getline(node_file, line);
-        assert1(insert_node(mesh_node1_t(), node_pos) == node_index);
     }
 
     std::ifstream face_file(path + std::string("face"));
@@ -114,24 +117,26 @@ bool cMesh::read_tetgen(const char *path) {
     std::getline(face_file, line);
     for (uint_t i = 0; i < num_faces; ++i) {
         uint_t face_index = 0;
-        std::vector<uint_t> face_nodes(3);
+        std::array<uint_t, 3> face_nodes{npos};
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> face_nodes[2] >> mark;
+        FEATHERS_ENSURE(
+            face_index == insert_face(mesh_face_triangle3_t(face_nodes.begin(), face_nodes.end()), mark));
         std::getline(face_file, line);
-        assert1(insert_face(mesh_face_triangle3_t(face_nodes.begin(), face_nodes.end()), mark) == face_index);
     }
 
     std::ifstream cell_file(path + std::string("ele"));
-    assert1(cell_file.is_open());
+    FEATHERS_ENSURE(cell_file.is_open());
     uint_t num_cells = 0;
     cell_file >> num_cells;
     std::getline(cell_file, line);
     for (uint_t i = 0; i < num_cells; ++i) {
         uint_t cell_index = 0;
-        std::vector<uint_t> cell_nodes(4);
+        std::array<uint_t, 4> cell_nodes{npos};
         cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2] >> cell_nodes[3];
+        FEATHERS_ENSURE(
+            cell_index == insert_cell(mesh_cell_tetrahedron4_t(cell_nodes.begin(), cell_nodes.end())));
         std::getline(cell_file, line);
-        assert1(insert_cell(mesh_cell_tetrahedron4_t(cell_nodes.begin(), cell_nodes.end())) == cell_index);
     }
 
     generate_faces();
@@ -289,11 +294,13 @@ uint_t cMesh::insert_node(const mesh_node1_t& node_, vec3_t p, uint_t mark) {
 uint_t cMesh::insert_edge(const mesh_edge_node1_t& edge_, uint_t mark) {
     const uint_t edge_index = allocate_edge_(edge_);
     set_mark(eEdgeTag, edge_index, mark);
+    set_shape(eEdgeTag, edge_index, eShape::node);
     return edge_index;
 }   // cMesh::insert_edge
 uint_t cMesh::insert_edge(const mesh_edge_segment2_t& edge_, uint_t mark) {
     const uint_t edge_index = allocate_edge_(edge_);
     set_mark(eEdgeTag, edge_index, mark);
+    set_shape(eEdgeTag, edge_index, eShape::segment_2);
     return edge_index;
 }   // cMesh::insert_edge
 /** @} */
@@ -334,21 +341,25 @@ uint_t cMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, ui
 uint_t cMesh::insert_face(const mesh_face_node1_t& face_, uint_t mark) {
     const uint_t face_index = allocate_face_(face_);
     set_mark(eFaceTag, face_index, mark);
+    set_shape(eFaceTag, face_index, eShape::node);
     return face_index;
 }   // cMesh::insert_face
 uint_t cMesh::insert_face(const mesh_face_segment2_t& face_, uint_t mark) {
     const uint_t face_index = allocate_face_(face_);
     set_mark(eFaceTag, face_index, mark);
+    set_shape(eFaceTag, face_index, eShape::segment_2);
     return face_index;
 }   // cMesh::insert_face
 uint_t cMesh::insert_face(const mesh_face_triangle3_t& face_, uint_t mark) {
     const uint_t face_index = allocate_face_(face_);
     set_mark(eFaceTag, face_index, mark);
+    set_shape(eFaceTag, face_index, eShape::triangle_3);
     return face_index;
 }   // cMesh::insert_face
 uint_t cMesh::insert_face(const mesh_face_quadrangle4_t& face_, uint_t mark) {
     const uint_t face_index = allocate_face_(face_);
     set_mark(eFaceTag, face_index, mark);
+    set_shape(eFaceTag, face_index, eShape::quadrangle_4);
     return face_index;
 }   // cMesh::insert_face
 /** @} */
@@ -399,36 +410,43 @@ uint_t cMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, ui
 uint_t cMesh::insert_cell(const mesh_cell_segment2_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::segment_2);
     return cell_index;
 }   // cMesh::insert_cell
 uint_t cMesh::insert_cell(const mesh_cell_triangle3_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::triangle_3);
     return cell_index;
 }   // cMesh::insert_cell
 uint_t cMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::quadrangle_4);
     return cell_index;
 }   // cMesh::insert_cell
 uint_t cMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::tetrahedron_4);
     return cell_index;
 }   // cMesh::insert_face
 uint_t cMesh::insert_cell(const mesh_cell_pyramid5_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::pyramid_5);
     return cell_index;
 }
 uint_t cMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::pentahedron_6);
     return cell_index;
 }   // cMesh::insert_face
 uint_t cMesh::insert_cell(const feathers::mesh_cell_hexahedron8_t& cell_, uint_t mark) {
     const uint_t cell_index = allocate_cell_(cell_);
     set_mark(eCellTag, cell_index, mark);
+    set_shape(eCellTag, cell_index, eShape::hexahedron_8);
     return cell_index;
 }
 /** @} */
@@ -510,6 +528,7 @@ SKUNK_INLINE uint_t cMesh::allocate_node_(const mesh_node_struct_t& node, size_t
 template<typename mesh_edge_struct_t>
 SKUNK_INLINE uint_t cMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment) {
     m_edge_marks.emplace_back();
+    m_edge_shapes.emplace_back();
     m_edge_lengths.emplace_back();
     m_edge_directions.emplace_back();
     return allocate_element_(edge, alignment, m_edge_storage, m_edge_offsets);
@@ -519,6 +538,7 @@ SKUNK_INLINE uint_t cMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t
 template<typename mesh_face_struct_t>
 SKUNK_INLINE uint_t cMesh::allocate_face_(const mesh_face_struct_t& face, size_t alignment) {
     m_face_marks.emplace_back();
+    m_face_shapes.emplace_back();
     m_face_areas.emplace_back();
     m_face_normals.emplace_back();
     m_face_center_coords.emplace_back();
@@ -529,6 +549,7 @@ SKUNK_INLINE uint_t cMesh::allocate_face_(const mesh_face_struct_t& face, size_t
 template<typename mesh_cell_struct_t>
 SKUNK_INLINE uint_t cMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
     m_cell_marks.emplace_back();
+    m_cell_shapes.emplace_back();
     m_cell_volumes.emplace_back();
     m_cell_center_coords.emplace_back();
     return allocate_element_(cell, alignment, m_cell_storage, m_cell_offsets);

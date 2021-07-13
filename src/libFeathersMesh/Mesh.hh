@@ -405,6 +405,8 @@ private:
     std::vector<uint_t> m_marked_face_ranges{0};
     std::vector<uint_t> m_marked_cell_ranges{0};
 
+    // TODO: edge length + direction -> 4D oriented direction.
+    // TODO: face area + normal -> 4D oriented area.
     std::vector<vec3_t> m_node_coords;
     std::vector<real_t> m_edge_lengths;
     std::vector<vec3_t> m_edge_directions;
@@ -843,27 +845,47 @@ public:
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
+    std::vector<eShape> m_edge_shapes;
+    std::vector<eShape> m_face_shapes;
+    std::vector<eShape> m_cell_shapes;
+
     /** Get element shape. */
     /** @{ */
 #if FEATHERS_DOXYGEN
     template<typename tTag>
     uint_t get_mark(tTag, uint_t index) const;
 #else
-    eShape get_shape(tNodeTag, uint_t node_index) const {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return eShape::node;
-    }
     eShape get_shape(tEdgeTag, uint_t edge_index) const {
         FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).get_type();
+        return m_edge_shapes[edge_index];
     }
     eShape get_shape(tFaceTag, uint_t face_index) const {
         FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).get_type();
+        return m_face_shapes[face_index];
     }
     eShape get_shape(tCellTag, uint_t cell_index) const {
         FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).get_type();
+        return m_cell_shapes[cell_index];
+    }
+#endif
+    /** @} */
+    /** Set element shape. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    template<typename tTag>
+    uint_t get_mark(tTag, uint_t index) const;
+#else
+    void set_shape(tEdgeTag, uint_t edge_index, eShape edge_shape) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_shapes[edge_index] = edge_shape;
+    }
+    void set_shape(tFaceTag, uint_t face_index, eShape face_shape) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_shapes[face_index] = face_shape;
+    }
+    void set_shape(tCellTag, uint_t cell_index, eShape cell_shape) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_shapes[cell_index] = cell_shape;
     }
 #endif
     /** @} */

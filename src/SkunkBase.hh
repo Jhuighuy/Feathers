@@ -51,6 +51,7 @@
 #include <algorithm>
 #include <type_traits>
 
+/** Configure GLM to initialize vectors and matrices with zeroes. */
 #define GLM_FORCE_CTOR_INIT 1
 #include <glm/glm.hpp>
 
