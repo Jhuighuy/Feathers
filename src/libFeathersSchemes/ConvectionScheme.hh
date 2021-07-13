@@ -97,9 +97,9 @@ public:
 public:
     explicit tUpwind2ConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_flux(new tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>()),
+        m_flux(new tHLLCFluxScheme<MhdPhysicsIdealGas>()),
         m_gradient_scheme(new tLeastSquaresGradientScheme<num_vars>(m_mesh)),
-        m_gradient_limiter_scheme(new tCubic2GradientLimiterScheme<num_vars>(m_mesh)) {
+        m_gradient_limiter_scheme(new tMinmodGradientLimiterScheme<num_vars>(m_mesh)) {
     }
 
     /** Compute the second-order upwind convection. */

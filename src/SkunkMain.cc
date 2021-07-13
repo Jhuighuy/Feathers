@@ -192,7 +192,9 @@ int main() {
 #include <omp.h>
 
 int main(int argc, char** argv) {
+#if _OPENMP
     omp_set_num_threads(20);
+#endif
 
     std::shared_ptr<cMesh> mesh(new cMesh(2));
 

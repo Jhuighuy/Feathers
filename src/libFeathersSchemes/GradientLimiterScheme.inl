@@ -118,7 +118,7 @@ inline real_t tCubicSlopeLimiter::operator()(real_t du_min, real_t du_max,
     auto limiter = 1.0;
     if (y_cur < y_thr) {
         const auto y_div = y_cur/y_thr;
-        limiter = y_cur + std::pow(y_div, 2) * (3.0 - 2.0 * y_thr + (y_thr - 2.0) * y_div);
+        limiter = y_cur + std::pow(y_div, 2) * (3.0 - 2.0*y_thr + (y_thr - 2.0)*y_div);
     }
     return limiter;
 }   // tCubicSlopeLimiter::operator()

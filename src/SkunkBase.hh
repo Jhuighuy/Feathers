@@ -236,8 +236,9 @@ namespace feathers {
 /** @} */
 
 #define FEATHERS_ENSURE(x) do { if(!(x)) { \
-        std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
-                     __FILE__, __LINE__, __FUNCTION__, FEATHERS_TO_STRING(x)); \
+        std::fprintf( \
+            stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
+            __FILE__, __LINE__, __FUNCTION__, FEATHERS_TO_STRING(x)); \
         std::abort(); \
     } } while (false)
 
@@ -253,20 +254,23 @@ namespace feathers {
 /** Fatal assertion macro. */
 /** @{ */
 #ifdef NDEBUG
-#define FEATHERS_ASSERT_FALSE(m) do { std::abort(); } while (false)
+#define FEATHERS_ASSERT_FALSE(message) do { std::abort(); } while (false)
 #else
-#define FEATHERS_ASSERT_FALSE(m) do { \
-        std::fprintf(stderr, "\nFatal assertion failed:\n%s:%d %s: %s", \
-                     __FILE__, __LINE__, __FUNCTION__, m); \
+#define FEATHERS_ASSERT_FALSE(message) do { \
+        std::fprintf( \
+            stderr, "\nFatal assertion failed:\n%s:%d %s: %s", \
+            __FILE__, __LINE__, __FUNCTION__, message); \
         std::abort(); \
     } while (false)
 #endif
 /** @} */
 
 /** Not implemented macro. */
-#define FEATHERS_NOT_IMPLEMENTED() FEATHERS_ASSERT_FALSE("not implemented.")
+#define FEATHERS_NOT_IMPLEMENTED(...) \
+    FEATHERS_ASSERT_FALSE("not implemented. " __VA_ARGS__)
 /** Not implemented macro. */
-#define FEATHERS_NOT_REACHABLE() FEATHERS_ASSERT_FALSE("not reachable.")
+#define FEATHERS_NOT_REACHABLE(...) \
+    FEATHERS_ASSERT_FALSE("not reachable. " __VA_ARGS__)
 
 }   // namespace feathers
 

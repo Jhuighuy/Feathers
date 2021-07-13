@@ -1110,13 +1110,13 @@ private:
 protected:
 
     /** Change order of all nodes. */
-    void reorder_nodes(const std::vector<uint_t>& node_reordering);
+    void reorder_nodes(const std::vector<uint_t>& node_permutation);
     /** Change order of all edges. */
-    void reorder_edges(const std::vector<uint_t>& edge_reordering);
+    void reorder_edges(const std::vector<uint_t>& edge_permutation);
     /** Change order of all faces. */
-    void reorder_faces(const std::vector<uint_t>& face_reordering);
+    void reorder_faces(const std::vector<uint_t>& face_permutation);
     /** Change order of all cells. */
-    void reorder_cells(const std::vector<uint_t>& cell_reordering);
+    void reorder_cells(const std::vector<uint_t>& cell_permutation);
 
 private:
 

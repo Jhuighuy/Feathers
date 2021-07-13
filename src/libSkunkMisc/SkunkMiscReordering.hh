@@ -43,13 +43,13 @@ namespace feathers {
  * Inverse reordering. Complexity is linear.
  */
 template<typename tIter, typename tInverseMutableIter>
-void inverse_reordering(tIter index_iter, tIter index_iter_end,
-                        tInverseMutableIter inverse_index_iter) {
+void convert_permutation_to_indices(tIter index_iter, tIter index_iter_end,
+                                    tInverseMutableIter inverse_index_iter) {
     size_t index = 0;
     for (; index_iter != index_iter_end; ++index_iter, ++index) {
         *(inverse_index_iter + *index_iter) = index;
     }
-}   // inverse_reordering
+}   // convert_permutation_to_indices
 
 /**
  * Apply reordering.
@@ -79,11 +79,11 @@ void reorder(tMutableIter index_iter, tMutableIter index_iter_end, tValueMutable
     reorder_swap(index_iter, index_iter_end, [&](auto index, auto new_index) {
         std::iter_swap(iter + index, iter + new_index);
     });
-}   // reorder
+}   // permute_inplace
 template<typename tContainer, typename tValueIter>
-void reorder(tContainer indices, tValueIter iter) {
+void permute_inplace(tContainer indices, tValueIter iter) {
     reorder(indices.begin(), indices.end(), iter);
-}   // reorder
+}   // permute_inplace
 /** @} */
 
 }   // namespace feathers

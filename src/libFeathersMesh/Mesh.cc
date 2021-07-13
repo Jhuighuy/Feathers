@@ -593,104 +593,112 @@ SKUNK_INLINE static void swap_elem_bytes_(uint_t first_elem_index, uint_t second
     }
 }   // swap_elem_bytes_
 
-namespace {
-/** @internal
- ** Functor that replaces connected element indices when elements are reordered. */
-class mesh_reorder_func_t {
+class tReorderFunc {
 private:
-    const std::vector<uint_t>& m_elem_inv_reordering;
+    const std::vector<uint_t>& m_indices;
 public:
-    SKUNK_INLINE explicit mesh_reorder_func_t(const std::vector<uint_t>& elem_reordering)
-        : m_elem_inv_reordering(elem_reordering) {
+    explicit tReorderFunc(const std::vector<uint_t>& indices)
+        : m_indices(indices) {
     }
-    SKUNK_INLINE void operator()(uint_t& elem_index) const {
-        if (elem_index != npos) {
-            elem_index = m_elem_inv_reordering.at(static_cast<size_t>(elem_index));
+    void operator()(uint_t& index) const {
+        if (index != npos) {
+            index = m_indices.at(static_cast<size_t>(index));
         }
     }
-};  // class mesh_reorder_func_t
-}   // namespace
+};  // class tReorderFunc
 
 /** Change order of all nodes. */
-void cMesh::reorder_nodes(const std::vector<uint_t>& node_reordering) {
-    /* Inverse reordering. */
-    std::vector<uint_t> node_inv_reordering(node_reordering.size());
-    inverse_reordering(node_reordering.begin(), node_reordering.end(), node_inv_reordering.begin());
-    /* Replace connections with edges. */
-    for_range(0u, num_edges(), [&](uint_t edge_index) {
-        Edge& edge = get_edge(edge_index);
-        std::for_each(edge.begin_node(), edge.end_node(), mesh_reorder_func_t(node_inv_reordering));
-    });
-    /* Replace connections with faces. */
-    for_range(0u, num_faces(), [&](uint_t face_index) {
-        Face& face = get_face(face_index);
-        std::for_each(face.begin_node(), face.end_node(), mesh_reorder_func_t(node_inv_reordering));
-    });
-    /* Replace connections with cells. */
-    for_range(0u, num_cells(), [&](uint_t cell_index) {
-        Cell& cell = get_cell(cell_index);
-        std::for_each(cell.begin_node(), cell.end_node(), mesh_reorder_func_t(node_inv_reordering));
-    });
-    /* Reorder nodes bytes. */
-    reorder_nodes_bytes_(node_reordering);
-    reorder(node_reordering, m_node_marks.begin());
-    reorder(node_reordering, m_node_coords.begin());
+void cMesh::reorder_nodes(const std::vector<uint_t>& node_permutation) {
+    {
+        /* Reconnect edge, face and cells with nodes. */
+        std::vector<uint_t> node_indices(node_permutation.size());
+        convert_permutation_to_indices(
+            node_permutation.begin(), node_permutation.end(), node_indices.begin());
+        for_range(0u, num_edges(), [&](uint_t edge_index) {
+            std::for_each(begin_adjacent_node(eEdgeTag, edge_index),
+                          end_adjacent_node(eEdgeTag, edge_index), tReorderFunc(node_indices));
+        });
+        for_range(0u, num_faces(), [&](uint_t face_index) {
+            std::for_each(begin_adjacent_node(eFaceTag, face_index),
+                          end_adjacent_node(eFaceTag, face_index), tReorderFunc(node_indices));
+        });
+        for_range(0u, num_cells(), [&](uint_t cell_index) {
+            std::for_each(begin_adjacent_node(eCellTag, cell_index),
+                          end_adjacent_node(eCellTag, cell_index), tReorderFunc(node_indices));
+        });
+    }
+    /* Permute node attributes. */
+    reorder_nodes_bytes_(node_permutation);
+    permute_inplace(node_permutation, m_node_marks.begin());
+    permute_inplace(node_permutation, m_node_coords.begin());
 }   // cMesh::reorder_nodes
+
 /** Change order of all edges. */
-void cMesh::reorder_edges(const std::vector<uint_t>& edge_reordering) {
-    /* Inverse reordering. */
-    std::vector<uint_t> edge_inv_reordering(edge_reordering.size());
-    inverse_reordering(edge_reordering.begin(), edge_reordering.end(), edge_inv_reordering.begin());
-    /* Replace connections with faces. */
-    for_range(0u, num_faces(), [&](uint_t face_index) {
-        Face& face = get_face(face_index);
-        std::for_each(face.begin_edge(), face.end_edge(), mesh_reorder_func_t(edge_inv_reordering));
-    });
-    /* Reorder edges bytes. */
-    reorder_edges_bytes_(edge_reordering);
-    reorder(edge_reordering, m_edge_marks.begin());
-    reorder(edge_reordering, m_edge_lengths.begin());
-    reorder(edge_reordering, m_edge_directions.begin());
+void cMesh::reorder_edges(const std::vector<uint_t>& edge_permutation) {
+    {
+        /* Reconnect faces with edges. */
+        std::vector<uint_t> edge_indices(edge_permutation.size());
+        convert_permutation_to_indices(
+            edge_permutation.begin(), edge_permutation.end(), edge_indices.begin());
+        for_range(0u, num_faces(), [&](uint_t face_index) {
+            std::for_each(begin_adjacent_edge(eFaceTag, face_index),
+                          end_adjacent_edge(eFaceTag, face_index), tReorderFunc(edge_indices));
+        });
+    }
+    /* Permute edge attributes. */
+    reorder_edges_bytes_(edge_permutation);
+    permute_inplace(edge_permutation, m_edge_marks.begin());
+    permute_inplace(edge_permutation, m_edge_shapes.begin());
+    permute_inplace(edge_permutation, m_edge_lengths.begin());
+    permute_inplace(edge_permutation, m_edge_directions.begin());
 }   // cMesh::reorder_edges
 /** Change order of all faces. */
-void cMesh::reorder_faces(const std::vector<uint_t>& face_reordering) {
-    /* Inverse reordering. */
-    std::vector<uint_t> face_inv_reordering(face_reordering.size());
-    inverse_reordering(face_reordering.begin(), face_reordering.end(), face_inv_reordering.begin());
-    /* Replace connections with cells. */
-    for_range(0u, num_cells(), [&](uint_t cell_index) {
-        Cell& cell = get_cell(cell_index);
-        std::for_each(cell.begin_face(), cell.end_face(), mesh_reorder_func_t(face_inv_reordering));
-    });
-    /* Reorder faces bytes. */
-    reorder_faces_bytes_(face_reordering);
-    reorder(face_reordering, m_face_marks.begin());
-    reorder(face_reordering, m_face_areas.begin());
-    reorder(face_reordering, m_face_normals.begin());
-    reorder(face_reordering, m_face_center_coords.begin());
+void cMesh::reorder_faces(const std::vector<uint_t>& face_permutation) {
+    {
+        /* Reconnect cells with faces. */
+        std::vector<uint_t> face_indices(face_permutation.size());
+        convert_permutation_to_indices(
+            face_permutation.begin(), face_permutation.end(), face_indices.begin());
+        for_range(0u, num_cells(), [&](uint_t cell_index) {
+            std::for_each(begin_adjacent_face(eCellTag, cell_index),
+                          end_adjacent_face(eCellTag, cell_index), tReorderFunc(face_indices));
+        });
+    }
+    /* Permute face attributes. */
+    reorder_faces_bytes_(face_permutation);
+    permute_inplace(face_permutation, m_face_marks.begin());
+    permute_inplace(face_permutation, m_face_shapes.begin());
+    permute_inplace(face_permutation, m_face_areas.begin());
+    permute_inplace(face_permutation, m_face_normals.begin());
+    permute_inplace(face_permutation, m_face_center_coords.begin());
 }   // cMesh::reorder_faces
 /** Change order of all cells. */
-void cMesh::reorder_cells(const std::vector<uint_t>& cell_reordering) {
-    /* Inverse reordering. */
-    std::vector<uint_t> cell_inv_reordering(cell_reordering.size());
-    inverse_reordering(cell_reordering.begin(), cell_reordering.end(), cell_inv_reordering.begin());
-    /* Replace connections with faces. */
-    for_range(0u, num_faces(), [&](uint_t face_index) {
-        Face& face = get_face(face_index);
-        std::for_each(face.begin_cell(), face.end_cell(), mesh_reorder_func_t(cell_inv_reordering));
-    });
-    /* Reorder cells bytes. */
-    reorder_cells_bytes_(cell_reordering);
-    reorder(cell_reordering, m_cell_marks.begin());
-    reorder(cell_reordering, m_cell_volumes.begin());
-    reorder(cell_reordering, m_cell_center_coords.begin());
+void cMesh::reorder_cells(const std::vector<uint_t>& cell_permutation) {
+    {
+        /* Reconnect faces with cells. */
+        std::vector<uint_t> cell_indices(cell_permutation.size());
+        convert_permutation_to_indices(
+            cell_permutation.begin(), cell_permutation.end(), cell_indices.begin());
+        for_range(0u, num_faces(), [&](uint_t face_index) {
+            std::for_each(begin_adjacent_node(eFaceTag, face_index),
+                          end_adjacent_node(eFaceTag, face_index), tReorderFunc(cell_permutation));
+        });
+    }
+    /* Permute cell attributes. */
+    reorder_cells_bytes_(cell_permutation);
+    permute_inplace(cell_permutation, m_cell_marks.begin());
+    permute_inplace(cell_permutation, m_cell_shapes.begin());
+    permute_inplace(cell_permutation, m_cell_volumes.begin());
+    permute_inplace(cell_permutation, m_cell_center_coords.begin());
 }   // cMesh::reorder_cells
 
 /** @internal
  ** Swap bytes of two elements. */
 SKUNK_INLINE static void reorder_elems_bytes_(std::vector<uint_t> elem_reordering,
-                                              std::vector<byte_t>& elem_storage, std::vector<size_t>& elem_offsets) {
-    reorder_swap(elem_reordering.begin(), elem_reordering.end(), [&](uint_t first_elem_index, uint_t second_elem_index) {
+                                              std::vector<byte_t>& elem_storage,
+                                              std::vector<size_t>& elem_offsets) {
+    reorder_swap(elem_reordering.begin(), elem_reordering.end(),
+                 [&](uint_t first_elem_index, uint_t second_elem_index) {
         swap_elem_bytes_(first_elem_index, second_elem_index, elem_storage, elem_offsets);
     });
 }   // reorder_elems_bytes_
@@ -723,7 +731,8 @@ void cMesh::reorder_faces() {
     {
         std::vector<uint_t> node_reordering(num_nodes());
         std::iota(node_reordering.begin(), node_reordering.end(), 0);
-        std::stable_sort(node_reordering.begin(), node_reordering.end(), [&](uint_t node_ind_1, uint_t node_ind_2) {
+        std::stable_sort(node_reordering.begin(), node_reordering.end(),
+                         [&](uint_t node_ind_1, uint_t node_ind_2) {
             return get_mark(eNodeTag, node_ind_1) < get_mark(eNodeTag, node_ind_2);
         });
         reorder_nodes(node_reordering);
@@ -731,12 +740,14 @@ void cMesh::reorder_faces() {
             m_marked_node_ranges.resize(get_mark(eNodeTag, node_index) + 2);
             m_marked_node_ranges[get_mark(eNodeTag, node_index) + 1] += 1;
         }
-        std::partial_sum(m_marked_node_ranges.begin(), m_marked_node_ranges.end(), m_marked_node_ranges.begin());
+        std::partial_sum(
+            m_marked_node_ranges.begin(), m_marked_node_ranges.end(), m_marked_node_ranges.begin());
     }
     {
         std::vector<uint_t> edge_reordering(num_edges());
         std::iota(edge_reordering.begin(), edge_reordering.end(), 0);
-        std::stable_sort(edge_reordering.begin(), edge_reordering.end(), [&](uint_t edge_ind_1, uint_t edge_ind_2) {
+        std::stable_sort(edge_reordering.begin(), edge_reordering.end(),
+                         [&](uint_t edge_ind_1, uint_t edge_ind_2) {
             return get_mark(eEdgeTag, edge_ind_1) < get_mark(eEdgeTag, edge_ind_2);
         });
         reorder_edges(edge_reordering);
@@ -744,12 +755,14 @@ void cMesh::reorder_faces() {
             m_marked_edge_ranges.resize(get_mark(eEdgeTag, edge_index) + 2);
             m_marked_edge_ranges[get_mark(eEdgeTag, edge_index) + 1] += 1;
         }
-        std::partial_sum(m_marked_edge_ranges.begin(), m_marked_edge_ranges.end(), m_marked_edge_ranges.begin());
+        std::partial_sum(
+            m_marked_edge_ranges.begin(), m_marked_edge_ranges.end(), m_marked_edge_ranges.begin());
     }
     {
         std::vector<uint_t> face_reordering(num_faces());
         std::iota(face_reordering.begin(), face_reordering.end(), 0);
-        std::stable_sort(face_reordering.begin(), face_reordering.end(), [&](uint_t face_ind_1, uint_t face_ind_2) {
+        std::stable_sort(face_reordering.begin(), face_reordering.end(),
+                         [&](uint_t face_ind_1, uint_t face_ind_2) {
             return get_mark(eFaceTag, face_ind_1) < get_mark(eFaceTag, face_ind_2);
         });
         reorder_faces(face_reordering);
@@ -757,12 +770,14 @@ void cMesh::reorder_faces() {
             m_marked_face_ranges.resize(get_mark(eFaceTag, face_index) + 2);
             m_marked_face_ranges[get_mark(eFaceTag, face_index) + 1] += 1;
         }
-        std::partial_sum(m_marked_face_ranges.begin(), m_marked_face_ranges.end(), m_marked_face_ranges.begin());
+        std::partial_sum(
+            m_marked_face_ranges.begin(), m_marked_face_ranges.end(), m_marked_face_ranges.begin());
     }
     {
         std::vector<uint_t> cell_reordering(num_cells());
         std::iota(cell_reordering.begin(), cell_reordering.end(), 0);
-        std::stable_sort(cell_reordering.begin(), cell_reordering.end(), [&](uint_t cell_ind_1, uint_t cell_ind_2) {
+        std::stable_sort(cell_reordering.begin(), cell_reordering.end(),
+                         [&](uint_t cell_ind_1, uint_t cell_ind_2) {
             return get_mark(eCellTag, cell_ind_1) < get_mark(eCellTag, cell_ind_2);
         });
         reorder_cells(cell_reordering);
@@ -770,7 +785,8 @@ void cMesh::reorder_faces() {
             m_marked_cell_ranges.resize(get_mark(eCellTag, cell_index) + 2);
             m_marked_cell_ranges[get_mark(eCellTag, cell_index) + 1] += 1;
         }
-        std::partial_sum(m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
+        std::partial_sum(
+            m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
     }
 }   // cMesh::reorder_faces
 
@@ -839,26 +855,30 @@ void cMesh::generate_edges() {
     }
 }   // cMesh::generate_edges
 
+/* Cell face node index tables for various cell types. */
+static const std::map<
+    eShape, std::vector<std::vector<uint_t>>> cell_face_nodes = {
+    /* 1D cells. */
+    {eShape::segment_2,
+        {{0}, {1} } },
+    /* 2D cells. */
+    {eShape::triangle_3,
+        {{1, 2},       {2, 0},       {0, 1} } },
+    {eShape::quadrangle_4,
+        {{0, 1},       {1, 2},       {2, 3},       {3, 0} } },
+    /* 3D cells.
+     * TODO: Add other cell types! */
+    {eShape::tetrahedron_4,
+        {{0, 2, 1},    {0, 1, 3},    {1, 2, 3},    {2, 0, 3} } },
+    {eShape::hexahedron_8,
+        {{0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4}, {0, 3, 2, 1}, {4, 5, 6, 7} } },
+};
+
 /**
  * Generate faces using the cell to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
 void cMesh::generate_faces() {
-    /* Cell face node index tables for various cell types. */
-    static const std::map<
-            eShape, std::vector<std::vector<uint_t>>> cell_face_nodes = {
-        /* 1D cells. */
-        {eShape::segment_2,     {{0},          {1} } },
-        /* 2D cells. */
-        {eShape::triangle_3,    {{1, 2},       {2, 0},       {0, 1} } },
-        {eShape::quadrangle_4,  {{0, 1},       {1, 2},       {2, 3},       {3, 0} } },
-        /* 3D cells.
-         * TODO: Add other cell types! */
-        {eShape::tetrahedron_4, {{0, 2, 1},    {0, 1, 3},    {1, 2, 3},    {2, 0, 3} } },
-        {eShape::hexahedron_8,  {{0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4},
-                                      {0, 3, 2, 1}, {4, 5, 6, 7} } },
-    };
-
     /* Build a map of the existing faces.
      * ( A face is uniquely defined by a set of it's nodes. ) */
     std::map<std::set<uint_t>, uint_t> face_cache;
@@ -932,8 +952,8 @@ void cMesh::generate_faces() {
  */
 void cMesh::generate_boundary_cells() {
     /* A node and edge flip table for various face types. */
-    static const std::map<eShape, std::pair<std::vector<uint_t>,
-                                                      std::vector<uint_t>>> face_nodes_edges_flip_table {
+    static const std::map<
+        eShape, std::pair<std::vector<uint_t>, std::vector<uint_t>>> face_nodes_edges_flip_table {
         /* 1D faces. */
         {eShape::node,         {{0},          {0} } },
         /* 2D faces. */
