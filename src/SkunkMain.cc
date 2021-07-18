@@ -23,7 +23,7 @@ static void print(
     std::ofstream file("out/fields-" + my_to_string(nn) + ".csv");
     file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
     file << "x,y,z,r,p,vx,vy,vz" << std::endl;
-    for (uint_t cell_ind = m.begin_cell(0); cell_ind != m.end_cell(0); ++cell_ind) {
+    for (uint_t cell_ind = m.begin_marked_cell(0); cell_ind != m.end_marked_cell(0); ++cell_ind) {
         const auto& c = m.get_cell(cell_ind);
         MhdHydroVars v({}, u[cell_ind].data());
         auto p = m.get_cell_center_coords(cell_ind);
@@ -36,7 +36,7 @@ static void print(
 
 template<unsigned N>
 static void print_vtk(feathers::uint_t nn,
-                      const cMesh & m,
+                      const cMesh& m,
                       const std::array<real_t, N>* u) {
     using namespace feathers;
     std::ofstream file("out/fields-" + my_to_string(nn) + ".vtk");
@@ -47,154 +47,41 @@ static void print_vtk(feathers::uint_t nn,
     file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
     file << "POINTS " << m.num_nodes() << " double" << std::endl;
-    for (uint_t node_ind = 0; node_ind < m.num_nodes(); ++node_ind) {
-        const Node& node = m.get_node(node_ind);
-        const vec3_t& p = m.get_node_coords(node_ind);
-        file << p.x << " " << p.y << " " << p.z << std::endl;
-    }
+    std::for_each(begin_node(m), end_node(m), [&](tNodeIter node) {
+        const vec3_t& coords = node.get_coords();
+        file << coords.x << " " << coords.y << " " << coords.z << std::endl;
+    });
 
     file << "CELLS " << m.num_marked_cells(0) << " " << m.num_marked_cells(0)*4 << std::endl;
-    for (uint_t cell_ind = m.begin_cell(0); cell_ind < m.end_cell(0); ++cell_ind) {
-        const Cell& cell = m.get_cell(cell_ind);
+    std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
         file << "3 ";
-        std::for_each(cell.begin_node(), cell.end_node(), [&](int_t node_ind) {
-            file << node_ind << " ";
+        cell.for_each_node([&](uint_t node_index) {
+            file << node_index << " ";
         });
         file << std::endl;
-    }
+    });
     file << "CELL_TYPES " << m.num_marked_cells(0) << std::endl;
-    for (uint_t cell_ind = m.begin_cell(0); cell_ind < m.end_cell(0); ++cell_ind) {
+    std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
         file << "5" << std::endl;
-    }
+    });
 
     file << "CELL_DATA " << m.num_marked_cells(0) << std::endl;
     for (uint_t i = 0; i < 1; ++i) {
         const char* const names[]{"rho", "p", "vx", "vy", "vz", "bx", "by", "bz"};
         file << "SCALARS " << names[i] << " double 1" << std::endl;
         file << "LOOKUP_TABLE default" << std::endl;
-        for (uint_t cell_ind = m.begin_cell(0); cell_ind < m.end_cell(0); ++cell_ind) {
-            MhdHydroVars v({}, u[cell_ind].data());
-            //file << m.get_cell_volume(cell_ind) << std::endl;
-            file << v.prim/*u[cell_ind]*/[i] << std::endl;
-        }
-    }
-}
-
-#if 0
-int main() {
-    using namespace feathers;
-    std::shared_ptr<cMesh> mesh(new feathers::structured_mesh_t(0.5, 1.0, 50,
-                                                               -SKUNK_PI/125, +SKUNK_PI/125, 1,
-                                                               0.0, SKUNK_PI_2, 200,
-                                                               1, 2, 3, 3, 5, 4));
-    //std::shared_ptr<cMesh> mesh(new feathers::structured_mesh_t(0.1, 1.0, 50,
-    //                                                           -SKUNK_PI/2 +SKUNK_PI/2, 200,
-    //                                                           0.0, 1.0, 1,
-    //                                                           1, 2, 3, 3, 5, 4));
-    /*std::shared_ptr<cMesh> mesh(new feathers::structured_mesh_t(0.0, 10.0, 200,
-                                                               0.0, 2.50, 50,
-                                                               -0.5, 0.5, 1,
-                                                               1, 2, 3, 3, 5, 4));*/
-
-    std::ofstream file1("../results/_nodes.csv");
-    file1 << "x,y,z" << std::endl;
-    for (uint_t node_ind = 0; node_ind != mesh->num_nodes(); ++node_ind) {
-        const Node& face = mesh->get_node(node_ind);
-        file1
-            << face.get_coords().x << ","
-            << face.get_coords().y << ","
-            << face.get_coords().z << std::endl;
-    }
-    file1.close();
-    std::ofstream file("../results/_normals.csv");
-    file << "x,y,z,nx,ny,nz,dx,dy,dz" << std::endl;
-    for (uint_t face_ind = 0; face_ind != mesh->num_faces(); ++face_ind) {
-        const Face& face = mesh->get_face(face_ind);
-        vec3_t direction = mesh->get_cell_center_coords(face.get_outer_cell()) -
-                           mesh->get_cell_center_coords(face.get_inner_cell());
-        direction *= safe_inv(direction.len());
-        file
-                << face.get_center_coords().x << ","
-                << face.get_center_coords().y << ","
-                << face.get_center_coords().z << ","
-                << face.get_normal().x << ","
-                << face.get_normal().y << ","
-                << face.get_normal().z << ","
-                << direction.x << "," << direction.y << "," << direction.z << std::endl;
-    }
-    file.close();
-
-    tScalarField<5> uc(mesh->num_cells());
-    tScalarField<5> up(mesh->num_cells());
-    for (uint_t cell_ind = mesh->begin_cell(0); cell_ind < mesh->end_cell(0); ++cell_ind) {
-        /*vec3_t n;
-        auto& cell = mesh->get_cell(cell_ind);
-        std::for_each(cell.begin_face(), cell.end_face(), [&](unsigned f){
-            if (f != npos)
-            {
-                if (mesh->get_face(f).get_outer_cell() == cell_ind)
-                    n += mesh->get_face_normal(f)*mesh->get_face_area(f);
-                else
-                    n -= mesh->get_face_normal(f)*mesh->get_face_area(f);
-            }
+        std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
+            MhdHydroVars v({}, u[cell].data());
+            file << v.prim[i] << std::endl;
         });
-        n /= cell.get_volume();
-        std::array<real_t, 5> q{ n.len(), 1.0, 0.0, 0.0, 0 };
-        uc[cell_ind] = q;*/
-
-        auto r = mesh->get_cell(cell_ind).get_center_coords();
-        auto v = 0.0*mhd_vec3_t({0.0, 0.0, 0.5}).cross(r);
-        auto p = 0.0*Gamma*(r.x*r.x + r.y*r.y) + 1.0;
-        auto d = Gamma;
-        //auto v = mhd_vec3_t({0.0, 0.0, 0.0});//.cross(mesh->get_cell(cell_ind).get_center_coords());
-
-        //if (mesh->get_cell(cell_ind).get_center_coords().x < 5.0) {
-        //    d = 2.0, p = 5.0;
-        //} else {
-        //    d = 1.0, p = 1.0;
-        //}
-
-        std::array<real_t, 5> q{ d, p, v.x, v.y, v.z };
-        MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
-        uc[cell_ind] = qq.cons;
-    }
-
-    auto dt = 1e-3;
-    MhdFvSolverT<MhdPhysicsIdealGas> solver(mesh);
-
-    print(0, *mesh, &uc[0]);
-    real_t tt = 0.0;
-    typedef std::chrono::high_resolution_clock Clock;
-    typedef std::chrono::nanoseconds nanoseconds;
-    Clock::time_point t0, t1;
-    {
-        for (int_t l = 1; /*l <= 40000000*/; ++l) {
-
-            t0 = Clock::now();
-            solver.calc_step(dt, uc, up);
-            t1 = Clock::now();
-
-            tt += std::chrono::duration_cast<nanoseconds>(t1 - t0).count() * 1e-9;
-            if (l % 100 == 0) {
-                std::cout << "\t" << tt << "\t" << l << "\t\t" << l*dt << std::endl;
-                print(l/100, *mesh, &up[0]);
-                tt = 0.0;
-            }
-
-            uc.swap(up);
-        }
     }
 }
-#endif
+
 
 #if 1
 
-#include <omp.h>
-
 int main(int argc, char** argv) {
-#if _OPENMP
-    omp_set_num_threads(20);
-#endif
+    set_max_num_threads(10);
 
     std::shared_ptr<cMesh> mesh(new cMesh(2));
 

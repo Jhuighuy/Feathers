@@ -46,8 +46,7 @@ private:
     /** @internal
      ** @warning Order of the fields should not be changed! */
     /** @{ */
-    eShape m_type : 8;
-    uint_t m_num_nodes : 6, m_num_edges : 6, m_num_faces : 6, m_num_cells : 6;
+    uint_t m_num_nodes : 8, m_num_edges : 8, m_num_faces : 8, m_num_cells : 8;
     uint_t m_elem_conn[std::max(1u, num_nodes_t + num_edges_t + num_faces_t + num_cells_t)];
     /** @} */
 
@@ -58,140 +57,86 @@ protected:
 
     /** Construct mesh element storage. */
     mesh_elem_struct_t()
-        : m_type(type_t),
-          m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
+        : m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
           m_num_faces(num_faces_t), m_num_cells(num_cells_t), m_elem_conn() {
         std::fill(std::begin(m_elem_conn), std::end(m_elem_conn), npos);
     }
     /** Construct mesh element storage with nodes connectivity. */
     /** @{ */
     mesh_elem_struct_t(std::initializer_list<uint_t> nodes)
-        : m_type(type_t),
-          m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
+        : m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
           m_num_faces(num_faces_t), m_num_cells(num_cells_t), m_elem_conn() {
         std::fill(std::begin(m_elem_conn), std::end(m_elem_conn), npos);
         std::copy(nodes.begin(), nodes.end(), begin_node());
     }
     template<typename node_iter_t>
     mesh_elem_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
-        : m_type(type_t),
-          m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
+        : m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
           m_num_faces(num_faces_t), m_num_cells(num_cells_t), m_elem_conn() {
         std::fill(std::begin(m_elem_conn), std::end(m_elem_conn), npos);
         std::copy(begin_nodes, end_nodes, begin_node());
     }
     /** @} */
 
-public://private:
+protected:
     friend class cMesh;
 
     /**************************************************************************/
     /**************************************************************************/
 
-    /** Type of the element. */
-    eShape get_type() const {
-        return m_type;
-    }
-
-    /**************************************************************************/
-    /**************************************************************************/
-
-    /** Number of nodes in the element. */
-    uint_t _num_nodes() const {
-        return m_num_nodes;
-    }
-    /** Number of edges in the element. */
-    uint_t _num_edges() const {
-        return m_num_edges;
-    }
-    /** Number of faces in the element. */
     uint_t _num_faces() const {
         return m_num_faces;
     }
-    /** Number of cells in the element. */
-    uint_t _num_cells() const {
-        return m_num_cells;
-    }
 
-    /** Pointer to the beginning of the connected nodes. */
-    /** @{ */
     uint_t* begin_node() {
         return m_elem_conn;
     }
     const uint_t* begin_node() const {
         return m_elem_conn;
     }
-    /** @} */
-    /** Pointer to the beginning of the connected edges. */
-    /** @{ */
     uint_t* begin_edge() {
         return m_elem_conn + m_num_nodes;
     }
     const uint_t* begin_edge() const {
         return m_elem_conn + m_num_nodes;
     }
-    /** @} */
-    /** Pointer to the beginning of the connected faces. */
-    /** @{ */
     uint_t* begin_face() {
         return m_elem_conn + m_num_nodes + m_num_edges;
     }
     const uint_t* begin_face() const {
         return m_elem_conn + m_num_nodes + m_num_edges;
     }
-    /** @} */
-    /** Pointer to the beginning of the connected cells. */
-    /** @{ */
     uint_t* begin_cell() {
         return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
     }
     const uint_t* begin_cell() const {
         return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
     }
-    /** @} */
-
-    /** Pointer to the end of the connected nodes. */
-    /** @{ */
     uint_t* end_node() {
         return m_elem_conn + m_num_nodes;
     }
     const uint_t* end_node() const {
         return m_elem_conn + m_num_nodes;
     }
-    /** @} */
-    /** Pointer to the end of the connected edges. */
-    /** @{ */
     uint_t* end_edge() {
         return m_elem_conn + m_num_nodes + m_num_edges;
     }
     const uint_t* end_edge() const {
         return m_elem_conn + m_num_nodes + m_num_edges;
     }
-    /** @} */
-    /** Pointer to the end of the connected faces. */
-    /** @{ */
     uint_t* end_face() {
         return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
     }
     const uint_t* end_face() const {
         return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
     }
-    /** @} */
-    /** Pointer to the end of the connected cells. */
-    /** @{ */
     uint_t* end_cell() {
         return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces + m_num_cells;
     }
     const uint_t* end_cell() const {
         return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces + m_num_cells;
     }
-    /** @} */
 
-    /**************************************************************************/
-    /**************************************************************************/
-
-    /** Erase the face from element.
-     ** @warning Element type would be set to unknown. */
     void erase_face(uint_t face_loc) {
         FEATHERS_ASSERT(face_loc < _num_faces());
         std::rotate(begin_face() + face_loc, begin_face() + face_loc + 1, end_cell());
@@ -275,6 +220,7 @@ public:
     }
     /** @} */
 
+//protected:
     /** Index of the inner cell. */
     /** @{ */
     uint_t& get_inner_cell() {
@@ -303,7 +249,7 @@ using Face = mesh_face_struct_t<eShape::null, 0, 0>;
 using mesh_face_node1_t = mesh_face_struct_t<eShape::node, 1, 1>;
 
 /** Linear segment face element for 2D meshes. */
-using mesh_face_segment2_t = mesh_face_struct_t<eShape::segment_2, 2, 2>;
+using mesh_face_segment2_t = mesh_face_struct_t<eShape::segment_2, 2, 0>;
 
 /** Linear triangle face element. */
 using mesh_face_triangle3_t = mesh_face_struct_t<eShape::triangle_3, 3, 3>;
@@ -382,9 +328,6 @@ enum tCellTag { eCellTag = 4 };
 /** Hybrid unstructured finite element mesh. */
 class cMesh : public tObject<cMesh> {
 private:
-    std::vector<eShape> m_edge_types, m_face_types, m_cell_types;
-
-private:
     uint_t m_dim;
 
     std::vector<byte_t> m_node_storage;
@@ -405,6 +348,9 @@ private:
     std::vector<uint_t> m_marked_face_ranges{0};
     std::vector<uint_t> m_marked_cell_ranges{0};
 
+    std::vector<eShape> m_edge_shapes;
+    std::vector<eShape> m_face_shapes;
+    std::vector<eShape> m_cell_shapes;
     // TODO: edge length + direction -> 4D oriented direction.
     // TODO: face area + normal -> 4D oriented area.
     std::vector<vec3_t> m_node_coords;
@@ -415,9 +361,9 @@ private:
     std::vector<vec3_t> m_face_center_coords;
     std::vector<real_t> m_cell_volumes;
     std::vector<vec3_t> m_cell_center_coords;
-    mutable real_t m_min_edge_length = 0.0, m_max_edge_length = 0.0;
-    mutable real_t m_min_face_area = 0.0, m_max_face_area = 0.0;
-    mutable real_t m_min_cell_volume = 0.0, m_max_cell_volume = 0.0;
+    real_t m_min_edge_length = 0.0, m_max_edge_length = 0.0;
+    real_t m_min_face_area = 0.0, m_max_face_area = 0.0;
+    real_t m_min_cell_volume = 0.0, m_max_cell_volume = 0.0;
 
 public:
 
@@ -510,6 +456,11 @@ public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
+
+    /** Local index of the face inner cell. */
+    static constexpr uint_t face_inner_cell = 0;
+    /** Local index of the face outer cell. */
+    static constexpr uint_t face_outer_cell = 1;
 
     /** Pointer to the beginning of the element adjacent nodes. */
     /** @{ */
@@ -705,27 +656,6 @@ public:
 #endif
     /** @} */
 
-    /** Number of nodes in the element. */
-    template<typename tTag>
-    uint_t num_adjacent_nodes(tTag tag, uint_t index) const {
-        return end_adjacent_node(tag, index) - begin_adjacent_node(tag, index);
-    }
-    /** Number of edges in the element. */
-    template<typename tTag>
-    uint_t num_adjacent_edges(tTag tag, uint_t index) const {
-        return end_adjacent_edge(tag, index) - begin_adjacent_edge(tag, index);
-    }
-    /** Number of faces in the element. */
-    template<typename tTag>
-    uint_t num_adjacent_faces(tTag tag, uint_t index) const {
-        return end_adjacent_face(tag, index) - begin_adjacent_face(tag, index);
-    }
-    /** Number of cells in the element. */
-    template<typename tTag>
-    uint_t num_adjacent_cells(tTag tag, uint_t index) const {
-        return end_adjacent_cell(tag, index) - begin_adjacent_cell(tag, index);
-    }
-
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
@@ -796,58 +726,54 @@ public:
     /** @} */
 
     /** Index of the first node with a given mark. */
-    uint_t begin_node(uint_t mark) const {
+    uint_t begin_marked_node(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_node_marks());
         return m_marked_node_ranges[mark];
     }
     /** Index of the first edge with a given mark. */
-    uint_t begin_edge(uint_t mark) const {
+    uint_t begin_marked_edge(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_edge_marks());
         return m_marked_edge_ranges[mark];
     }
     /** Index of the first face with a given mark. */
-    uint_t begin_face(uint_t mark) const {
+    uint_t begin_marked_face(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_face_marks());
         return m_marked_face_ranges[mark];
     }
     /** Index of the first cell with a given mark. */
-    uint_t begin_cell(uint_t mark) const {
+    uint_t begin_marked_cell(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_cell_marks());
         return m_marked_cell_ranges[mark];
     }
 
     /** Index of a node after the last node with a given mark. */
-    uint_t end_node(uint_t mark) const {
+    uint_t end_marked_node(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_node_marks());
         return m_marked_node_ranges[mark + 1];
     }
     /** Index of an edge after the last edge with a given mark. */
-    uint_t end_edge(uint_t mark) const {
+    uint_t end_marked_edge(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_edge_marks());
         return m_marked_edge_ranges[mark + 1];
     }
     /** Index of a face after the last face with a given mark. */
-    uint_t end_face(uint_t mark) const {
+    uint_t end_marked_face(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_face_marks());
         return m_marked_face_ranges[mark + 1];
     }
     /** Index a cell after of the last cell with a given mark. */
-    uint_t end_cell(uint_t mark) const {
+    uint_t end_marked_cell(uint_t mark) const {
         FEATHERS_ASSERT(mark < num_cell_marks());
         return m_marked_cell_ranges[mark + 1];
     }
 
     /** Number of marked cells in the mesh. */
     uint_t num_marked_cells(uint_t mark) const {
-        return end_cell(mark) - begin_cell(mark);
+        return end_marked_cell(mark) - begin_marked_cell(mark);
     }
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
-
-    std::vector<eShape> m_edge_shapes;
-    std::vector<eShape> m_face_shapes;
-    std::vector<eShape> m_cell_shapes;
 
     /** Get element shape. */
     /** @{ */
@@ -925,10 +851,13 @@ public:
     }
 
     /** Get minimal edge length. */
-    real_t get_min_edge_length() const;
+    real_t get_min_edge_length() const {
+        return m_min_edge_length;
+    }
     /** Get maximal edge length. */
-    real_t get_max_edge_length() const;
-
+    real_t get_max_edge_length() const {
+        return m_max_edge_length;
+    }
     /** Get edge length. */
     real_t get_edge_length(uint_t edge_index) const {
         FEATHERS_ASSERT(edge_index < num_edges());
@@ -951,10 +880,13 @@ public:
     }
 
     /** Get minimal face area. */
-    real_t get_min_face_area() const;
+    real_t get_min_face_area() const{
+        return m_min_face_area;
+    }
     /** Get maximal face area. */
-    real_t get_max_face_area() const;
-
+    real_t get_max_face_area() const {
+        return m_max_face_area;
+    }
     /** Get face area/length. */
     real_t get_face_area(uint_t face_index) const {
         FEATHERS_ASSERT(face_index < num_faces());
@@ -987,10 +919,13 @@ public:
     }
 
     /** Get minimal cell volume. */
-    real_t get_min_cell_volume() const;
+    real_t get_min_cell_volume() const {
+        return m_min_cell_volume;
+    }
     /** Get maximal cell volume. */
-    real_t get_max_cell_volume() const;
-
+    real_t get_max_cell_volume() const {
+        return m_max_cell_volume;
+    }
     /** Get cell volume/area/length. */
     real_t get_cell_volume(uint_t cell_index) const {
         FEATHERS_ASSERT(cell_index < num_cells());
@@ -1011,10 +946,6 @@ public:
         FEATHERS_ASSERT(cell_index < num_cells());
         m_cell_center_coords[cell_index] = cell_center_coords;
      }
-
-    /** Compute mesh orthogonality.
-     ** Mesh orthogonality is defined as a ... */
-    real_t get_orthogonality() const;
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -1104,34 +1035,21 @@ private:
     template<typename mesh_cell_struct_t>
     uint_t allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment = s_default_alignment);
 
+public:
+
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
-protected:
+public:
 
     /** Change order of all nodes. */
-    void reorder_nodes(const std::vector<uint_t>& node_permutation);
+    void permute_nodes(const std::vector<uint_t>& node_permutation);
     /** Change order of all edges. */
-    void reorder_edges(const std::vector<uint_t>& edge_permutation);
+    void permute_edges(const std::vector<uint_t>& edge_permutation);
     /** Change order of all faces. */
-    void reorder_faces(const std::vector<uint_t>& face_permutation);
+    void permute_faces(const std::vector<uint_t>& face_permutation);
     /** Change order of all cells. */
-    void reorder_cells(const std::vector<uint_t>& cell_permutation);
-
-private:
-
-    /** @internal
-     ** Change order of bytes of all nodes. */
-    void reorder_nodes_bytes_(const std::vector<uint_t>& node_reordering);
-    /** @internal
-     ** Change order of bytes of all edges. */
-    void reorder_edges_bytes_(const std::vector<uint_t>& edge_reordering);
-    /** @internal
-     ** Change order of bytes of all faces. */
-    void reorder_faces_bytes_(const std::vector<uint_t>& face_reordering);
-    /** @internal
-     ** Change order of bytes of all cells. */
-    void reorder_cells_bytes_(const std::vector<uint_t>& cell_reordering);
+    void permute_cells(const std::vector<uint_t>& cell_permutation);
 
 protected:
 
@@ -1154,7 +1072,7 @@ protected:
 
     /** Generate boundary cells to complete face connectivity. */
     void generate_boundary_cells();
-};  // class cMesh
+};  // class tMesh
 
 }   // namespace feathers
 

@@ -39,7 +39,7 @@ void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
     /* Compute the least-squares
      * problem matrices for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        mat3_t& mat = m_inverse_matrices[cell][0];
+        mat3_t& mat = m_inverse_matrices[cell][0] = mat3_t(0.0);
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             const vec3_t dr =
                 cell_outer.get_center_coords() - cell_inner.get_center_coords();
@@ -51,7 +51,7 @@ void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
      * right hand statements for the boundary cells.
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
     for_each_boundary_face_cells(*m_mesh, [&](tCellIter cell_inner, tCellIter cell_outer) {
-        mat3_t& mat = m_inverse_matrices[cell_outer][0];
+        mat3_t& mat = m_inverse_matrices[cell_outer][0] = mat3_t(0.0);
         const vec3_t dr =
             cell_outer.get_center_coords() - cell_inner.get_center_coords();
         mat += glm::outerProduct(dr, dr);
@@ -89,6 +89,7 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
     /* Compute the least-squares
      * problem right hand statements for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
+        grad_u[cell].fill(vec3_t(0.0));
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             const vec3_t dr =
                 cell_outer.get_center_coords() - cell_inner.get_center_coords();
@@ -102,8 +103,9 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
      * right hand statements for the boundary cells.
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
     for_each_boundary_face_cells(*m_mesh, [&](tCellIter cell_inner, tCellIter cell_outer) {
-      const vec3_t dr =
-          cell_outer.get_center_coords() - cell_inner.get_center_coords();
+        grad_u[cell_outer].fill(vec3_t(0.0));
+        const vec3_t dr =
+            cell_outer.get_center_coords() - cell_inner.get_center_coords();
         for (int_t i = 0; i < num_vars; ++i) {
             grad_u[cell_outer][i] += (u[cell_outer][i] - u[cell_inner][i])*dr;
         }

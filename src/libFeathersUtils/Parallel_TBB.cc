@@ -25,12 +25,8 @@
  * SOFTWARE.
  */
 
-#pragma once
-#ifndef GRADIENT_SCHEME_HH_
-#define GRADIENT_SCHEME_HH_
-
-#include "SkunkBase.hh"
-#include "libFeathersMesh/Mesh.hh"
+#include "Parallel.hh"
+#if FEATHERS_HAS_TBB
 
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -38,56 +34,16 @@
 
 namespace feathers {
 
-/** Abstract cell-centered gradient scheme. */
-template<int_t num_vars>
-class iGradientScheme : public tObject<iGradientScheme<num_vars>> {
-public:
-    /** Compute cell-centered gradients. */
-    /** @{ */
-    virtual void get_gradients(tVectorField<num_vars>& grad_u,
-                               const tScalarField<num_vars>& u) const = 0;
-    /** @} */
-};  // class iGradientScheme
+static std::unique_ptr<tbb::global_control> g_control;
 
-/**
- * Weighted Least-Squares gradient estimation scheme, cell-based:
- * computes cell-centered gradients based on the cell-centered values.
- *
- * This gradient scheme is a second-order scheme for any meshes.
- * Also, this gradient scheme is by far the fastest one.
- */
-template<int_t num_vars>
-class tLeastSquaresGradientScheme final : public iGradientScheme<num_vars> {
-private:
-    std::shared_ptr<const cMesh> m_mesh;
-    tMatrixField<> m_inverse_matrices;
-
-public:
-    /** Initialize the gradient scheme. */
-    explicit tLeastSquaresGradientScheme(std::shared_ptr<const cMesh> mesh):
-        m_mesh(std::move(mesh)),
-        m_inverse_matrices(m_mesh->num_cells()) {
-        init_gradients_();
+void set_num_threads_tbb_(uint_t num_threads) {
+    if (num_threads == get_max_num_threads()) {
+        return;
     }
-
-    /** Compute cell-centered gradients. */
-    /** @{ */
-    void get_gradients(tVectorField<num_vars>& grad_u,
-                       const tScalarField<num_vars>& u) const final {
-        get_gradients_(grad_u, u);
-    }
-    /** @} */
-
-private:
-    /** Compute cell-centered gradients. */
-    /** @{ */
-    void init_gradients_();
-    template</*template<int_t>*/ class tInField,
-             /*template<int_t>*/ class tOutField>
-    void get_gradients_(tOutField/*<num_vars>*/& grad_u,
-                        const tInField/*<num_vars>*/& u) const;
-    /** @} */
-};  // class tLeastSquaresGradientScheme
+    g_control = std::make_unique<tbb::global_control>(
+        tbb::global_control::max_allowed_parallelism, num_threads);
+    static_cast<void>(g_control);
+}   // set_num_threads_tbb_
 
 }   // namespace feathers
 
@@ -95,6 +51,4 @@ private:
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-#include "GradientScheme.inl"
-
-#endif // GRADIENT_SCHEME_HH_
+#endif // FEATHERS_HAS_TBB

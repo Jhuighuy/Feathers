@@ -43,13 +43,13 @@ namespace feathers {
  * Inverse reordering. Complexity is linear.
  */
 template<typename tIter, typename tInverseMutableIter>
-void convert_permutation_to_indices(tIter index_iter, tIter index_iter_end,
-                                    tInverseMutableIter inverse_index_iter) {
+void permutation_to_indices(tIter index_iter, tIter last_index_iter,
+                            tInverseMutableIter inverse_index_iter) {
     size_t index = 0;
-    for (; index_iter != index_iter_end; ++index_iter, ++index) {
+    for (; index_iter != last_index_iter; ++index_iter, ++index) {
         *(inverse_index_iter + *index_iter) = index;
     }
-}   // convert_permutation_to_indices
+}   // permutation_to_indices
 
 /**
  * Apply reordering.
@@ -57,11 +57,12 @@ void convert_permutation_to_indices(tIter index_iter, tIter index_iter_end,
  */
 /** @{ */
 template<typename tMutableIter, typename tSwapFunc>
-void reorder_swap(tMutableIter index_iter, tMutableIter index_iter_end, tSwapFunc&& swap) {
+void permute_swap(tMutableIter index_iter,
+                  tMutableIter last_index_iter, tSwapFunc swap) {
     /* For implementation details see
      * https://devblogs.microsoft.com/oldnewthing/20170102-00/?p=95095 */
     size_t index = 0;
-    for (; index_iter != index_iter_end; ++index_iter, ++index) {
+    for (; index_iter != last_index_iter; ++index_iter, ++index) {
         size_t current_index = index;
         tMutableIter current_index_iter = index_iter;
         while (*current_index_iter != index) {
@@ -73,16 +74,17 @@ void reorder_swap(tMutableIter index_iter, tMutableIter index_iter_end, tSwapFun
         }
         *current_index_iter = current_index;
     }
-}   // reorder_swap
+}   // permute_swap
 template<typename tMutableIter, typename tValueMutableIter>
-void reorder(tMutableIter index_iter, tMutableIter index_iter_end, tValueMutableIter iter) {
-    reorder_swap(index_iter, index_iter_end, [&](auto index, auto new_index) {
+void permute_inplace(tMutableIter first_index_iter,
+                     tMutableIter last_index_iter, tValueMutableIter iter) {
+    permute_swap(first_index_iter, last_index_iter, [&](auto index, auto new_index) {
         std::iter_swap(iter + index, iter + new_index);
     });
-}   // permute_inplace
+}   // permute_swap
 template<typename tContainer, typename tValueIter>
 void permute_inplace(tContainer indices, tValueIter iter) {
-    reorder(indices.begin(), indices.end(), iter);
+    permute_inplace(indices.begin(), indices.end(), iter);
 }   // permute_inplace
 /** @} */
 

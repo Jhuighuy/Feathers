@@ -78,7 +78,7 @@ real_t cSegmentShape::get_length_or_area_or_volume() const {
 vec3_t cSegmentShape::get_normal() const {
     const vec3_t delta =
         get_node_coords(1) - get_node_coords(0);
-    static constexpr vec3_t up(0.0, 0.0, 1.0);
+    static const vec3_t up(0.0, 0.0, 1.0);
     return glm::normalize(glm::cross(delta, up));
 }
 vec3_t cSegmentShape::get_direction() const {
@@ -163,7 +163,7 @@ real_t iSplittableShape::get_length_or_area_or_volume() const {
 }   // iSplittableShape::get_length_or_area_or_volume
 
 vec3_t iSplittableShape::get_normal() const {
-    vec3_t weighted_sum_of_normals;
+    vec3_t weighted_sum_of_normals(0.0);
     for_each_part_([&](iShape& shape) {
         real_t part_length_or_area_or_volume =
             shape.get_length_or_area_or_volume();
@@ -174,7 +174,7 @@ vec3_t iSplittableShape::get_normal() const {
 }   // iSplittableShape::get_normal
 
 vec3_t iSplittableShape::get_center_coords() const {
-    vec3_t weighted_sum_of_center_coords;
+    vec3_t weighted_sum_of_center_coords(0.0);
     real_t length_or_area_or_volume = 0.0;
     for_each_part_([&](iShape& shape) {
         real_t part_length_or_area_or_volume =

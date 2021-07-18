@@ -40,26 +40,6 @@
 namespace feathers {
 
 /**
- * Gradient cell limiter estimation scheme:
- * computes cell-centered limiters and averages based on the cell-centered expansion.
- */
-template<int_t num_vars>
-class iGradientLimiterScheme : public tObject<iGradientLimiterScheme<num_vars>> {
-public:
-    /** Compute cell-centered gradient limiter coefficients and averages. */
-    virtual void get_cell_limiter(tScalarField<num_vars>& lim_u,
-                                  const tPiecewiseLinearFunction<num_vars>& u) const = 0;
-};  // class iGradientLimiterScheme
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
-
-/**
  * Barth-Jespersen (minmod)
  * slope limiter for the limiter estimation scheme.
  *
@@ -132,6 +112,18 @@ public:
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
+
+/**
+ * Gradient cell limiter estimation scheme:
+ * computes cell-centered limiters and averages based on the cell-centered expansion.
+ */
+template<int_t num_vars>
+class iGradientLimiterScheme : public tObject<iGradientLimiterScheme<num_vars>> {
+public:
+    /** Compute cell-centered gradient limiter coefficients and averages. */
+    virtual void get_cell_limiter(tScalarField<num_vars>& lim_u,
+                                  const tPiecewiseLinearFunction<num_vars>& u) const = 0;
+};  // class iGradientLimiterScheme
 
 /**
  * Gradient cell limiter estimation scheme:

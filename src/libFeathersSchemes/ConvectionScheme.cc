@@ -116,24 +116,24 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_va
 
     /* Compute the second order convection. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        std::array<real_t, num_vars>& conv = div_f[cell];
-        conv.fill(0.0), cell.for_each_face([&](tFaceIter face) {
+        div_f[cell].fill(0.0);
+        cell.for_each_face([&](tFaceIter face) {
             const tCellIter cell_outer = face.get_outer_cell();
             const tCellIter cell_inner = face.get_inner_cell();
             const real_t ds = face.get_area();
             if (cell_outer == cell) {
                 for (int_t i = 0; i < num_vars; ++i) {
-                    conv[i] -= flux_f[face][i] * ds;
+                    div_f[cell][i] -= flux_f[face][i] * ds;
                 }
             } else if (cell_inner == cell) {
                 for (int_t i = 0; i < num_vars; ++i) {
-                    conv[i] += flux_f[face][i] * ds;
+                    div_f[cell][i] += flux_f[face][i] * ds;
                 }
             }
         });
         const real_t inv_dv = 1.0/cell.get_volume();
         for (int_t i = 0; i < num_vars; ++i) {
-            conv[i] *= inv_dv;
+            div_f[cell][i] *= inv_dv;
         }
     });
 }   // tUpwind2ConvectionScheme::get_cell_convection
