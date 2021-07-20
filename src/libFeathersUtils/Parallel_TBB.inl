@@ -37,7 +37,7 @@
 
 namespace feathers {
 
-extern void set_num_threads_tbb_(uint_t num_threads);
+extern void set_max_num_threads_impl_(uint_t num_threads);
 
 uint_t get_thread_index() {
     FEATHERS_NOT_IMPLEMENTED();
@@ -47,7 +47,7 @@ uint_t get_max_num_threads() {
         tbb::global_control::max_allowed_parallelism);
 }
 static void set_max_num_threads(uint_t num_threads) {
-    set_num_threads_tbb_(num_threads);
+    set_max_num_threads_impl_(num_threads);
 }
 #define THREAD_IDS_DEFINED_
 

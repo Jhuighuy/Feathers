@@ -36,14 +36,14 @@ namespace feathers {
 
 static std::unique_ptr<tbb::global_control> g_control;
 
-void set_num_threads_tbb_(uint_t num_threads) {
+void set_max_num_threads_impl_(uint_t num_threads) {
     if (num_threads == get_max_num_threads()) {
         return;
     }
     g_control = std::make_unique<tbb::global_control>(
         tbb::global_control::max_allowed_parallelism, num_threads);
     static_cast<void>(g_control);
-}   // set_num_threads_tbb_
+}   // set_max_num_threads_impl_
 
 }   // namespace feathers
 

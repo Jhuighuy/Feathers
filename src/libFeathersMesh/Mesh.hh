@@ -29,283 +29,9 @@
 #ifndef MESH_HH_
 #define MESH_HH_
 
-#include <SkunkBase.hh>
+#include "SkunkBase.hh"
+#include "libFeathersUtils/Table.hh"
 #include "Shape.hh"
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
-
-/** Mesh element connectivity structure. */
-template<eShape type_t,
-         uint_t num_nodes_t, uint_t num_edges_t, uint_t num_faces_t, uint_t num_cells_t>
-class mesh_elem_struct_t {
-private:
-    /** @internal
-     ** @warning Order of the fields should not be changed! */
-    /** @{ */
-    uint_t m_num_nodes : 8, m_num_edges : 8, m_num_faces : 8, m_num_cells : 8;
-    uint_t m_elem_conn[std::max(1u, num_nodes_t + num_edges_t + num_faces_t + num_cells_t)];
-    /** @} */
-
-    /**************************************************************************/
-    /**************************************************************************/
-
-protected:
-
-    /** Construct mesh element storage. */
-    mesh_elem_struct_t()
-        : m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
-          m_num_faces(num_faces_t), m_num_cells(num_cells_t), m_elem_conn() {
-        std::fill(std::begin(m_elem_conn), std::end(m_elem_conn), npos);
-    }
-    /** Construct mesh element storage with nodes connectivity. */
-    /** @{ */
-    mesh_elem_struct_t(std::initializer_list<uint_t> nodes)
-        : m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
-          m_num_faces(num_faces_t), m_num_cells(num_cells_t), m_elem_conn() {
-        std::fill(std::begin(m_elem_conn), std::end(m_elem_conn), npos);
-        std::copy(nodes.begin(), nodes.end(), begin_node());
-    }
-    template<typename node_iter_t>
-    mesh_elem_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
-        : m_num_nodes(num_nodes_t), m_num_edges(num_edges_t),
-          m_num_faces(num_faces_t), m_num_cells(num_cells_t), m_elem_conn() {
-        std::fill(std::begin(m_elem_conn), std::end(m_elem_conn), npos);
-        std::copy(begin_nodes, end_nodes, begin_node());
-    }
-    /** @} */
-
-protected:
-    friend class cMesh;
-
-    /**************************************************************************/
-    /**************************************************************************/
-
-    uint_t _num_faces() const {
-        return m_num_faces;
-    }
-
-    uint_t* begin_node() {
-        return m_elem_conn;
-    }
-    const uint_t* begin_node() const {
-        return m_elem_conn;
-    }
-    uint_t* begin_edge() {
-        return m_elem_conn + m_num_nodes;
-    }
-    const uint_t* begin_edge() const {
-        return m_elem_conn + m_num_nodes;
-    }
-    uint_t* begin_face() {
-        return m_elem_conn + m_num_nodes + m_num_edges;
-    }
-    const uint_t* begin_face() const {
-        return m_elem_conn + m_num_nodes + m_num_edges;
-    }
-    uint_t* begin_cell() {
-        return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
-    }
-    const uint_t* begin_cell() const {
-        return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
-    }
-    uint_t* end_node() {
-        return m_elem_conn + m_num_nodes;
-    }
-    const uint_t* end_node() const {
-        return m_elem_conn + m_num_nodes;
-    }
-    uint_t* end_edge() {
-        return m_elem_conn + m_num_nodes + m_num_edges;
-    }
-    const uint_t* end_edge() const {
-        return m_elem_conn + m_num_nodes + m_num_edges;
-    }
-    uint_t* end_face() {
-        return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
-    }
-    const uint_t* end_face() const {
-        return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces;
-    }
-    uint_t* end_cell() {
-        return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces + m_num_cells;
-    }
-    const uint_t* end_cell() const {
-        return m_elem_conn + m_num_nodes + m_num_edges + m_num_faces + m_num_cells;
-    }
-
-    void erase_face(uint_t face_loc) {
-        FEATHERS_ASSERT(face_loc < _num_faces());
-        std::rotate(begin_face() + face_loc, begin_face() + face_loc + 1, end_cell());
-        m_num_faces -= 1;
-    }
-};  // class mesh_elem_struct_t
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
-
-/** Node element. */
-template<eShape type_t>
-class mesh_node_struct_t final : public mesh_elem_struct_t<type_t, 0, 0, 0, 0> {
-};  // class mesh_node_struct_t
-
-/** Generic node element. */
-using Node = mesh_node_struct_t<eShape::null>;
-
-/** Node element. */
-using mesh_node1_t = mesh_node_struct_t<eShape::node>;
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
-
-/** Edge element. */
-template<eShape type_t, uint_t num_nodes_t>
-class mesh_edge_struct_t : public mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0> {
-public:
-    /** Construct an edge element with nodes connectivity. */
-    /** @{ */
-    mesh_edge_struct_t(std::initializer_list<uint_t> nodes)
-        : mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0>(nodes) {
-    }
-    template<typename node_iter_t>
-    mesh_edge_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
-        : mesh_elem_struct_t<type_t, num_nodes_t, 0, 0, 0>(begin_nodes, end_nodes) {
-    }
-    /** @} */
-};  // class mesh_edge_struct_t
-
-/** Generic edge element. */
-using Edge = mesh_edge_struct_t<eShape::null, 0>;
-
-/** Dummy "node" edge element.
- ** Acts as a placeholder fo 1D/2D meshes. */
-using mesh_edge_node1_t = mesh_edge_struct_t<eShape::node, 1>;
-
-/** Linear segment edge element. */
-using mesh_edge_segment2_t = mesh_edge_struct_t<eShape::segment_2, 2>;
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
-
-/** Face element. */
-template<eShape type_t, uint_t num_nodes_t, uint_t num_edges_t>
-class mesh_face_struct_t : public mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2> {
-public:
-    /** Construct a face element with nodes connectivity. */
-    /** @{ */
-    mesh_face_struct_t(std::initializer_list<uint_t> nodes)
-        : mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2>(nodes) {
-    }
-    template<typename node_iter_t>
-    mesh_face_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
-        : mesh_elem_struct_t<type_t, num_nodes_t, num_edges_t, 0, 2>(begin_nodes, end_nodes) {
-    }
-    /** @} */
-
-//protected:
-    /** Index of the inner cell. */
-    /** @{ */
-    uint_t& get_inner_cell() {
-        return this->begin_cell()[0];
-    }
-    const uint_t& get_inner_cell() const {
-        return this->begin_cell()[0];
-    }
-    /** @} */
-    /** Index of the outer cell. */
-    /** @{ */
-    uint_t& get_outer_cell() {
-        return this->begin_cell()[1];
-    }
-    const uint_t& get_outer_cell() const {
-        return this->begin_cell()[1];
-    }
-    /** @} */
-};  // class mesh_face_struct_t
-
-/** Generic face element. */
-using Face = mesh_face_struct_t<eShape::null, 0, 0>;
-
-/** Dummy "node" face element.
- ** Acts as a placeholder for 1D meshes. */
-using mesh_face_node1_t = mesh_face_struct_t<eShape::node, 1, 1>;
-
-/** Linear segment face element for 2D meshes. */
-using mesh_face_segment2_t = mesh_face_struct_t<eShape::segment_2, 2, 0>;
-
-/** Linear triangle face element. */
-using mesh_face_triangle3_t = mesh_face_struct_t<eShape::triangle_3, 3, 3>;
-
-/** Linear quadrangle face element. */
-using mesh_face_quadrangle4_t = mesh_face_struct_t<eShape::quadrangle_4, 4, 4>;
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
-
-/** Cell element. */
-template<eShape type_t, uint_t num_nodes_t, uint_t num_faces_t>
-class mesh_cell_struct_t : public mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0> {
-public:
-    /** Construct a cell element with nodes connectivity. */
-    /** @{ */
-    mesh_cell_struct_t(std::initializer_list<uint_t> nodes)
-        : mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0>(nodes) {
-    }
-    template<typename node_iter_t>
-    mesh_cell_struct_t(node_iter_t begin_nodes, node_iter_t end_nodes)
-        : mesh_elem_struct_t<type_t, num_nodes_t, 0, num_faces_t, 0>(begin_nodes, end_nodes) {
-    }
-    /** @} */
-};  // class mesh_cell_struct_t
-
-/** Generic cell element. */
-using Cell = mesh_cell_struct_t<eShape::null, 0, 0>;
-
-/** Linear segment cell element for 1D meshes. */
-using mesh_cell_segment2_t = mesh_cell_struct_t<eShape::segment_2, 2, 2>;
-
-/** Linear triangle cell element for 2D meshes. */
-using mesh_cell_triangle3_t = mesh_cell_struct_t<eShape::triangle_3, 3, 3>;
-
-/** Linear quadrangle cell element for 2D meshes. */
-using mesh_cell_quadrangle4_t = mesh_cell_struct_t<eShape::quadrangle_4, 4, 4>;
-
-/** Linear tetrahedron cell element. */
-using mesh_cell_tetrahedron4_t = mesh_cell_struct_t<eShape::tetrahedron_4, 4, 4>;
-
-/** Linear pyramid cell element. */
-using mesh_cell_pyramid5_t = mesh_cell_struct_t<eShape::pyramid_5, 5, 5>;
-
-/** Linear pentahedron cell element. */
-using mesh_cell_pentahedron6_t = mesh_cell_struct_t<eShape::pentahedron_6, 6, 5>;
-
-/** Linear hexahedron cell element. */
-using mesh_cell_hexahedron8_t = mesh_cell_struct_t<eShape::hexahedron_8, 8, 6>;
-
-}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -330,14 +56,8 @@ class cMesh : public tObject<cMesh> {
 private:
     uint_t m_dim;
 
-    std::vector<byte_t> m_node_storage;
-    std::vector<byte_t> m_edge_storage;
-    std::vector<byte_t> m_face_storage;
-    std::vector<byte_t> m_cell_storage;
-    std::vector<size_t> m_node_offsets;
-    std::vector<size_t> m_edge_offsets;
-    std::vector<size_t> m_face_offsets;
-    std::vector<size_t> m_cell_offsets;
+    uint_t m_num_nodes = 0, m_num_edges = 0;
+    uint_t m_num_faces = 0, m_num_cells = 0;
 
     std::vector<uint_t> m_node_marks;
     std::vector<uint_t> m_edge_marks;
@@ -347,6 +67,11 @@ private:
     std::vector<uint_t> m_marked_edge_ranges{0};
     std::vector<uint_t> m_marked_face_ranges{0};
     std::vector<uint_t> m_marked_cell_ranges{0};
+
+    cTable m_node_nodes, m_edge_nodes, m_face_nodes, m_cell_nodes;
+    cTable m_node_edges, m_edge_edges, m_face_edges, m_cell_edges;
+    cTable m_node_faces, m_edge_faces, m_face_faces, m_cell_faces;
+    cTable m_node_cells, m_edge_cells, m_face_cells, m_cell_cells;
 
     std::vector<eShape> m_edge_shapes;
     std::vector<eShape> m_face_shapes;
@@ -391,270 +116,20 @@ public:
 
     /** Total number of nodes in the mesh. */
     uint_t num_nodes() const {
-        return m_node_offsets.size();
+        return m_num_nodes;
     }
     /** Total number of edges in the mesh. */
     uint_t num_edges() const {
-        return m_edge_offsets.size();
+        return m_num_edges;
     }
     /** Total number of faces in the mesh. */
     uint_t num_faces() const {
-        return m_face_offsets.size();
+        return m_num_faces;
     }
     /** Total number of cells in the mesh. */
     uint_t num_cells() const {
-        return m_cell_offsets.size();
+        return m_num_cells;
     }
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
-
-    /** Get node element at global index. */
-    /** @{ */
-    Node& get_node(uint_t node_index) {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return reinterpret_cast<Node&>(m_node_storage[m_node_offsets[node_index]]);
-    }
-    const Node& get_node(uint_t node_index) const {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return reinterpret_cast<const Node&>(m_node_storage[m_node_offsets[node_index]]);
-    }
-    /** @} */
-    /** Get edge element at global index. */
-    /** @{ */
-    Edge& get_edge(uint_t edge_index) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return reinterpret_cast<Edge&>(m_edge_storage[m_edge_offsets[edge_index]]);
-    }
-    const Edge& get_edge(uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return reinterpret_cast<const Edge&>(m_edge_storage[m_edge_offsets[edge_index]]);
-    }
-    /** @} */
-    /** Get face element at global index. */
-    /** @{ */
-    Face& get_face(uint_t face_index) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return reinterpret_cast<Face&>(m_face_storage[m_face_offsets[face_index]]);
-    }
-    const Face& get_face(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return reinterpret_cast<const Face&>(m_face_storage[m_face_offsets[face_index]]);
-    }
-    /** @} */
-    /** Get cell element at global index. */
-    /** @{ */
-    Cell& get_cell(uint_t cell_index) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return reinterpret_cast<Cell&>(m_cell_storage[m_cell_offsets[cell_index]]);
-    }
-    const Cell& get_cell(uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return reinterpret_cast<const Cell&>(m_cell_storage[m_cell_offsets[cell_index]]);
-    }
-    /** @} */
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
-
-    /** Local index of the face inner cell. */
-    static constexpr uint_t face_inner_cell = 0;
-    /** Local index of the face outer cell. */
-    static constexpr uint_t face_outer_cell = 1;
-
-    /** Pointer to the beginning of the element adjacent nodes. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_node, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_node();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_node();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_node();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).begin_node();
-    })
-#endif
-    /** @} */
-    /** Pointer to the beginning of the element adjacent edges. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_edge, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_edge();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_edge();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_edge();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).begin_edge();
-    })
-#endif
-    /** @} */
-    /** Pointer to the beginning of the element adjacent faces. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_face, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_face();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_face();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_face();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).begin_face();
-    })
-#endif
-    /** @} */
-    /** Pointer to the beginning of the element adjacent cells. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_cell, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).begin_cell();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).begin_cell();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).begin_cell();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).begin_cell();
-    })
-#endif
-    /** @} */
-
-    /** Pointer to the end of the element adjacent nodes. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_node, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_node();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_node();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_node();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).end_node();
-    })
-#endif
-    /** @} */
-    /** Pointer to the end of the element adjacent edges. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_edge, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_edge();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_edge();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_edge();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).end_edge();
-    })
-#endif
-    /** @} */
-    /** Pointer to the end of the element adjacent faces. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_face, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_face();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_face();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_face();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).end_face();
-    })
-#endif
-    /** @} */
-    /** Pointer to the end of the element adjacent cells. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_cell, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return get_node(node_index).end_cell();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return get_edge(edge_index).end_cell();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return get_face(face_index).end_cell();
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return get_cell(cell_index).end_cell();
-    })
-#endif
-    /** @} */
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -771,6 +246,208 @@ public:
     uint_t num_marked_cells(uint_t mark) const {
         return end_marked_cell(mark) - begin_marked_cell(mark);
     }
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Local index of the face inner cell. */
+    static constexpr uint_t face_inner_cell = 0;
+    /** Local index of the face outer cell. */
+    static constexpr uint_t face_outer_cell = 1;
+
+    /** Pointer to the beginning of the element adjacent nodes. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_node, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_nodes.begin_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_nodes.begin_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_nodes.begin_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_nodes.begin_row(cell_index);
+    })
+#endif
+    /** @} */
+    /** Pointer to the beginning of the element adjacent edges. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_edge, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_edges.begin_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_edges.begin_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_edges.begin_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_edges.begin_row(cell_index);
+    })
+#endif
+    /** @} */
+    /** Pointer to the beginning of the element adjacent faces. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_face, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_faces.begin_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_faces.begin_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_faces.begin_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_faces.begin_row(cell_index);
+    })
+#endif
+    /** @} */
+    /** Pointer to the beginning of the element adjacent cells. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, begin_adjacent_cell, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_cells.begin_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_cells.begin_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_cells.begin_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_cells.begin_row(cell_index);
+    })
+#endif
+    /** @} */
+
+    /** Pointer to the end of the element adjacent nodes. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_node, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_nodes.end_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_nodes.end_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_nodes.end_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_nodes.end_row(cell_index);
+    })
+#endif
+    /** @} */
+    /** Pointer to the end of the element adjacent edges. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_edge, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_edges.end_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_edges.end_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_edges.end_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_edges.end_row(cell_index);
+    })
+#endif
+    /** @} */
+    /** Pointer to the end of the element adjacent faces. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_face, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_faces.end_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_faces.end_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_faces.end_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_faces.end_row(cell_index);
+    })
+#endif
+    /** @} */
+    /** Pointer to the end of the element adjacent cells. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
+        uint_t*, end_adjacent_cell, (tTag, uint_t index), ;)
+#else
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tNodeTag, uint_t node_index), {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_cells.end_row(node_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tEdgeTag, uint_t edge_index), {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_cells.end_row(edge_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tFaceTag, uint_t face_index), {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_cells.end_row(face_index);
+    })
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tCellTag, uint_t cell_index), {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_cells.end_row(cell_index);
+    })
+#endif
+    /** @} */
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -950,92 +627,29 @@ public:
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
-protected:
+    /**
+     * Insert a new node into the mesh.
+     * @returns Index of the inserted node.
+     */
+    uint_t insert_node(const vec3_t& node_coords, uint_t mark = 0);
 
-    /** Insert a new node into the mesh.
-     ** @param node Edge nodes.
-     ** @returns Index of the inserted node. */
-    uint_t insert_node(const mesh_node1_t& node, vec3_t p, uint_t mark = 0);
+    /**
+     * Insert a new edge into the mesh.
+     * @returns Index of the inserted edge.
+     */
+    uint_t insert_edge(eShape edge_shape, const std::vector<uint_t>& edge_nodes, uint_t mark=0);
 
-    /** Insert a new edge into the mesh.
-     ** @param edge Edge nodes.
-     ** @returns Index of the inserted edge. */
-    /** @{ */
-    uint_t insert_edge(const mesh_edge_node1_t& edge, uint_t mark = 0);
-    uint_t insert_edge(const mesh_edge_segment2_t& edge, uint_t mark = 0);
-    /** @} */
+    /**
+     * Insert a new face into the mesh.
+     * @returns Index of the inserted face.
+     */
+    uint_t insert_face(eShape face_shape, const std::vector<uint_t>& face_nodes, uint_t mark=0);
 
-    /** Insert a new edge into the mesh.
-     ** Type of the edge is detected by the set of nodes and dimension.
-     ** @param edge_nodes Set of the edge nodes.
-     ** @param mark Boundary mark.
-     ** @param dim Overridden dimension.
-     ** @returns Index of the inserted edge. */
-    uint_t insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark = 0, uint_t dim = 0);
-
-    /** Insert a new face into the mesh.
-     ** @param face Face nodes.
-     ** @returns Index of the inserted face. */
-    /** @{ */
-    uint_t insert_face(const mesh_face_node1_t& face, uint_t mark = 0);
-    uint_t insert_face(const mesh_face_segment2_t& face, uint_t mark = 0);
-    uint_t insert_face(const mesh_face_triangle3_t& face, uint_t mark = 0);
-    uint_t insert_face(const mesh_face_quadrangle4_t& face, uint_t mark = 0);
-    /** @} */
-
-    /** Insert a new face into the mesh.
-     ** Type of the face is detected by the set of nodes and dimension.
-     ** @param face_nodes Set of the face nodes.
-     ** @param mark Boundary mark.
-     ** @param dim Overridden dimension.
-     ** @returns Index of the inserted face. */
-    uint_t insert_face(const std::vector<uint_t>& face_nodes, uint_t mark = 0, uint_t dim = 0);
-
-    /** Insert a new cell into the mesh.
-     ** @param cell Cell nodes.
-     ** @returns Index of the inserted face. */
-    /** @{ */
-    uint_t insert_cell(const mesh_cell_segment2_t& cell, uint_t mark = 0);
-    uint_t insert_cell(const mesh_cell_triangle3_t& cell, uint_t mark = 0);
-    uint_t insert_cell(const mesh_cell_quadrangle4_t& cell, uint_t mark = 0);
-    uint_t insert_cell(const mesh_cell_tetrahedron4_t& cell, uint_t mark = 0);
-    uint_t insert_cell(const mesh_cell_pyramid5_t& cell, uint_t mark = 0);
-    uint_t insert_cell(const mesh_cell_pentahedron6_t& cell, uint_t mark = 0);
-    uint_t insert_cell(const mesh_cell_hexahedron8_t& cell, uint_t mark = 0);
-    /** @} */
-
-    /** Insert a new cell into the mesh.
-     ** Type of the cell is detected by the set of nodes and dimension.
-     ** @param cell_nodes Set of the cell nodes.
-     ** @param mark Boundary mark.
-     ** @param dim Overridden dimension.
-     ** @returns Index of the inserted cell. */
-    uint_t insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark = 0, uint_t dim = 0);
-
-private:
-
-    /** @internal
-     ** Default alignment for elements storage. */
-    static constexpr size_t s_default_alignment = sizeof(size_t);
-
-    /** @internal
-     ** Allocate and insert a new node into the mesh. */
-    template<typename mesh_node_struct_t>
-    uint_t allocate_node_(const mesh_node_struct_t& node, size_t alignment = s_default_alignment);
-    /** @internal
-     ** Allocate and insert a new edge into the mesh. */
-    template<typename mesh_edge_struct_t>
-    uint_t allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment = s_default_alignment);
-    /** @internal
-     ** Allocate and insert a new face into the mesh. */
-    template<typename mesh_face_struct_t>
-    uint_t allocate_face_(const mesh_face_struct_t& face, size_t alignment = s_default_alignment);
-    /** @internal
-     ** Allocate and insert a new cell into the mesh. */
-    template<typename mesh_cell_struct_t>
-    uint_t allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment = s_default_alignment);
-
-public:
+    /**
+     * Insert a new cell into the mesh.
+     * @returns Index of the inserted cell.
+     */
+    uint_t insert_cell(eShape cell_shape, const std::vector<uint_t>& cell_nodes, uint_t mark=0);
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -1043,13 +657,13 @@ public:
 public:
 
     /** Change order of all nodes. */
-    void permute_nodes(const std::vector<uint_t>& node_permutation);
+    void permute_nodes(std::vector<uint_t>&& node_permutation);
     /** Change order of all edges. */
-    void permute_edges(const std::vector<uint_t>& edge_permutation);
+    void permute_edges(std::vector<uint_t>&& edge_permutation);
     /** Change order of all faces. */
-    void permute_faces(const std::vector<uint_t>& face_permutation);
+    void permute_faces(std::vector<uint_t>&& face_permutation);
     /** Change order of all cells. */
-    void permute_cells(const std::vector<uint_t>& cell_permutation);
+    void permute_cells(std::vector<uint_t>&& cell_permutation);
 
 protected:
 

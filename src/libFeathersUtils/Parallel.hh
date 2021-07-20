@@ -232,7 +232,7 @@ void for_range(tIter first_1, tIter last_1,
 template<typename tValue, typename tIter, typename tFunc, typename tReduceFunc>
 tValue for_range_reduce(tIter first, tIter last,
                         tValue init, tFunc func, tReduceFunc reduce_func) {
-    std::vector<tValue> partial(num_threads(), init);
+    std::vector<tValue> partial(get_max_num_threads(), init);
     for_range(first, last, [&](tIter iter) {
         partial[get_thread_index()] =
             reduce_func(partial[get_thread_index()], func(iter));
@@ -248,7 +248,7 @@ template<typename tValue, typename tIter, typename tFunc, typename tReduceFunc>
 tValue for_range_reduce(tIter first_1, tIter last_1,
                         tIter first_2, tIter last_2,
                         tValue init, tFunc func, tReduceFunc reduce_func) {
-    std::vector<tValue> partial(num_threads(), init);
+    std::vector<tValue> partial(get_max_num_threads(), init);
     for_range(first_1, last_1,
               first_2, last_2, [&](tIter iter_1, tIter iter_2) {
         partial[get_thread_index()] =
@@ -266,7 +266,7 @@ tValue for_range_reduce(tIter first_1, tIter last_1,
                         tIter first_2, tIter last_2,
                         tIter first_3, tIter last_3,
                         tValue init, tFunc func, tReduceFunc reduce_func) {
-    std::vector<tValue> partial(num_threads(), init);
+    std::vector<tValue> partial(get_max_num_threads(), init);
     for_range(first_1, last_1, first_2, last_2,
               first_3, last_3, [&](tIter iter_1, tIter iter_2, tIter iter_3) {
         partial[get_thread_index()] =

@@ -3,6 +3,7 @@
 #include <string>
 
 #include "SkunkBase.hh"
+#include "libSkunkMisc/SkunkMiscReordering.hh"
 #include "libFeathersSchemes/SkunkFvSolver.hh"
 
 #include <chrono>
@@ -15,6 +16,7 @@ inline std::string my_to_string(feathers::uint_t i) {
     return z + s;
 }
 
+#if 0
 static void print(
         feathers::int_t nn,
         const cMesh & m,
@@ -33,6 +35,7 @@ static void print(
              << std::endl;
     }
 }
+#endif
 
 template<unsigned N>
 static void print_vtk(feathers::uint_t nn,

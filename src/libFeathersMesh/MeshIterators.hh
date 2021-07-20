@@ -56,12 +56,14 @@ private:
 protected:
     tElementIterBase(tMesh& mesh, uint_t index):
         m_mesh(&mesh), m_index(index) {
+        FEATHERS_ASSERT(m_index != npos);
     }
 
     template<typename uIter, typename uMesh>
     tElementIterBase( // NOLINT(google-explicit-constructor)
             const tElementIterBase<uIter, uMesh, tTag, eTag>& other):
         m_mesh(&other.get_mesh()), m_index(other.get_index()) {
+        FEATHERS_ASSERT(m_index != npos);
     }
 
 public:
@@ -136,7 +138,7 @@ public:
         ++m_index;
         return static_cast<tIter&>(*this);
     }
-    const tIter operator++(int_t) {
+    const tIter operator++(int) {
         tIter iter(*this);
         return ++*this, iter;
     }
@@ -148,7 +150,7 @@ public:
         --m_index;
         return static_cast<tIter&>(*this);
     }
-    const tIter operator--(int_t) {
+    const tIter operator--(int) {
         tIter iter(static_cast<tIter&>(*this));
         return --*this, iter;
     }

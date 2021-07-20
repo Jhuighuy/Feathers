@@ -48,10 +48,10 @@ bool cMesh::read_triangle(const char *path) {
     std::getline(node_file, line);
     for (uint_t i = 0; i < num_nodes; ++i) {
         uint_t node_index = 0;
-        vec3_t node_pos{};
-        node_file >> node_index >> node_pos.x >> node_pos.y;
+        vec3_t node_coords(0.0);
+        node_file >> node_index >> node_coords.x >> node_coords.y;
         std::getline(node_file, line);
-        FEATHERS_ENSURE(node_index == insert_node(mesh_node1_t(), node_pos));
+        FEATHERS_ENSURE(node_index == insert_node(node_coords));
     }
 
     std::ifstream face_file(path + std::string("edge"));
@@ -61,11 +61,11 @@ bool cMesh::read_triangle(const char *path) {
     std::getline(face_file, line);
     for (uint_t i = 0; i < num_faces; ++i) {
         uint_t face_index = 0;
-        std::array<uint_t, 2> face_nodes{npos};
+        std::vector<uint_t> face_nodes(2, npos);
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> mark;
         FEATHERS_ENSURE(
-            face_index == insert_face(mesh_face_segment2_t(face_nodes.begin(), face_nodes.end()), mark));
+            face_index == insert_face(eShape::segment_2, face_nodes, mark));
         std::getline(face_file, line);
     }
 
@@ -76,10 +76,10 @@ bool cMesh::read_triangle(const char *path) {
     std::getline(cell_file, line);
     for (uint_t i = 0; i < num_cells; ++i) {
         uint_t cell_index = 0;
-        std::array<uint_t, 3> cell_nodes{npos};
+        std::vector<uint_t> cell_nodes(3, npos);
         cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2];
         FEATHERS_ENSURE(
-            cell_index == insert_cell(mesh_cell_triangle3_t(cell_nodes.begin(), cell_nodes.end())));
+            cell_index == insert_cell(eShape::triangle_3, cell_nodes));
         std::getline(cell_file, line);
     }
 
@@ -100,10 +100,10 @@ bool cMesh::read_tetgen(const char *path) {
     std::getline(node_file, line);
     for (uint_t i = 0; i < num_nodes; ++i) {
         uint_t node_index = 0;
-        vec3_t node_pos;
-        node_file >> node_index >> node_pos.x >> node_pos.y >> node_pos.z;
+        vec3_t node_coords(0.0);
+        node_file >> node_index >> node_coords.x >> node_coords.y >> node_coords.z;
         FEATHERS_ENSURE(
-            node_index == insert_node(mesh_node1_t(), node_pos));
+            node_index == insert_node(node_coords));
         std::getline(node_file, line);
     }
 
@@ -114,11 +114,11 @@ bool cMesh::read_tetgen(const char *path) {
     std::getline(face_file, line);
     for (uint_t i = 0; i < num_faces; ++i) {
         uint_t face_index = 0;
-        std::array<uint_t, 3> face_nodes{npos};
+        std::vector<uint_t> face_nodes(3, npos);
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> face_nodes[2] >> mark;
         FEATHERS_ENSURE(
-            face_index == insert_face(mesh_face_triangle3_t(face_nodes.begin(), face_nodes.end()), mark));
+            face_index == insert_face(eShape::triangle_3, face_nodes, mark));
         std::getline(face_file, line);
     }
 
@@ -129,10 +129,10 @@ bool cMesh::read_tetgen(const char *path) {
     std::getline(cell_file, line);
     for (uint_t i = 0; i < num_cells; ++i) {
         uint_t cell_index = 0;
-        std::array<uint_t, 4> cell_nodes{npos};
+        std::vector<uint_t> cell_nodes(4, npos);
         cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2] >> cell_nodes[3];
         FEATHERS_ENSURE(
-            cell_index == insert_cell(mesh_cell_tetrahedron4_t(cell_nodes.begin(), cell_nodes.end())));
+            cell_index == insert_cell(eShape::tetrahedron_4, cell_nodes));
         std::getline(cell_file, line);
     }
 
@@ -195,335 +195,108 @@ void cMesh::compute_cell_shape_properties() {
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/** Insert a new node into the mesh.
- ** @param node_ Edge nodes.
- ** @returns Index of the inserted node. */
-uint_t cMesh::insert_node(const mesh_node1_t& node_, vec3_t p, uint_t mark) {
-    /** @todo Refactor me! */
-    const uint_t node_index = allocate_node_(node_);
+struct tShapeAdjacencyCount {
+    uint_t num_nodes, num_edges, num_faces, num_cells;
+};  // tShapeAdjacencyCount
+
+static const std::map<eShape, tShapeAdjacencyCount> g_edge_shape_adjacency_count = {
+    { eShape::node, {1, 0, 0, 0} },
+    { eShape::segment_2, {2, 0, 0, 0} },
+};
+
+static const std::map<eShape, tShapeAdjacencyCount> g_face_shape_adjacency_count = {
+    { eShape::node, {1, 1, 0, 2} },
+    { eShape::segment_2, {2, 2, 0, 2} },
+    { eShape::triangle_3, {3, 3, 0, 2} },
+    { eShape::quadrangle_4, {4, 4, 0, 2} },
+};
+
+static const std::map<eShape, tShapeAdjacencyCount> g_cell_shape_adjacency_count = {
+    { eShape::segment_2, {2, 1, 2, 0} },
+    { eShape::triangle_3, {3, 3, 3, 0} },
+    { eShape::quadrangle_4, {4, 4, 4, 0} },
+    { eShape::tetrahedron_4, {4, 6, 4, 0} },
+    { eShape::pyramid_5, {5, 8, 5, 0} },
+    { eShape::pentahedron_6, {6, 9, 5, 0} },
+    { eShape::hexahedron_8, {8, 12, 6, 0} },
+};
+
+/**
+ * Insert a new node into the mesh.
+ * @returns Index of the inserted node.
+ */
+uint_t cMesh::insert_node(const vec3_t& node_coords, uint_t mark) {
+    const uint_t node_index = m_num_nodes;
+    m_num_nodes += 1;
+    m_node_marks.emplace_back(mark);
+    m_node_nodes.emplace_back_row();
+    m_node_edges.emplace_back_row();
+    m_node_faces.emplace_back_row();
+    m_node_cells.emplace_back_row();
+    m_node_coords.emplace_back(node_coords);
+    /* Set node attributes. */
     set_mark(eNodeTag, node_index, mark);
-    set_node_coords(node_index, p);
-    const vec3_t& node_geometry = p;
-    if (m_dim <= 2) {
-        FEATHERS_ASSERT(node_geometry.z == 0.0);
-        if (m_dim == 1) {
-            FEATHERS_ASSERT(node_geometry.y == 0.0);
-        }
-    }
     return node_index;
 }   // сMesh::insert_node
 
-/** Insert a new edge into the mesh.
- ** @param edge_ Edge nodes.
- ** @returns Index of the inserted edge. */
-/** @{ */
-uint_t cMesh::insert_edge(const mesh_edge_node1_t& edge_, uint_t mark) {
-    const uint_t edge_index = allocate_edge_(edge_);
-    set_mark(eEdgeTag, edge_index, mark);
-    set_shape(eEdgeTag, edge_index, eShape::node);
-    return edge_index;
-}   // сMesh::insert_edge
-uint_t cMesh::insert_edge(const mesh_edge_segment2_t& edge_, uint_t mark) {
-    const uint_t edge_index = allocate_edge_(edge_);
-    set_mark(eEdgeTag, edge_index, mark);
-    set_shape(eEdgeTag, edge_index, eShape::segment_2);
-    return edge_index;
-}   // сMesh::insert_edge
-/** @} */
-
-/** Insert a new edge into the mesh.
- ** Type of the edge is detected by the set of nodes and dimension.
- ** @param edge_nodes Set of the edge nodes.
- ** @param mark Boundary mark.
- ** @param dim Overridden dimension.
- ** @returns Index of the inserted edge. */
-uint_t cMesh::insert_edge(const std::vector<uint_t>& edge_nodes, uint_t mark, uint_t dim) {
-    if (dim == 0) {
-        dim = m_dim;
-    }
-    FEATHERS_ASSERT(1 <= dim && dim <= 3);
-    if (dim <= 2) {
-        switch (edge_nodes.size()) {
-        /* Dummy 1D/2D edge. */
-        case 1:
-            return insert_edge(mesh_edge_node1_t(edge_nodes.cbegin(), edge_nodes.cend()), mark);
-        default:;
-        }
-    } else if (dim == 3) {
-        switch (edge_nodes.size()) {
-        /* Segment edge. */
-        case 2:
-            return insert_edge(mesh_edge_segment2_t(edge_nodes.cbegin(), edge_nodes.cend()), mark);
-        default:;
-        }
-    }
-    FEATHERS_ERROR_STOP("Invalid edge nodes: cell type cannot be uniquely matched.");
-}   // сMesh::insert_edge
-
-/** Insert a new face into the mesh.
- ** @param face_ Face nodes.
- ** @returns Index of the inserted face. */
-/** @{ */
-uint_t cMesh::insert_face(const mesh_face_node1_t& face_, uint_t mark) {
-    const uint_t face_index = allocate_face_(face_);
-    set_mark(eFaceTag, face_index, mark);
-    set_shape(eFaceTag, face_index, eShape::node);
-    return face_index;
-}   // сMesh::insert_face
-uint_t cMesh::insert_face(const mesh_face_segment2_t& face_, uint_t mark) {
-    const uint_t face_index = allocate_face_(face_);
-    set_mark(eFaceTag, face_index, mark);
-    set_shape(eFaceTag, face_index, eShape::segment_2);
-    return face_index;
-}   // сMesh::insert_face
-uint_t cMesh::insert_face(const mesh_face_triangle3_t& face_, uint_t mark) {
-    const uint_t face_index = allocate_face_(face_);
-    set_mark(eFaceTag, face_index, mark);
-    set_shape(eFaceTag, face_index, eShape::triangle_3);
-    return face_index;
-}   // сMesh::insert_face
-uint_t cMesh::insert_face(const mesh_face_quadrangle4_t& face_, uint_t mark) {
-    const uint_t face_index = allocate_face_(face_);
-    set_mark(eFaceTag, face_index, mark);
-    set_shape(eFaceTag, face_index, eShape::quadrangle_4);
-    return face_index;
-}   // сMesh::insert_face
-/** @} */
-
-/** Insert a new face into the mesh.
- ** Type of the face is detected by the set of nodes and dimension.
- ** @param face_nodes Set of the face nodes.
- ** @param mark Boundary mark.
- ** @param dim Overridden dimension.
- ** @returns Index of the inserted face. */
-uint_t cMesh::insert_face(const std::vector<uint_t>& face_nodes, uint_t mark, uint_t dim) {
-    if (dim == 0) {
-        dim = m_dim;
-    }
-    FEATHERS_ASSERT(1 <= dim && dim <= 3);
-    if (dim == 1) {
-        switch (face_nodes.size()) {
-        /* Dummy 1D face. */
-        case 1:
-            return insert_face(mesh_face_node1_t(face_nodes.cbegin(), face_nodes.cend()), mark);
-        default:;
-        }
-    } else if (dim == 2) {
-        switch (face_nodes.size()) {
-        /* Segment face. */
-        case 2:
-            return insert_face(mesh_face_segment2_t(face_nodes.cbegin(), face_nodes.cend()), mark);
-        default:;
-        }
-    } else if (dim == 3) {
-        switch (face_nodes.size()) {
-        /* Triangular face. */
-        case 3:
-            return insert_face(mesh_face_triangle3_t(face_nodes.cbegin(), face_nodes.cend()), mark);
-        /* Quadrangular face. */
-        case 4:
-            return insert_face(mesh_face_quadrangle4_t(face_nodes.cbegin(), face_nodes.cend()), mark);
-        default:;
-        }
-    }
-    FEATHERS_ERROR_STOP("Invalid face nodes: face type cannot be uniquely matched.");
-}   // сMesh::insert_face
-
-/** Insert a new cell into the mesh.
- ** @param cell_ Cell nodes.
- ** @returns Index of the inserted face. */
-/** @{ */
-uint_t cMesh::insert_cell(const mesh_cell_segment2_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::segment_2);
-    return cell_index;
-}   // сMesh::insert_cell
-uint_t cMesh::insert_cell(const mesh_cell_triangle3_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::triangle_3);
-    return cell_index;
-}   // сMesh::insert_cell
-uint_t cMesh::insert_cell(const mesh_cell_quadrangle4_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::quadrangle_4);
-    return cell_index;
-}   // сMesh::insert_cell
-uint_t cMesh::insert_cell(const mesh_cell_tetrahedron4_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::tetrahedron_4);
-    return cell_index;
-}   // сMesh::insert_face
-uint_t cMesh::insert_cell(const mesh_cell_pyramid5_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::pyramid_5);
-    return cell_index;
-}
-uint_t cMesh::insert_cell(const mesh_cell_pentahedron6_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::pentahedron_6);
-    return cell_index;
-}   // сMesh::insert_face
-uint_t cMesh::insert_cell(const mesh_cell_hexahedron8_t& cell_, uint_t mark) {
-    const uint_t cell_index = allocate_cell_(cell_);
-    set_mark(eCellTag, cell_index, mark);
-    set_shape(eCellTag, cell_index, eShape::hexahedron_8);
-    return cell_index;
-}
-/** @} */
-
-/** Insert a new cell into the mesh.
- ** Type of the cell is detected by the set of nodes and dimension.
- ** @param cell_nodes Set of the cell nodes.
- ** @param mark Boundary mark.
- ** @param dim Overridden dimension.
- ** @returns Index of the inserted cell. */
-uint_t cMesh::insert_cell(const std::vector<uint_t>& cell_nodes, uint_t mark, uint_t dim) {
-    if (dim == 0) {
-        dim = m_dim;
-    }
-    FEATHERS_ASSERT(1 <= dim && dim <= 3);
-    if (dim == 1) {
-        switch (cell_nodes.size()) {
-        /* Segment cell. */
-        case 2:
-            return insert_cell(mesh_cell_segment2_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        default:;
-        }
-    } else if (dim == 2) {
-        switch (cell_nodes.size()) {
-        /* Triangular cell. */
-        case 3:
-            return insert_cell(mesh_cell_triangle3_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        /* Quadrangular cell. */
-        case 4:
-            return insert_cell(mesh_cell_quadrangle4_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        default:;
-        }
-    } else if (dim == 3) {
-        switch (cell_nodes.size()) {
-        /* Tetrahedral cell. */
-        case 4:
-            return insert_cell(mesh_cell_tetrahedron4_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        /* Pyramidal cell. */
-        case 5:
-            return insert_cell(mesh_cell_pyramid5_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        /* Pentahedral cell. */
-        case 6:
-            return insert_cell(mesh_cell_pentahedron6_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        /* Hexahedral cell. */
-        case 8:
-            return insert_cell(mesh_cell_hexahedron8_t(cell_nodes.cbegin(), cell_nodes.cend()), mark);
-        default:;
-        }
-    }
-    FEATHERS_ASSERT(!"Invalid cell nodes: cell type cannot be uniquely matched.");
-}   // сMesh::insert_cell
-
-/** @internal
- ** Allocate and insert the new element into the storage. */
-template<typename mesh_elem_struct_t>
-uint_t allocate_element_(const mesh_elem_struct_t& elem, size_t alignment,
-                                      std::vector<byte_t>& elem_storage, std::vector<size_t>& elem_offsets) {
-    FEATHERS_ASSERT(alignment > 0);
-    /* Align size of the element. */
-    size_t delta_elem = sizeof(elem);
-    delta_elem += (alignment - delta_elem%alignment)%alignment;
-    /* Allocate and initialize a new element. */
-    elem_offsets.push_back(elem_storage.size());
-    elem_storage.resize(elem_storage.size() + delta_elem);
-    new (elem_storage.data() + elem_offsets.back()) mesh_elem_struct_t(elem);
-    const auto elem_index = static_cast<uint_t>(elem_offsets.size()) - 1;
-    return elem_index;
-}   // allocate_element_
-/** @internal
- ** Allocate and insert a new node into the mesh. */
-template<typename mesh_node_struct_t>
-uint_t cMesh::allocate_node_(const mesh_node_struct_t& node, size_t alignment) {
-    m_node_marks.emplace_back();
-    m_node_coords.emplace_back();
-    return allocate_element_(node, alignment, m_node_storage, m_node_offsets);
-}   // сMesh::allocate_node_
-/** @internal
- ** Allocate and insert a new edge into the mesh. */
-template<typename mesh_edge_struct_t>
-uint_t cMesh::allocate_edge_(const mesh_edge_struct_t& edge, size_t alignment) {
-    m_edge_marks.emplace_back();
-    m_edge_shapes.emplace_back();
+/**
+ * Insert a new edge into the mesh.
+ * @returns Index of the inserted edge.
+ */
+uint_t cMesh::insert_edge(eShape edge_shape, const std::vector<uint_t>& edge_nodes, uint_t mark) {
+    const uint_t edge_index = m_num_edges;
+    m_num_edges += 1;
+    m_edge_marks.emplace_back(mark);
+    m_edge_nodes.emplace_back_row(edge_nodes.begin(), edge_nodes.end());
+    m_edge_edges.emplace_back_row();
+    m_edge_faces.emplace_back_row();
+    m_edge_cells.emplace_back_row();
+    m_edge_shapes.emplace_back(edge_shape);
     m_edge_lengths.emplace_back();
     m_edge_directions.emplace_back();
-    return allocate_element_(edge, alignment, m_edge_storage, m_edge_offsets);
-}   // сMesh::allocate_edge_
-/** @internal
- ** Allocate and insert a new face into the mesh. */
-template<typename mesh_face_struct_t>
-uint_t cMesh::allocate_face_(const mesh_face_struct_t& face, size_t alignment) {
-    m_face_marks.emplace_back();
-    m_face_shapes.emplace_back();
+    FEATHERS_NOT_IMPLEMENTED();
+    return edge_index;
+}   // сMesh::insert_edge
+
+/**
+ * Insert a new face into the mesh.
+ * @returns Index of the inserted face.
+ */
+uint_t cMesh::insert_face(eShape face_shape, const std::vector<uint_t>& face_nodes, uint_t mark) {
+    const uint_t face_index = m_num_faces;
+    m_num_faces += 1;
+    m_face_marks.emplace_back(mark);
+    m_face_nodes.emplace_back_row(face_nodes.begin(), face_nodes.end());
+    m_face_edges.emplace_back_row();
+    m_face_faces.emplace_back_row();
+    m_face_cells.emplace_back_row(2); // TODO
+    m_face_shapes.emplace_back(face_shape);
     m_face_areas.emplace_back();
     m_face_normals.emplace_back();
     m_face_center_coords.emplace_back();
-    return allocate_element_(face, alignment, m_face_storage, m_face_offsets);
-}   // сMesh::allocate_face_
-/** @internal
- ** Allocate and insert a new cell into the mesh. */
-template<typename mesh_cell_struct_t>
-uint_t cMesh::allocate_cell_(const mesh_cell_struct_t& cell, size_t alignment) {
-    m_cell_marks.emplace_back();
-    m_cell_shapes.emplace_back();
+    return face_index;
+}   // сMesh::insert_face
+
+/**
+ * Insert a new cell into the mesh.
+ * @returns Index of the inserted cell.
+ */
+uint_t cMesh::insert_cell(eShape cell_shape, const std::vector<uint_t>& cell_nodes, uint_t mark) {
+    const uint_t cell_index = m_num_cells;
+    m_num_cells += 1;
+    m_cell_marks.emplace_back(mark);
+    m_cell_nodes.emplace_back_row(cell_nodes.begin(), cell_nodes.end());
+    m_cell_edges.emplace_back_row();
+    m_cell_faces.emplace_back_row(3); // TODO
+    m_cell_cells.emplace_back_row();
+    m_cell_shapes.emplace_back(cell_shape);
     m_cell_volumes.emplace_back();
     m_cell_center_coords.emplace_back();
-    return allocate_element_(cell, alignment, m_cell_storage, m_cell_offsets);
-}   // сMesh::allocate_cell_
+    return cell_index;
+}   // сMesh::insert_cell
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
-
-static void reorder_elems_bytes_(std::vector<uint_t> elem_reordering,
-                                 std::vector<byte_t>& elem_storage,
-                                 std::vector<size_t>& elem_offsets) {
-    permute_swap(
-        elem_reordering.begin(),
-        elem_reordering.end(), [&](uint_t first_elem_index, uint_t second_elem_index) {
-            /* Find ranges for element storage. */
-            FEATHERS_ASSERT(first_elem_index <= elem_offsets.size());
-            const size_t first_elem_beg = elem_offsets[first_elem_index];
-            const size_t first_elem_end = elem_offsets.size() > first_elem_index + 1 ?
-                                          elem_offsets[first_elem_index + 1] : elem_storage.size();
-
-            /* Find ranges for new element storage. */
-            FEATHERS_ASSERT(second_elem_index <= elem_offsets.size());
-            const size_t second_elem_beg = elem_offsets[second_elem_index];
-            const size_t second_elem_end = elem_offsets.size() > second_elem_index + 1 ?
-                                           elem_offsets[second_elem_index + 1] : elem_storage.size();
-
-            const size_t first_elem_range = first_elem_end - first_elem_beg;
-            const size_t second_elem_range = second_elem_end - second_elem_beg;
-            if (first_elem_range == second_elem_range) {
-                /* Identical sizes -- fast inplace swap. */
-                std::swap_ranges(
-                    elem_storage.begin() + first_elem_beg,
-                    elem_storage.begin() + first_elem_end, elem_storage.begin() + second_elem_beg);
-            } else {
-                /* Identical sizes -- slow inplace rotation. */
-                const auto iter = std::rotate(
-                    elem_storage.begin() + first_elem_beg,
-                    elem_storage.begin() + second_elem_beg, elem_storage.begin() + second_elem_end);
-                std::rotate(
-                    iter, iter + first_elem_range, elem_storage.begin() + second_elem_end);
-                const ptrdiff_t range = second_elem_range - first_elem_range;
-                for (; first_elem_index <= second_elem_index; ++first_elem_index) {
-                    FEATHERS_ASSERT(elem_offsets[first_elem_index] >= first_elem_beg);
-                    elem_offsets[first_elem_index] += range;
-                }
-            }
-        });
-}   // reorder_elems_bytes_
 
 class tReorderFunc {
 private:
@@ -540,139 +313,141 @@ public:
 /**
  * Change order of all nodes.
  */
-void cMesh::permute_nodes(const std::vector<uint_t>& node_permutation) {
-    {
-        /* Fix adjacency lists. */
-        std::vector<uint_t> node_indices(node_permutation.size());
-        permutation_to_indices(
-            node_permutation.begin(), node_permutation.end(), node_indices.begin());
+void cMesh::permute_nodes(std::vector<uint_t>&& node_permutation) {
+    {   /* Fix adjacency lists. */
+        std::vector<uint_t> node_ordering(node_permutation.size());
+        convert_permutation_to_ordering(
+            node_permutation.begin(), node_permutation.end(), node_ordering.begin());
         for_each_node(*this, [&](tNodeMutableIter node) {
             std::transform(node.begin_node(), node.end_node(),
-                           node.begin_node(), tReorderFunc(node_indices));
+                           node.begin_node(), [&](uint_t index) { return node_ordering[index]; });
         });
         for_each_edge(*this, [&](tEdgeMutableIter edge) {
             std::transform(edge.begin_node(), edge.end_node(),
-                           edge.begin_node(), tReorderFunc(node_indices));
+                           edge.begin_node(), tReorderFunc(node_ordering));
         });
         for_each_face(*this, [&](tFaceMutableIter face) {
             std::transform(face.begin_node(), face.end_node(),
-                           face.begin_node(), tReorderFunc(node_indices));
+                           face.begin_node(), tReorderFunc(node_ordering));
         });
         for_each_cell(*this, [&](tCellMutableIter cell) {
             std::transform(cell.begin_node(), cell.end_node(),
-                           cell.begin_node(), tReorderFunc(node_indices));
+                           cell.begin_node(), tReorderFunc(node_ordering));
         });
     }
     /* Permute node attributes. */
-    reorder_elems_bytes_(
-        node_permutation, m_node_storage, m_node_offsets);
-    permute_inplace(node_permutation, m_node_marks.begin());
-    permute_inplace(node_permutation, m_node_coords.begin());
+    permute_tables(
+        node_permutation.begin(), node_permutation.end(),
+        m_node_nodes, m_node_edges, m_node_faces, m_node_cells);
+    permute_inplace(
+        node_permutation.begin(), node_permutation.end(),
+        m_node_marks.begin(), m_node_coords.begin());
 }   // сMesh::permute_nodes
 
 /**
  * Change order of all edges.
  */
-void cMesh::permute_edges(const std::vector<uint_t>& edge_permutation) {
-    {
-        /* Fix adjacency lists. */
-        std::vector<uint_t> edge_indices(edge_permutation.size());
-        permutation_to_indices(
-            edge_permutation.begin(), edge_permutation.end(), edge_indices.begin());
+void cMesh::permute_edges(std::vector<uint_t>&& edge_permutation) {
+    {   /* Fix adjacency lists. */
+        std::vector<uint_t> edge_ordering(edge_permutation.size());
+        convert_permutation_to_ordering(
+            edge_permutation.begin(), edge_permutation.end(), edge_ordering.begin());
         for_each_node(*this, [&](tNodeMutableIter node) {
             std::transform(node.begin_edge(), node.end_edge(),
-                           node.begin_edge(), tReorderFunc(edge_indices));
+                           node.begin_edge(), tReorderFunc(edge_ordering));
         });
         for_each_edge(*this, [&](tEdgeMutableIter edge) {
             std::transform(edge.begin_edge(), edge.end_edge(),
-                           edge.begin_edge(), tReorderFunc(edge_indices));
+                           edge.begin_edge(), tReorderFunc(edge_ordering));
         });
         for_each_face(*this, [&](tFaceMutableIter face) {
             std::transform(face.begin_edge(), face.end_edge(),
-                           face.begin_edge(), tReorderFunc(edge_indices));
+                           face.begin_edge(), tReorderFunc(edge_ordering));
         });
         for_each_cell(*this, [&](tCellMutableIter cell) {
             std::transform(cell.begin_edge(), cell.end_edge(),
-                           cell.begin_edge(), tReorderFunc(edge_indices));
+                           cell.begin_edge(), tReorderFunc(edge_ordering));
         });
     }
     /* Permute edge attributes. */
-    reorder_elems_bytes_(
-        edge_permutation, m_edge_storage, m_edge_offsets);
-    permute_inplace(edge_permutation, m_edge_marks.begin());
-    permute_inplace(edge_permutation, m_edge_shapes.begin());
-    permute_inplace(edge_permutation, m_edge_lengths.begin());
-    permute_inplace(edge_permutation, m_edge_directions.begin());
+    permute_tables(
+        edge_permutation.begin(), edge_permutation.end(),
+        m_edge_nodes, m_edge_edges, m_edge_faces, m_edge_cells);
+    permute_inplace(
+        edge_permutation.begin(), edge_permutation.end(),
+        m_edge_marks.begin(), m_edge_shapes.begin(),
+        m_edge_lengths.begin(), m_edge_directions.begin());
 }   // сMesh::permute_edges
 
 /**
  * Change order of all faces.
  */
-void cMesh::permute_faces(const std::vector<uint_t>& face_permutation) {
-    {
-        /* Fix adjacency lists. */
-        std::vector<uint_t> face_indices(face_permutation.size());
-        permutation_to_indices(
-            face_permutation.begin(), face_permutation.end(), face_indices.begin());
+void cMesh::permute_faces(std::vector<uint_t>&& face_permutation) {
+    {   /* Fix adjacency lists. */
+        std::vector<uint_t> face_ordering(face_permutation.size());
+        convert_permutation_to_ordering(
+            face_permutation.begin(), face_permutation.end(), face_ordering.begin());
         for_each_node(*this, [&](tNodeMutableIter node) {
             std::transform(node.begin_face(), node.end_face(),
-                           node.begin_face(), tReorderFunc(face_indices));
+                           node.begin_face(), tReorderFunc(face_ordering));
         });
         for_each_edge(*this, [&](tEdgeMutableIter edge) {
             std::transform(edge.begin_face(), edge.end_face(),
-                           edge.begin_face(), tReorderFunc(face_indices));
+                           edge.begin_face(), tReorderFunc(face_ordering));
         });
         for_each_face(*this, [&](tFaceMutableIter face) {
             std::transform(face.begin_face(), face.end_face(),
-                           face.begin_face(), tReorderFunc(face_indices));
+                           face.begin_face(), tReorderFunc(face_ordering));
         });
         for_each_cell(*this, [&](tCellMutableIter cell) {
+            auto m = cell.get_mark();
             std::transform(cell.begin_face(), cell.end_face(),
-                           cell.begin_face(), tReorderFunc(face_indices));
+                           cell.begin_face(), tReorderFunc(face_ordering));
         });
     }
     /* Permute face attributes. */
-    reorder_elems_bytes_(face_permutation, m_face_storage, m_face_offsets);
-    permute_inplace(face_permutation, m_face_marks.begin());
-    permute_inplace(face_permutation, m_face_shapes.begin());
-    permute_inplace(face_permutation, m_face_areas.begin());
-    permute_inplace(face_permutation, m_face_normals.begin());
-    permute_inplace(face_permutation, m_face_center_coords.begin());
+    permute_tables(
+        face_permutation.begin(), face_permutation.end(),
+        m_face_nodes, m_face_edges, m_face_faces, m_face_cells);
+    permute_inplace(
+        face_permutation.begin(), face_permutation.end(),
+        m_face_marks.begin(), m_face_shapes.begin(),
+        m_face_areas.begin(), m_face_normals.begin(), m_face_center_coords.begin());
 }   // сMesh::permute_faces
 
 /**
  * Change order of all cells.
  */
-void cMesh::permute_cells(const std::vector<uint_t>& cell_permutation) {
-    {
-        /* Fix adjacency lists. */
-        std::vector<uint_t> cell_indices(cell_permutation.size());
-        permutation_to_indices(
-            cell_permutation.begin(), cell_permutation.end(), cell_indices.begin());
-        auto b = cell_indices == cell_permutation;
+void cMesh::permute_cells(std::vector<uint_t>&& cell_permutation) {
+    {   /* Fix adjacency lists. */
+        std::vector<uint_t> cell_ordering(cell_permutation.size());
+        convert_permutation_to_ordering(
+            cell_permutation.begin(), cell_permutation.end(), cell_ordering.begin());
         for_each_node(*this, [&](tNodeMutableIter node) {
             std::transform(node.begin_cell(), node.end_cell(),
-                           node.begin_cell(), tReorderFunc(cell_indices));
+                           node.begin_cell(), tReorderFunc(cell_ordering));
         });
         for_each_edge(*this, [&](tEdgeMutableIter edge) {
             std::transform(edge.begin_cell(), edge.end_cell(),
-                           edge.begin_cell(), tReorderFunc(cell_indices));
+                           edge.begin_cell(), tReorderFunc(cell_ordering));
         });
         for_each_face(*this, [&](tFaceMutableIter face) {
             std::transform(face.begin_cell(), face.end_cell(),
-                           face.begin_cell(), tReorderFunc(cell_indices));
+                           face.begin_cell(), tReorderFunc(cell_ordering));
         });
         for_each_cell(*this, [&](tCellMutableIter cell) {
             std::transform(cell.begin_cell(), cell.end_cell(),
-                           cell.begin_cell(), tReorderFunc(cell_indices));
+                           cell.begin_cell(), tReorderFunc(cell_ordering));
         });
     }
     /* Permute cell attributes. */
-    reorder_elems_bytes_(cell_permutation, m_cell_storage, m_cell_offsets);
-    permute_inplace(cell_permutation, m_cell_marks.begin());
-    permute_inplace(cell_permutation, m_cell_shapes.begin());
-    permute_inplace(cell_permutation, m_cell_volumes.begin());
-    permute_inplace(cell_permutation, m_cell_center_coords.begin());
+    permute_tables(
+        cell_permutation.begin(), cell_permutation.end(),
+        m_cell_nodes, m_cell_edges, m_cell_faces, m_cell_cells);
+    permute_inplace(
+        cell_permutation.begin(), cell_permutation.end(),
+        m_cell_marks.begin(), m_cell_shapes.begin(),
+        m_cell_volumes.begin(), m_cell_center_coords.begin());
 }   // сMesh::permute_cells
 
 // ------------------------------------------------------------------------------------ //
@@ -687,7 +462,7 @@ void cMesh::reorder_faces() {
                          [&](uint_t node_index_1, uint_t node_index_2) {
             return get_mark(eNodeTag, node_index_1) < get_mark(eNodeTag, node_index_2);
         });
-        permute_nodes(node_reordering);
+        permute_nodes(std::move(node_reordering));
         for (uint_t node_index = 0; node_index < num_nodes(); ++node_index) {
             m_marked_node_ranges.resize(get_mark(eNodeTag, node_index) + 2);
             m_marked_node_ranges[get_mark(eNodeTag, node_index) + 1] += 1;
@@ -702,7 +477,7 @@ void cMesh::reorder_faces() {
                          [&](uint_t edge_index_1, uint_t edge_index_2) {
             return get_mark(eEdgeTag, edge_index_1) < get_mark(eEdgeTag, edge_index_2);
         });
-        permute_edges(edge_reordering);
+        permute_edges(std::move(edge_reordering));
         for (uint_t edge_index = 0; edge_index < num_edges(); ++edge_index) {
             m_marked_edge_ranges.resize(get_mark(eEdgeTag, edge_index) + 2);
             m_marked_edge_ranges[get_mark(eEdgeTag, edge_index) + 1] += 1;
@@ -717,7 +492,7 @@ void cMesh::reorder_faces() {
                          [&](uint_t face_index_1, uint_t face_index_2) {
             return get_mark(eFaceTag, face_index_1) < get_mark(eFaceTag, face_index_2);
         });
-        permute_faces(face_reordering);
+        permute_faces(std::move(face_reordering));
         for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
             m_marked_face_ranges.resize(get_mark(eFaceTag, face_index) + 2);
             m_marked_face_ranges[get_mark(eFaceTag, face_index) + 1] += 1;
@@ -732,7 +507,7 @@ void cMesh::reorder_faces() {
                          [&](uint_t cell_index_1, uint_t cell_index_2) {
             return get_mark(eCellTag, cell_index_1) < get_mark(eCellTag, cell_index_2);
         });
-        permute_cells(cell_reordering);
+        permute_cells(std::move(cell_reordering));
         for (uint_t cell_index = 0; cell_index < num_cells(); ++cell_index) {
             m_marked_cell_ranges.resize(get_mark(eCellTag, cell_index) + 2);
             m_marked_cell_ranges[get_mark(eCellTag, cell_index) + 1] += 1;
@@ -791,7 +566,8 @@ void cMesh::generate_edges() {
                 edge_index = edge_cache_iter->second;
             } else {
                 /* Create a brand-new edge. */
-                edge_index = insert_edge(std::vector<uint_t>(edge_nodes.begin(), edge_nodes.end()));
+                edge_index = insert_edge( // TODO:
+                    eShape::segment_2, std::vector<uint_t>(edge_nodes.begin(), edge_nodes.end()));
                 edge_cache.emplace(edge_nodes, edge_index);
                 set_mark(eEdgeTag, edge_index, face.get_mark());
             }
@@ -860,16 +636,17 @@ void cMesh::generate_faces() {
                 face_index = face_cache_iter->second;
                 tFaceMutableIter face(*this, face_index);
                 if (std::equal(face.begin_node(), face.end_node(), face_nodes.cbegin())) {
-                    FEATHERS_ASSERT(face.get_inner_cell() == npos);
+                    FEATHERS_ASSERT(face.begin_cell()[face_inner_cell] == npos);
                     face.begin_cell()[face_inner_cell] = cell;
                 } else {
-                    FEATHERS_ASSERT(face.get_outer_cell() == npos);
+                    FEATHERS_ASSERT(face.begin_cell()[face_outer_cell] == npos);
                     face.begin_cell()[face_outer_cell] = cell;
                 }
             } else {
                 /* Create a brand-new face.
                  * Assign the current cell as the inner one. */
-                face_index = insert_face(face_nodes);
+                // TODO: correct face shape!
+                face_index = insert_face(eShape::segment_2, face_nodes);
                 face_cache.emplace(face_nodes_set, face_index);
                 tFaceMutableIter face(*this, face_index);
                 face.begin_cell()[face_inner_cell] = cell;
@@ -925,8 +702,10 @@ void cMesh::generate_boundary_cells() {
             std::vector<uint_t> node_permutation, edge_permutation;
             std::tie(node_permutation, edge_permutation) =
                 g_face_shape_to_nodes_and_edges_flip.at(face.get_shape());
-            permute_inplace(node_permutation, face.begin_node());
-            permute_inplace(edge_permutation, face.begin_edge());
+            permute_inplace(
+                node_permutation.begin(), node_permutation.end(), face.begin_node());
+            permute_inplace(
+                edge_permutation.begin(), edge_permutation.end(), face.begin_edge());
         }
         tCellIter cell = face.get_inner_cell();
 
@@ -948,7 +727,7 @@ void cMesh::generate_boundary_cells() {
                 const vec3_t delta = node_coords - face.get_center_coords();
                 node_coords -= 2.0*glm::dot(delta, face.get_normal())*face.get_normal();
                 ghost_cell_nodes.push_back(
-                    insert_node(mesh_node1_t{}, node_coords, face.get_mark()));
+                    insert_node(node_coords, face.get_mark()));
             } else {
                 /* Insert a boundary face node. */
                 ghost_cell_nodes.push_back(node);
@@ -956,13 +735,16 @@ void cMesh::generate_boundary_cells() {
         });
 #endif
         /* Insert the boundary cell. */
+        // TODO:
         const uint_t boundary_cell_index =
-            insert_cell(ghost_cell_nodes, face.get_mark(), ghost_cell_dim);
+            insert_cell(eShape::triangle_3, ghost_cell_nodes, face.get_mark());
+#if 0
         Cell& boundary_cell = get_cell(boundary_cell_index);
         while (boundary_cell._num_faces() != 1) {
             boundary_cell.erase_face(0);
         }
         boundary_cell.begin_face()[0] = face;
+#endif
         face.begin_cell()[face_outer_cell] = boundary_cell_index;
     });
 }   // сMesh::generate_boundary_cells
