@@ -38,11 +38,11 @@
 namespace feathers {
 
 /**
- * Compressed sparse row table class.
+ * Compressed sparse row (CSR) table class.
  */
-class cTable {
+class cCSRTable {
 private:
-    std::vector<uint_t> m_row_pointers{0};
+    std::vector<uint_t> m_row_offsets{0};
     std::vector<uint_t> m_column_indices;
 
 public:
@@ -52,19 +52,71 @@ public:
 
     /** Number of rows in the mesh. */
     uint_t num_rows() const {
-        return m_row_pointers.size() - 1;
+        return m_row_offsets.size() - 1;
     }
 
     /** Pointer to the beginning of the row. */
     FEATHERS_CONST_OVERLOAD(uint_t*, begin_row, (uint_t row_index), {
         FEATHERS_ASSERT(row_index < num_rows());
-        return m_column_indices.data() + m_row_pointers[row_index];
+        return &m_column_indices[m_row_offsets[row_index]];
     })
 
     /** Pointer to the end of the row. */
     FEATHERS_CONST_OVERLOAD(uint_t*, end_row, (uint_t row_index), {
         FEATHERS_ASSERT(row_index < num_rows());
-        return m_column_indices.data() + m_row_pointers[row_index + 1];
+        return &m_column_indices[m_row_offsets[row_index + 1]];
+    })
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Insert a row into the table. */
+    template<typename tColumnIndexIter>
+    void emplace_back_row(tColumnIndexIter first_index_iter, tColumnIndexIter last_index_iter) {
+        m_column_indices.insert(
+            m_column_indices.end(), first_index_iter, last_index_iter);
+        m_row_offsets.push_back(m_column_indices.size());
+    }
+
+    /** Insert a dummy row into the table. */
+    void emplace_back_row(uint_t num_column_indices = 0, uint_t column_index = npos) {
+        m_column_indices.insert(
+            m_column_indices.end(), num_column_indices, column_index);
+        m_row_offsets.push_back(m_column_indices.size());
+    }
+};  // class cCSRTable
+
+/**
+ * Table in some weird format.
+ */
+class cTable {
+private:
+    std::vector<uint_t> m_row_offsets;
+    std::vector<uint_t> m_column_nums_and_indices;
+
+public:
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Number of rows in the mesh. */
+    uint_t num_rows() const {
+        return m_row_offsets.size();
+    }
+
+    /** Pointer to the beginning of the row. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, begin_row, (uint_t row_index), {
+        FEATHERS_ASSERT(row_index < num_rows());
+        const uint_t row_offset = m_row_offsets[row_index];
+        return &m_column_nums_and_indices[row_offset + 1];
+    })
+
+    /** Pointer to the end of the row. */
+    FEATHERS_CONST_OVERLOAD(uint_t*, end_row, (uint_t row_index), {
+        FEATHERS_ASSERT(row_index < num_rows());
+        const uint_t row_offset = m_row_offsets[row_index];
+        const uint_t row_num_column_indices = m_column_nums_and_indices[row_offset];
+        return &m_column_nums_and_indices[row_offset + 1 + row_num_column_indices];
     })
 
     // ---------------------------------------------------------------------- //
@@ -73,22 +125,27 @@ public:
     /** Insert a row into the table. */
     template<typename tIter>
     void emplace_back_row(tIter first_index, tIter last_index) {
-        m_column_indices.insert(
-            m_column_indices.end(), first_index, last_index);
-        m_row_pointers.push_back(m_column_indices.size());
+        m_row_offsets.push_back(m_column_nums_and_indices.size());
+        m_column_nums_and_indices.emplace_back(last_index - first_index);
+        m_column_nums_and_indices.insert(
+            m_column_nums_and_indices.end(), first_index, last_index);
     }
 
     /** Insert a dummy row into the table. */
-    void emplace_back_row(uint_t num_column_indices= 0, uint_t column_index= npos) {
-        m_column_indices.insert(
-            m_column_indices.end(), num_column_indices, column_index);
-        m_row_pointers.push_back(m_column_indices.size());
+    void emplace_back_row(uint_t num_column_indices = 0, uint_t column_index = npos) {
+        m_row_offsets.push_back(m_column_nums_and_indices.size());
+        m_column_nums_and_indices.emplace_back(num_column_indices);
+        m_column_nums_and_indices.insert(
+            m_column_nums_and_indices.end(), num_column_indices, column_index);
     }
 };  // class cTable
 
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
+
 template<typename tIter>
-void permute_tables(tIter first_permutation_iter,
-                    tIter last_permutation_iter, cTable& table) {
+void permute_rows(tIter first_permutation_iter,
+                  tIter last_permutation_iter, cTable& table) {
     cTable permuted_table;
     for (tIter permutation_iter = first_permutation_iter;
          permutation_iter != last_permutation_iter; ++permutation_iter) {
@@ -98,10 +155,10 @@ void permute_tables(tIter first_permutation_iter,
     table = std::move(permuted_table);
 }
 template<typename tIter, typename... tTable>
-void permute_tables(tIter first_permutation_iter,
-                    tIter last_permutation_iter, cTable& table, tTable&... rest) {
-    permute_tables(first_permutation_iter, last_permutation_iter, table);
-    permute_tables(first_permutation_iter, last_permutation_iter, rest...);
+void permute_rows(tIter first_permutation_iter,
+                  tIter last_permutation_iter, cTable& table, tTable&... rest) {
+    permute_rows(first_permutation_iter, last_permutation_iter, table);
+    permute_rows(first_permutation_iter, last_permutation_iter, rest...);
 }
 
 } // namespace feathers

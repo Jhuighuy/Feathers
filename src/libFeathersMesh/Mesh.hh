@@ -48,6 +48,13 @@ enum tFaceTag { eFaceTag = 3 };
 /** Cell element tag. */
 enum tCellTag { eCellTag = 4 };
 
+enum : uint_t {
+    /** Local index of the face inner cell. */
+    eFaceInnerCell = 0,
+    /** Local index of the face outer cell. */
+    eFaceOuterCell = 1
+};  // enum
+
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -249,11 +256,6 @@ public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
-
-    /** Local index of the face inner cell. */
-    static constexpr uint_t face_inner_cell = 0;
-    /** Local index of the face outer cell. */
-    static constexpr uint_t face_outer_cell = 1;
 
     /** Pointer to the beginning of the element adjacent nodes. */
     /** @{ */
@@ -653,6 +655,10 @@ public:
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
+
+private:
+    template<typename tTag>
+    void fix_permutation_and_adjacency_(tTag tag, std::vector<uint_t>& permutation);
 
 public:
 

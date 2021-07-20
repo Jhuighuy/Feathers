@@ -219,87 +219,92 @@ public:
 
     /** Number of nodes in the element. */
     uint_t num_nodes() const {
-        return end_node() - begin_node();
+        return end(eNodeTag) - begin(eNodeTag);
     }
     /** Number of edges in the element. */
     uint_t num_edges() const {
-        return end_edge() - begin_edge();
+        return end(eEdgeTag) - begin(eEdgeTag);
     }
     /** Number of faces in the element. */
     uint_t num_faces() const {
-        return end_face() - begin_face();
+        return end(eFaceTag) - begin(eFaceTag);
     }
     /** Number of cells in the element. */
     uint_t num_cells() const {
-        return end_cell() - begin_cell();
+        return end(eCellTag) - begin(eCellTag);
     }
 
-    /** Pointer to the beginning of the element adjacent nodes. */
-    auto begin_node() const {
+    /** Pointer to the beginning of the adjacent elements. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    template<typename uTag>
+    auto begin(uTag);
+#else
+    auto begin(tNodeTag) const {
         return m_mesh->begin_adjacent_node(eTag, m_index);
     }
-    /** Pointer to the beginning of the element adjacent edges. */
-    auto begin_edge() const {
+    auto begin(tEdgeTag) const {
         return m_mesh->begin_adjacent_edge(eTag, m_index);
     }
-    /** Pointer to the beginning of the element adjacent faces. */
-    auto begin_face() const {
+    auto begin(tFaceTag) const {
         return m_mesh->begin_adjacent_face(eTag, m_index);
     }
-    /** Pointer to the beginning of the element adjacent cells. */
-    auto begin_cell() const {
+    auto begin(tCellTag) const {
         return m_mesh->begin_adjacent_cell(eTag, m_index);
     }
+#endif
 
-    /** Pointer to the end of the element adjacent nodes. */
-    auto end_node() const {
+    /** Pointer to the end of the adjacent elements. */
+#if FEATHERS_DOXYGEN
+    template<typename uTag>
+    auto end(uTag);
+#else
+    auto end(tNodeTag) const {
         return m_mesh->end_adjacent_node(eTag, m_index);
     }
-    /** Pointer to the end of the element adjacent edges. */
-    auto end_edge() const {
+    auto end(tEdgeTag) const {
         return m_mesh->end_adjacent_edge(eTag, m_index);
     }
-    /** Pointer to the end of the element adjacent faces. */
-    auto end_face() const {
+    auto end(tFaceTag) const {
         return m_mesh->end_adjacent_face(eTag, m_index);
     }
-    /** Pointer to the end of the element adjacent cells. */
-    auto end_cell() const {
+    auto end(tCellTag) const {
         return m_mesh->end_adjacent_cell(eTag, m_index);
     }
+#endif
 
-    /** Get connected node. */
+    /** Get adjacent node. */
     auto get_node(uint_t node_local) const {
         FEATHERS_ASSERT(node_local < num_nodes());
-        return tNodeIterBase<tMesh>(*m_mesh, begin_node()[node_local]);
+        return tNodeIterBase<tMesh>(*m_mesh, begin(eNodeTag)[node_local]);
     }
-    /** Get connected edge. */
+    /** Get adjacent edge. */
     auto get_edge(uint_t edge_local) const {
         FEATHERS_ASSERT(edge_local < num_edges());
-        return tEdgeIterBase<tMesh>(*m_mesh, begin_edge()[edge_local]);
+        return tEdgeIterBase<tMesh>(*m_mesh, begin(eEdgeTag)[edge_local]);
     }
-    /** Get connected face. */
+    /** Get adjacent face. */
     auto get_face(uint_t face_local) const {
         FEATHERS_ASSERT(face_local < num_faces());
-        return tFaceIterBase<tMesh>(*m_mesh, begin_face()[face_local]);
+        return tFaceIterBase<tMesh>(*m_mesh, begin(eFaceTag)[face_local]);
     }
-    /** Get connected cell. */
+    /** Get adjacent cell. */
     auto get_cell(uint_t cell_local) const {
         FEATHERS_ASSERT(cell_local < num_cells());
-        return tCellIterBase<tMesh>(*m_mesh, begin_cell()[cell_local]);
+        return tCellIterBase<tMesh>(*m_mesh, begin(eCellTag)[cell_local]);
     }
 
     /** Iterate through all connected nodes. */
     template<typename tFunc>
     void for_each_node(tFunc func) const {
-        std::for_each(begin_node(), end_node(), [&](uint_t node_index) {
+        std::for_each(begin(eNodeTag), end(eNodeTag), [&](uint_t node_index) {
             func(tNodeIterBase<tMesh>(*m_mesh, node_index));
         });
     }
     /** Iterate through all connected edges. */
     template<typename tFunc>
     void for_each_edge(tFunc func) const {
-        std::for_each(begin_edge(), end_edge(), [&](uint_t edge_index) {
+        std::for_each(begin(eEdgeTag), end(eEdgeTag), [&](uint_t edge_index) {
             func(tEdgeIterBase<tMesh>(*m_mesh, edge_index));
         });
     }
@@ -307,13 +312,13 @@ public:
     /** @{ */
     template<typename tFunc>
     void for_each_face(tFunc func) const {
-        std::for_each(begin_face(), end_face(), [&](uint_t face_index) {
+        std::for_each(begin(eFaceTag), end(eFaceTag), [&](uint_t face_index) {
             func(tFaceIterBase<tMesh>(*m_mesh, face_index));
         });
     }
     template<typename tFunc>
     void for_each_face_cells(tFunc func) const {
-        std::for_each(begin_face(), end_face(), [&](uint_t face_index) {
+        std::for_each(begin(eFaceTag), end(eFaceTag), [&](uint_t face_index) {
             tFaceIterBase<tMesh> face(*m_mesh, face_index);
             func(face.get_inner_cell(), face.get_outer_cell());
         });
@@ -322,7 +327,7 @@ public:
     /** Iterate through all connected cells. */
     template<typename tFunc>
     void for_each_cell(tFunc func) const {
-        std::for_each(begin_cell(), end_cell(), [&](uint_t cell_index) {
+        std::for_each(begin(eCellTag), end(eCellTag), [&](uint_t cell_index) {
             func(tCellIterBase<tMesh>(*m_mesh, cell_index));
         });
     }
@@ -450,11 +455,11 @@ public:
 
     /** Get connected inner cell. */
     auto get_inner_cell() const {
-        return this->get_cell(tMesh::face_inner_cell);
+        return this->get_cell(eFaceInnerCell);
     }
     /** Get connected outer cell. */
     auto get_outer_cell() const {
-        return this->get_cell(tMesh::face_outer_cell);
+        return this->get_cell(eFaceOuterCell);
     }
 
     // ---------------------------------------------------------------------- //
