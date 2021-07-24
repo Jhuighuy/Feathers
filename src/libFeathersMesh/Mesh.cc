@@ -26,7 +26,7 @@
  */
 
 #include "Mesh.hh"
-#include <libFeathersMesh/Shape.hh>
+#include <libFeathersMesh/Element.hh>
 #include <libFeathersUtils/Parallel.hh>
 #include <libSkunkMisc/SkunkMiscReordering.hh>
 
@@ -156,9 +156,9 @@ void cMesh::compute_edge_shape_properties() {
     std::tie(m_min_edge_length, m_max_edge_length) =
         for_range_minmax(begin_edge(*this), end_edge(*this),
                          +huge, -huge, [&](tEdgeMutableIter edge) {
-            const iShapePtr edge_shape = edge.get_shape_ptr();
-            edge.set_length(edge_shape->get_length_or_area_or_volume());
-            edge.set_direction(edge_shape->get_direction());
+            std::unique_ptr<const iElement> edge_element = edge.get_element_object();
+            edge.set_length(edge_element->get_length_or_area_or_volume());
+            edge.set_direction(edge_element->get_direction());
             return edge.get_length();
         });
 }   // сMesh::compute_edge_shape_properties
@@ -170,10 +170,10 @@ void cMesh::compute_face_shape_properties() {
     std::tie(m_min_face_area, m_max_face_area) =
         for_range_minmax(begin_face(*this), end_face(*this),
                          +huge, -huge, [&](tFaceMutableIter face) {
-            iShapePtr face_shape = face.get_shape_ptr();
-            face.set_area(face_shape->get_length_or_area_or_volume());
-            face.set_normal(face_shape->get_normal());
-            face.set_center_coords(face_shape->get_center_coords());
+            std::unique_ptr<const iElement> face_element = face.get_element_object();
+            face.set_area(face_element->get_length_or_area_or_volume());
+            face.set_normal(face_element->get_normal());
+            face.set_center_coords(face_element->get_center_coords());
             return face.get_area();
         });
 }   // сMesh::compute_face_shape_properties
@@ -185,41 +185,15 @@ void cMesh::compute_cell_shape_properties() {
     std::tie(m_min_face_area, m_max_face_area) =
         for_range_minmax(begin_cell(*this), end_cell(*this),
                          +huge, -huge, [&](tCellMutableIter cell) {
-            const iShapePtr cell_shape = cell.get_shape_ptr();
-            cell.set_volume(cell_shape->get_length_or_area_or_volume());
-            cell.set_center_coords(cell_shape->get_center_coords());
+            std::unique_ptr<const iElement> cell_element = cell.get_element_object();
+            cell.set_volume(cell_element->get_length_or_area_or_volume());
+            cell.set_center_coords(cell_element->get_center_coords());
             return cell.get_volume();
         });
 }   // сMesh::compute_cell_shape_properties
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
-
-struct tShapeAdjacencyCount {
-    uint_t num_nodes, num_edges, num_faces, num_cells;
-};  // tShapeAdjacencyCount
-
-static const std::map<eShape, tShapeAdjacencyCount> g_edge_shape_adjacency_count = {
-    { eShape::node, {1, 0, 0, 0} },
-    { eShape::segment_2, {2, 0, 0, 0} },
-};
-
-static const std::map<eShape, tShapeAdjacencyCount> g_face_shape_adjacency_count = {
-    { eShape::node, {1, 1, 0, 2} },
-    { eShape::segment_2, {2, 2, 0, 2} },
-    { eShape::triangle_3, {3, 3, 0, 2} },
-    { eShape::quadrangle_4, {4, 4, 0, 2} },
-};
-
-static const std::map<eShape, tShapeAdjacencyCount> g_cell_shape_adjacency_count = {
-    { eShape::segment_2, {2, 1, 2, 0} },
-    { eShape::triangle_3, {3, 3, 3, 0} },
-    { eShape::quadrangle_4, {4, 4, 4, 0} },
-    { eShape::tetrahedron_4, {4, 6, 4, 0} },
-    { eShape::pyramid_5, {5, 8, 5, 0} },
-    { eShape::pentahedron_6, {6, 9, 5, 0} },
-    { eShape::hexahedron_8, {8, 12, 6, 0} },
-};
 
 /**
  * Insert a new node into the mesh.

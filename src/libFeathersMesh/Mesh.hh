@@ -31,7 +31,7 @@
 
 #include "SkunkBase.hh"
 #include "libFeathersUtils/Table.hh"
-#include "Shape.hh"
+#include "Element.hh"
 
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -77,11 +77,6 @@ private:
     std::vector<uint_t> m_marked_face_ranges{0};
     std::vector<uint_t> m_marked_cell_ranges{0};
 
-    cTable m_node_nodes, m_edge_nodes, m_face_nodes, m_cell_nodes;
-    cTable m_node_edges, m_edge_edges, m_face_edges, m_cell_edges;
-    cTable m_node_faces, m_edge_faces, m_face_faces, m_cell_faces;
-    cTable m_node_cells, m_edge_cells, m_face_cells, m_cell_cells;
-
     std::vector<eShape> m_edge_shapes;
     std::vector<eShape> m_face_shapes;
     std::vector<eShape> m_cell_shapes;
@@ -98,6 +93,11 @@ private:
     real_t m_min_edge_length = 0.0, m_max_edge_length = 0.0;
     real_t m_min_face_area = 0.0, m_max_face_area = 0.0;
     real_t m_min_cell_volume = 0.0, m_max_cell_volume = 0.0;
+
+    cTable m_node_nodes, m_edge_nodes, m_face_nodes, m_cell_nodes;
+    cTable m_node_edges, m_edge_edges, m_face_edges, m_cell_edges;
+    cTable m_node_faces, m_edge_faces, m_face_faces, m_cell_faces;
+    cTable m_node_cells, m_edge_cells, m_face_cells, m_cell_cells;
 
 public:
 
@@ -255,6 +255,183 @@ public:
     uint_t num_marked_cells(uint_t mark) const {
         return end_marked_cell(mark) - begin_marked_cell(mark);
     }
+
+    // ---------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+
+    /** Get element shape. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    template<typename tTag>
+    uint_t get_shape(tTag, uint_t index) const;
+#else
+    eShape get_shape(tEdgeTag, uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_shapes[edge_index];
+    }
+    eShape get_shape(tFaceTag, uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_shapes[face_index];
+    }
+    eShape get_shape(tCellTag, uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_shapes[cell_index];
+    }
+#endif
+    /** @} */
+    /** Set element shape. */
+    /** @{ */
+#if FEATHERS_DOXYGEN
+    template<typename tTag>
+    uint_t set_shape(tTag, uint_t index, eShape shape) const;
+#else
+    void set_shape(tEdgeTag, uint_t edge_index, eShape edge_shape) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_shapes[edge_index] = edge_shape;
+    }
+    void set_shape(tFaceTag, uint_t face_index, eShape face_shape) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_shapes[face_index] = face_shape;
+    }
+    void set_shape(tCellTag, uint_t cell_index, eShape cell_shape) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_shapes[cell_index] = cell_shape;
+    }
+#endif
+    /** @} */
+
+    /** Get element object. */
+    template<typename tTag>
+    std::unique_ptr<const iElement> get_element_object(tTag tag, uint_t index) const {
+        // TODO: element factory.
+        iElementPtr element(get_shape(tag, index));
+        element->assign_nodes(m_num_nodes, m_node_coords.data(),
+                              begin_adjacent_node(tag, index),
+                              end_adjacent_node(tag, index));
+        return std::unique_ptr<const iElement>(element.release());
+    }
+
+    /** Compute edge shape properties. */
+    void compute_edge_shape_properties();
+    /** Compute face shape properties. */
+    void compute_face_shape_properties();
+    /** Compute cell shape properties. */
+    void compute_cell_shape_properties();
+    /** Compute all elements shape properties. */
+    void compute_all_shape_properties() {
+        // TODO:
+        //compute_edge_shape_properties();
+        compute_face_shape_properties();
+        compute_cell_shape_properties();
+    }
+
+    /** Get node position. */
+    const vec3_t& get_node_coords(uint_t node_index) const {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        return m_node_coords[node_index];
+    }
+    /** Set node position. */
+    void set_node_coords(uint_t node_index, const vec3_t& node_coords) {
+        FEATHERS_ASSERT(node_index < num_nodes());
+        m_node_coords[node_index] = node_coords;
+    }
+
+    /** Get minimal edge length. */
+    real_t get_min_edge_length() const {
+        return m_min_edge_length;
+    }
+    /** Get maximal edge length. */
+    real_t get_max_edge_length() const {
+        return m_max_edge_length;
+    }
+    /** Get edge length. */
+    real_t get_edge_length(uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_lengths[edge_index];
+    }
+    /** Set edge length. */
+    void set_edge_length(uint_t edge_index, real_t edge_length) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_lengths[edge_index] = edge_length;
+    }
+    /** Get edge direction. */
+    const vec3_t& get_edge_direction(uint_t edge_index) const {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        return m_edge_directions[edge_index];
+    }
+    /** Set edge direction. */
+    void set_edge_direction(uint_t edge_index, const vec3_t& edge_direction) {
+        FEATHERS_ASSERT(edge_index < num_edges());
+        m_edge_directions[edge_index] = edge_direction;
+    }
+
+    /** Get minimal face area. */
+    real_t get_min_face_area() const{
+        return m_min_face_area;
+    }
+    /** Get maximal face area. */
+    real_t get_max_face_area() const {
+        return m_max_face_area;
+    }
+    /** Get face area/length. */
+    real_t get_face_area(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_areas[face_index];
+    }
+    /** Set face area/length. */
+    void set_face_area(uint_t face_index, real_t face_area) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_areas[face_index] = face_area;
+    }
+    /** Get face normal. */
+    const vec3_t& get_face_normal(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_normals[face_index];
+    }
+    /** Set face normal. */
+    void set_face_normal(uint_t face_index, const vec3_t& face_normal) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_normals[face_index] = face_normal;
+    }
+    /** Get face barycenter. */
+    const vec3_t& get_face_center_coords(uint_t face_index) const {
+        FEATHERS_ASSERT(face_index < num_faces());
+        return m_face_center_coords[face_index];
+    }
+    /** Set face barycenter. */
+    void set_face_center_coords(uint_t face_index, const vec3_t& face_center_coords) {
+        FEATHERS_ASSERT(face_index < num_faces());
+        m_face_center_coords[face_index] = face_center_coords;
+    }
+
+    /** Get minimal cell volume. */
+    real_t get_min_cell_volume() const {
+        return m_min_cell_volume;
+    }
+    /** Get maximal cell volume. */
+    real_t get_max_cell_volume() const {
+        return m_max_cell_volume;
+    }
+    /** Get cell volume/area/length. */
+    real_t get_cell_volume(uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_volumes[cell_index];
+    }
+    /** Set cell volume/area/length. */
+    void set_cell_volume(uint_t cell_index, real_t cell_volume) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_volumes[cell_index] = cell_volume;
+    }
+    /** Get cell barycenter. */
+    const vec3_t& get_cell_center_coords(uint_t cell_index) const {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        return m_cell_center_coords[cell_index];
+    }
+    /** Get cell barycenter. */
+    void set_cell_center_coords(uint_t cell_index, const vec3_t& cell_center_coords) {
+        FEATHERS_ASSERT(cell_index < num_cells());
+        m_cell_center_coords[cell_index] = cell_center_coords;
+     }
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -452,181 +629,6 @@ public:
     })
 #endif
     /** @} */
-
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
-
-    /** Get element shape. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    template<typename tTag>
-    uint_t get_mark(tTag, uint_t index) const;
-#else
-    eShape get_shape(tEdgeTag, uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_shapes[edge_index];
-    }
-    eShape get_shape(tFaceTag, uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_shapes[face_index];
-    }
-    eShape get_shape(tCellTag, uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_shapes[cell_index];
-    }
-#endif
-    /** @} */
-    /** Set element shape. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    template<typename tTag>
-    uint_t get_mark(tTag, uint_t index) const;
-#else
-    void set_shape(tEdgeTag, uint_t edge_index, eShape edge_shape) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_shapes[edge_index] = edge_shape;
-    }
-    void set_shape(tFaceTag, uint_t face_index, eShape face_shape) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_shapes[face_index] = face_shape;
-    }
-    void set_shape(tCellTag, uint_t cell_index, eShape cell_shape) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_shapes[cell_index] = cell_shape;
-    }
-#endif
-    /** @} */
-
-    template<typename tTag>
-    iShapePtr get_shape_ptr(tTag tag, uint_t index) const {
-        iShapePtr shape_ptr(get_shape(tag, index));
-        shape_ptr->assign_nodes(m_num_nodes, m_node_coords.data(),
-                                begin_adjacent_node(tag, index),
-                                end_adjacent_node(tag, index));
-        return shape_ptr;
-    }
-
-    /** Compute edge shape properties. */
-    void compute_edge_shape_properties();
-    /** Compute face shape properties. */
-    void compute_face_shape_properties();
-    /** Compute cell shape properties. */
-    void compute_cell_shape_properties();
-    /** Compute all elements shape properties. */
-    void compute_all_shape_properties() {
-        // TODO:
-        //compute_edge_shape_properties();
-        compute_face_shape_properties();
-        compute_cell_shape_properties();
-    }
-
-    /** Get node position. */
-    const vec3_t& get_node_coords(uint_t node_index) const {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_coords[node_index];
-    }
-    /** Set node position. */
-    void set_node_coords(uint_t node_index, const vec3_t& node_coords) {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        m_node_coords[node_index] = node_coords;
-    }
-
-    /** Get minimal edge length. */
-    real_t get_min_edge_length() const {
-        return m_min_edge_length;
-    }
-    /** Get maximal edge length. */
-    real_t get_max_edge_length() const {
-        return m_max_edge_length;
-    }
-    /** Get edge length. */
-    real_t get_edge_length(uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_lengths[edge_index];
-    }
-    /** Set edge length. */
-    void set_edge_length(uint_t edge_index, real_t edge_length) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_lengths[edge_index] = edge_length;
-    }
-    /** Get edge direction. */
-    const vec3_t& get_edge_direction(uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_directions[edge_index];
-    }
-    /** Set edge direction. */
-    void set_edge_direction(uint_t edge_index, const vec3_t& edge_direction) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_directions[edge_index] = edge_direction;
-    }
-
-    /** Get minimal face area. */
-    real_t get_min_face_area() const{
-        return m_min_face_area;
-    }
-    /** Get maximal face area. */
-    real_t get_max_face_area() const {
-        return m_max_face_area;
-    }
-    /** Get face area/length. */
-    real_t get_face_area(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_areas[face_index];
-    }
-    /** Set face area/length. */
-    void set_face_area(uint_t face_index, real_t face_area) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_areas[face_index] = face_area;
-    }
-    /** Get face normal. */
-    const vec3_t& get_face_normal(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_normals[face_index];
-    }
-    /** Set face normal. */
-    void set_face_normal(uint_t face_index, const vec3_t& face_normal) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_normals[face_index] = face_normal;
-    }
-    /** Get face barycenter. */
-    const vec3_t& get_face_center_coords(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_center_coords[face_index];
-    }
-    /** Set face barycenter. */
-    void set_face_center_coords(uint_t face_index, const vec3_t& face_center_coords) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_center_coords[face_index] = face_center_coords;
-    }
-
-    /** Get minimal cell volume. */
-    real_t get_min_cell_volume() const {
-        return m_min_cell_volume;
-    }
-    /** Get maximal cell volume. */
-    real_t get_max_cell_volume() const {
-        return m_max_cell_volume;
-    }
-    /** Get cell volume/area/length. */
-    real_t get_cell_volume(uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_volumes[cell_index];
-    }
-    /** Set cell volume/area/length. */
-    void set_cell_volume(uint_t cell_index, real_t cell_volume) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_volumes[cell_index] = cell_volume;
-    }
-    /** Get cell barycenter. */
-    const vec3_t& get_cell_center_coords(uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_center_coords[cell_index];
-    }
-    /** Get cell barycenter. */
-    void set_cell_center_coords(uint_t cell_index, const vec3_t& cell_center_coords) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_center_coords[cell_index] = cell_center_coords;
-     }
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //

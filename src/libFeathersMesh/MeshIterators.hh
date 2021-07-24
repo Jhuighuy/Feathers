@@ -210,8 +210,10 @@ public:
     eShape get_shape() const {
         return m_mesh->get_shape(tag, m_index);
     }
-    iShapePtr get_shape_ptr() const {
-        return m_mesh->get_shape_ptr(tag, m_index);
+
+    /** Get element object. */
+    std::unique_ptr<const iElement> get_element_object() const {
+        return m_mesh->get_element_object(tag, m_index);
     }
 
     // ---------------------------------------------------------------------- //
