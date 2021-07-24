@@ -47,7 +47,7 @@ class tCellIterBase;
 /**
  * Base element iterator.
  */
-template<class tIter, typename tMesh, typename tTag, tTag eTag>
+template<class tIter, typename tMesh, typename tTag, tTag tag>
 class tElementIterBase {
 private:
     tMesh* m_mesh;
@@ -61,7 +61,7 @@ protected:
 
     template<typename uIter, typename uMesh>
     tElementIterBase( // NOLINT(google-explicit-constructor)
-            const tElementIterBase<uIter, uMesh, tTag, eTag>& other):
+            const tElementIterBase<uIter, uMesh, tTag, tag>& other):
         m_mesh(&other.get_mesh()), m_index(other.get_index()) {
         FEATHERS_ASSERT(m_index != npos);
     }
@@ -81,7 +81,7 @@ public:
     }
 
     /** Cast to index operator. */
-    operator uint_t() const {
+    operator uint_t() const { // NOLINT(google-explicit-constructor)
         return m_index;
     }
 
@@ -203,15 +203,15 @@ public:
 
     /** Get mark. */
     uint_t get_mark() const {
-        return m_mesh->get_mark(eTag, m_index);
+        return m_mesh->get_mark(tag, m_index);
     }
 
     /** Get shape. */
     eShape get_shape() const {
-        return m_mesh->get_shape(eTag, m_index);
+        return m_mesh->get_shape(tag, m_index);
     }
     iShapePtr get_shape_ptr() const {
-        return m_mesh->get_shape_ptr(eTag, m_index);
+        return m_mesh->get_shape_ptr(tag, m_index);
     }
 
     // ---------------------------------------------------------------------- //
@@ -241,16 +241,16 @@ public:
     auto begin(uTag);
 #else
     auto begin(tNodeTag) const {
-        return m_mesh->begin_adjacent_node(eTag, m_index);
+        return m_mesh->begin_adjacent_node(tag, m_index);
     }
     auto begin(tEdgeTag) const {
-        return m_mesh->begin_adjacent_edge(eTag, m_index);
+        return m_mesh->begin_adjacent_edge(tag, m_index);
     }
     auto begin(tFaceTag) const {
-        return m_mesh->begin_adjacent_face(eTag, m_index);
+        return m_mesh->begin_adjacent_face(tag, m_index);
     }
     auto begin(tCellTag) const {
-        return m_mesh->begin_adjacent_cell(eTag, m_index);
+        return m_mesh->begin_adjacent_cell(tag, m_index);
     }
 #endif
 
@@ -260,16 +260,16 @@ public:
     auto end(uTag);
 #else
     auto end(tNodeTag) const {
-        return m_mesh->end_adjacent_node(eTag, m_index);
+        return m_mesh->end_adjacent_node(tag, m_index);
     }
     auto end(tEdgeTag) const {
-        return m_mesh->end_adjacent_edge(eTag, m_index);
+        return m_mesh->end_adjacent_edge(tag, m_index);
     }
     auto end(tFaceTag) const {
-        return m_mesh->end_adjacent_face(eTag, m_index);
+        return m_mesh->end_adjacent_face(tag, m_index);
     }
     auto end(tCellTag) const {
-        return m_mesh->end_adjacent_cell(eTag, m_index);
+        return m_mesh->end_adjacent_cell(tag, m_index);
     }
 #endif
 

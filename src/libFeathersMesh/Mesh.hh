@@ -58,7 +58,9 @@ enum : uint_t {
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/** Hybrid unstructured finite element mesh. */
+/**
+ * Hybrid unstructured multidimensional mesh.
+ */
 class cMesh : public tObject<cMesh> {
 private:
     uint_t m_dim;
@@ -498,9 +500,9 @@ public:
     template<typename tTag>
     iShapePtr get_shape_ptr(tTag tag, uint_t index) const {
         iShapePtr shape_ptr(get_shape(tag, index));
-        shape_ptr->assign_node_coords(m_node_coords.data(),
-                                      begin_adjacent_node(tag, index),
-                                      end_adjacent_node(tag, index));
+        shape_ptr->assign_nodes(m_num_nodes, m_node_coords.data(),
+                                begin_adjacent_node(tag, index),
+                                end_adjacent_node(tag, index));
         return shape_ptr;
     }
 
