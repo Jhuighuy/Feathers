@@ -203,13 +203,11 @@ uint_t cMesh::insert_node(const vec3_t& node_coords, uint_t mark) {
     const uint_t node_index = m_num_nodes;
     m_num_nodes += 1;
     m_node_marks.emplace_back(mark);
+    m_node_coords.emplace_back(node_coords);
     m_node_nodes.emplace_back_row();
     m_node_edges.emplace_back_row();
     m_node_faces.emplace_back_row();
     m_node_cells.emplace_back_row();
-    m_node_coords.emplace_back(node_coords);
-    /* Set node attributes. */
-    set_mark(eNodeTag, node_index, mark);
     return node_index;
 }   // сMesh::insert_node
 
@@ -217,17 +215,17 @@ uint_t cMesh::insert_node(const vec3_t& node_coords, uint_t mark) {
  * Insert a new edge into the mesh.
  * @returns Index of the inserted edge.
  */
-uint_t cMesh::insert_edge(eShape edge_shape, const std::vector<uint_t>& edge_nodes, uint_t mark) {
+uint_t cMesh::insert_edge(const std::unique_ptr<const iElement>& edge, uint_t mark) {
     const uint_t edge_index = m_num_edges;
     m_num_edges += 1;
     m_edge_marks.emplace_back(mark);
-    m_edge_nodes.emplace_back_row(edge_nodes.begin(), edge_nodes.end());
+    m_edge_shapes.emplace_back(edge->get_shape());
+    m_edge_lengths.emplace_back(edge->get_length_or_area_or_volume());
+    m_edge_directions.emplace_back(edge->get_direction());
+    m_edge_nodes.emplace_back_row(edge->get_nodes().begin(), edge->get_nodes().end());
     m_edge_edges.emplace_back_row();
     m_edge_faces.emplace_back_row();
     m_edge_cells.emplace_back_row();
-    m_edge_shapes.emplace_back(edge_shape);
-    m_edge_lengths.emplace_back();
-    m_edge_directions.emplace_back();
     FEATHERS_NOT_IMPLEMENTED();
     return edge_index;
 }   // сMesh::insert_edge
@@ -240,14 +238,14 @@ uint_t cMesh::insert_face(eShape face_shape, const std::vector<uint_t>& face_nod
     const uint_t face_index = m_num_faces;
     m_num_faces += 1;
     m_face_marks.emplace_back(mark);
-    m_face_nodes.emplace_back_row(face_nodes.begin(), face_nodes.end());
-    m_face_edges.emplace_back_row();
-    m_face_faces.emplace_back_row();
-    m_face_cells.emplace_back_row(2); // TODO
     m_face_shapes.emplace_back(face_shape);
     m_face_areas.emplace_back();
     m_face_normals.emplace_back();
     m_face_center_coords.emplace_back();
+    m_face_nodes.emplace_back_row(face_nodes.begin(), face_nodes.end());
+    m_face_edges.emplace_back_row();
+    m_face_faces.emplace_back_row();
+    m_face_cells.emplace_back_row(2); // TODO
     return face_index;
 }   // сMesh::insert_face
 
@@ -259,13 +257,13 @@ uint_t cMesh::insert_cell(eShape cell_shape, const std::vector<uint_t>& cell_nod
     const uint_t cell_index = m_num_cells;
     m_num_cells += 1;
     m_cell_marks.emplace_back(mark);
+    m_cell_shapes.emplace_back(cell_shape);
+    m_cell_volumes.emplace_back();
+    m_cell_center_coords.emplace_back();
     m_cell_nodes.emplace_back_row(cell_nodes.begin(), cell_nodes.end());
     m_cell_edges.emplace_back_row();
     m_cell_faces.emplace_back_row(3); // TODO
     m_cell_cells.emplace_back_row();
-    m_cell_shapes.emplace_back(cell_shape);
-    m_cell_volumes.emplace_back();
-    m_cell_center_coords.emplace_back();
     return cell_index;
 }   // сMesh::insert_cell
 
@@ -470,7 +468,7 @@ void cMesh::generate_edges() {
             } else {
                 /* Create a brand-new edge. */
                 edge_index = insert_edge( // TODO:
-                    eShape::segment_2, std::vector<uint_t>(edge_nodes.begin(), edge_nodes.end()));
+                    { eShape::segment_2, std::vector<uint_t>(edge_nodes.begin(), edge_nodes.end()) });
                 edge_cache.emplace(edge_nodes, edge_index);
                 set_mark(eEdgeTag, edge_index, face.get_mark());
             }

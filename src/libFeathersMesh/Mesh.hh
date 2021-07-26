@@ -300,15 +300,18 @@ public:
 #endif
     /** @} */
 
+    /** Make a mesh element from description. */
+    std::unique_ptr<const iElement> make_element(sElementDesc&& desc) const {
+        return iElement::make(std::forward<sElementDesc>(desc),
+                              m_num_nodes, m_node_coords.data());
+    }
+
     /** Get element object. */
     template<typename tTag>
     std::unique_ptr<const iElement> get_element_object(tTag tag, uint_t index) const {
-        // TODO: element factory.
-        iElementPtr element(get_shape(tag, index));
-        element->assign_nodes(m_num_nodes, m_node_coords.data(),
-                              begin_adjacent_node(tag, index),
-                              end_adjacent_node(tag, index));
-        return std::unique_ptr<const iElement>(element.release());
+        return make_element({ get_shape(tag, index),
+                              std::vector<uint_t>(begin_adjacent_node(tag, index),
+                                                  end_adjacent_node(tag, index)) });
     }
 
     /** Compute edge shape properties. */
@@ -366,7 +369,7 @@ public:
     }
 
     /** Get minimal face area. */
-    real_t get_min_face_area() const{
+    real_t get_min_face_area() const {
         return m_min_face_area;
     }
     /** Get maximal face area. */
@@ -643,7 +646,12 @@ public:
      * Insert a new edge into the mesh.
      * @returns Index of the inserted edge.
      */
-    uint_t insert_edge(eShape edge_shape, const std::vector<uint_t>& edge_nodes, uint_t mark=0);
+    /** @{ */
+    uint_t insert_edge(const std::unique_ptr<const iElement>& edge, uint_t mark = 0);
+    uint_t insert_edge(sElementDesc&& edge_desc, uint_t mark = 0) {
+        return insert_edge(make_element(std::forward<sElementDesc>(edge_desc)), mark);
+    }
+    /** @} */
 
     /**
      * Insert a new face into the mesh.
