@@ -130,17 +130,17 @@ void set_max_num_threads(uint_t num_threads) {
 // ------------------------------------------------------------------------------------ //
 
 #if FEATHERS_HAS_OPENMP_3_0
-template<typename tIter, typename tFunc>
-void for_range(tIter first, tIter last, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first, tIndex last, tFunc func) {
 #pragma omp parallel for schedule(static)
-    for (tIter iter = first; iter < last; ++iter) {
-        func(iter);
+    for (tIndex index = first; index < last; ++index) {
+        func(index);
     }
 }
 #define FOR_RANGE_1_DEFINED_
 #elif FEATHERS_HAS_OPENMP_2_0
-template<typename tIter, typename tFunc>
-void for_range(tIter first, tIter last, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first, tIndex last, tFunc func) {
     const ptrdiff_t count = last - first;
 #pragma omp parallel for schedule(static)
     for (ptrdiff_t index = 0; index < count; ++index) {
@@ -150,26 +150,26 @@ void for_range(tIter first, tIter last, tFunc func) {
 #define FOR_RANGE_1_DEFINED_
 #endif
 #if FEATHERS_HAS_OPENMP_3_0
-template<typename tIter, typename tFunc>
-void for_range(tIter first_1, tIter last_1,
-               tIter first_2, tIter last_2, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first_1, tIndex last_1,
+               tIndex first_2, tIndex last_2, tFunc func) {
 #pragma omp parallel for collapse(2) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            func(iter_1, iter_2);
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            func(index_1, index_2);
         }
     }
 }
 #define FOR_RANGE_2_DEFINED_
-template<typename tIter, typename tFunc>
-void for_range(tIter first_1, tIter last_1,
-               tIter first_2, tIter last_2,
-               tIter first_3, tIter last_3, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first_1, tIndex last_1,
+               tIndex first_2, tIndex last_2,
+               tIndex first_3, tIndex last_3, tFunc func) {
 #pragma omp parallel for collapse(3) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            for (tIter iter_3 = first_3; iter_3 < last_3; ++iter_3) {
-                func(iter_1, iter_2, iter_3);
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            for (tIndex index_3 = first_3; index_3 < last_3; ++index_3) {
+                func(index_1, index_2, index_3);
             }
         }
     }
@@ -186,18 +186,18 @@ void for_range(tIter first_1, tIter last_1,
 // ------------------------------------------------------------------------------------ //
 
 #if FEATHERS_HAS_OPENMP_3_0
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_sum(tIter first, tIter last, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_sum(tIndex first, tIndex last, tValue init, tFunc func) {
 #pragma omp parallel for reduction(+:init) schedule(static)
-    for (tIter iter = first; iter < last; ++iter) {
-        init += func(iter);
+    for (tIndex index = first; index < last; ++index) {
+        init += func(index);
     }
     return init;
 }
 #define FOR_RANGE_SUM_1_DEFINED_
 #elif FEATHERS_HAS_OPENMP_2_0
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_sum(tIter first, tIter last, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_sum(tIndex first, tIndex last, tValue init, tFunc func) {
     const ptrdiff_t count = last - first;
 #pragma omp parallel for reduction(+:init) schedule(static)
     for (ptrdiff_t index = 0; index < count; ++index) {
@@ -208,27 +208,27 @@ tValue for_range_sum(tIter first, tIter last, tValue init, tFunc func) {
 #define FOR_RANGE_SUM_1_DEFINED_
 #endif
 #if FEATHERS_HAS_OPENMP_3_0
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_sum(tIter first_1, tIter last_1,
-                     tIter first_2, tIter last_2, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_sum(tIndex first_1, tIndex last_1,
+                     tIndex first_2, tIndex last_2, tValue init, tFunc func) {
 #pragma omp parallel for collapse(2) reduction(+:init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            init += func(iter_1, iter_2);
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            init += func(index_1, index_2);
         }
     }
     return init;
 }
 #define FOR_RANGE_SUM_2_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_sum(tIter first_1, tIter last_1,
-                     tIter first_2, tIter last_2,
-                     tIter first_3, tIter last_3, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_sum(tIndex first_1, tIndex last_1,
+                     tIndex first_2, tIndex last_2,
+                     tIndex first_3, tIndex last_3, tValue init, tFunc func) {
 #pragma omp parallel for collapse(3) reduction(+:init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            for (tIter iter_3 = first_3; iter_3 < last_3; ++iter_3) {
-                init += func(iter_1, iter_2, iter_3);
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            for (tIndex index_3 = first_3; index_3 < last_3; ++index_3) {
+                init += func(index_1, index_2, index_3);
             }
         }
     }
@@ -241,36 +241,36 @@ tValue for_range_sum(tIter first_1, tIter last_1,
 // ------------------------------------------------------------------------------------ //
 
 #if FEATHERS_HAS_OPENMP_4_0
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_min(tIter first, tIter last, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_min(tIndex first, tIndex last, tValue init, tFunc func) {
 #pragma omp parallel for reduction(min:init) schedule(static)
-    for (tIter iter = first; iter < last; ++iter) {
-        init = std::min(init, func(iter));
+    for (tIndex index = first; index < last; ++index) {
+        init = std::min(init, func(index));
     }
     return init;
 }
 #define FOR_RANGE_MIN_1_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_min(tIter first_1, tIter last_1,
-                     tIter first_2, tIter last_2, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_min(tIndex first_1, tIndex last_1,
+                     tIndex first_2, tIndex last_2, tValue init, tFunc func) {
 #pragma omp parallel for collapse(2) reduction(min:init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            init = std::min(init, func(iter_1, iter_2));
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            init = std::min(init, func(index_1, index_2));
         }
     }
     return init;
 }
 #define FOR_RANGE_MIN_2_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_min(tIter first_1, tIter last_1,
-                     tIter first_2, tIter last_2,
-                     tIter first_3, tIter last_3, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_min(tIndex first_1, tIndex last_1,
+                     tIndex first_2, tIndex last_2,
+                     tIndex first_3, tIndex last_3, tValue init, tFunc func) {
 #pragma omp parallel for collapse(3) reduction(min:init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            for (tIter iter_3 = first_3; iter_3 < last_3; ++iter_3) {
-                init = std::min(init, func(iter_1, iter_2, iter_3));
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            for (tIndex index_3 = first_3; index_3 < last_3; ++index_3) {
+                init = std::min(init, func(index_1, index_2, index_3));
             }
         }
     }
@@ -280,36 +280,36 @@ tValue for_range_min(tIter first_1, tIter last_1,
 #endif // FEATHERS_HAS_OPENMP_4_0
 
 #if FEATHERS_HAS_OPENMP_4_0
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_max(tIter first, tIter last, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_max(tIndex first, tIndex last, tValue init, tFunc func) {
 #pragma omp parallel for reduction(max:init) schedule(static)
-    for (tIter iter = first; iter < last; ++iter) {
-        init = std::max(init, func(iter));
+    for (tIndex index = first; index < last; ++index) {
+        init = std::max(init, func(index));
     }
     return init;
 }
 #define FOR_RANGE_MAX_1_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_max(tIter first_1, tIter last_1,
-                     tIter first_2, tIter last_2, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_max(tIndex first_1, tIndex last_1,
+                     tIndex first_2, tIndex last_2, tValue init, tFunc func) {
 #pragma omp parallel for collapse(2) reduction(max:init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            init = std::max(init, func(iter_1, iter_2));
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            init = std::max(init, func(index_1, index_2));
         }
     }
     return init;
 }
 #define FOR_RANGE_MAX_2_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-tValue for_range_max(tIter first_1, tIter last_1,
-                     tIter first_2, tIter last_2,
-                     tIter first_3, tIter last_3, tValue init, tFunc func) {
+template<typename tValue, typename tIndex, typename tFunc>
+tValue for_range_max(tIndex first_1, tIndex last_1,
+                     tIndex first_2, tIndex last_2,
+                     tIndex first_3, tIndex last_3, tValue init, tFunc func) {
 #pragma omp parallel for collapse(3) reduction(max:init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            for (tIter iter_3 = first_3; iter_3 < last_3; ++iter_3) {
-                init = std::max(init, func(iter_1, iter_2, iter_3));
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            for (tIndex index_3 = first_3; index_3 < last_3; ++index_3) {
+                init = std::max(init, func(index_1, index_2, index_3));
             }
         }
     }
@@ -319,28 +319,28 @@ tValue for_range_max(tIter first_1, tIter last_1,
 #endif // FEATHERS_HAS_OPENMP_4_0
 
 #if FEATHERS_HAS_OPENMP_4_0
-template<typename tValue, typename tIter, typename tFunc>
-std::pair<tValue, tValue> for_range_minmax(tIter first, tIter last,
+template<typename tValue, typename tIndex, typename tFunc>
+std::pair<tValue, tValue> for_range_minmax(tIndex first, tIndex last,
                                            tValue min_init, tValue max_init, tFunc func) {
 #pragma omp parallel for \
         reduction(min:min_init) reduction(max:max_init) schedule(static)
-    for (tIter iter = first; iter < last; ++iter) {
-        const auto current = func(iter);
+    for (tIndex index = first; index < last; ++index) {
+        const auto current = func(index);
         min_init = std::min(min_init, current);
         max_init = std::max(max_init, current);
     }
     return std::make_pair(min_init, max_init);
 }
 #define FOR_RANGE_MINMAX_1_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-std::pair<tValue, tValue> for_range_minmax(tIter first_1, tIter last_1,
-                                           tIter first_2, tIter last_2,
+template<typename tValue, typename tIndex, typename tFunc>
+std::pair<tValue, tValue> for_range_minmax(tIndex first_1, tIndex last_1,
+                                           tIndex first_2, tIndex last_2,
                                            tValue min_init, tValue max_init, tFunc func) {
 #pragma omp parallel for collapse(2) \
         reduction(min:min_init) reduction(max:max_init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            const auto current = func(iter_1, iter_2);
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            const auto current = func(index_1, index_2);
             min_init = std::min(min_init, current);
             max_init = std::max(max_init, current);
         }
@@ -348,17 +348,17 @@ std::pair<tValue, tValue> for_range_minmax(tIter first_1, tIter last_1,
     return std::make_pair(min_init, max_init);
 }
 #define FOR_RANGE_MINMAX_2_DEFINED_
-template<typename tValue, typename tIter, typename tFunc>
-std::pair<tValue, tValue> for_range_minmax(tIter first_1, tIter last_1,
-                                           tIter first_2, tIter last_2,
-                                           tIter first_3, tIter last_3,
+template<typename tValue, typename tIndex, typename tFunc>
+std::pair<tValue, tValue> for_range_minmax(tIndex first_1, tIndex last_1,
+                                           tIndex first_2, tIndex last_2,
+                                           tIndex first_3, tIndex last_3,
                                            tValue min_init, tValue max_init, tFunc func) {
 #pragma omp parallel for collapse(3) \
         reduction(min:min_init) reduction(max:max_init) schedule(static)
-    for (tIter iter_1 = first_1; iter_1 < last_1; ++iter_1) {
-        for (tIter iter_2 = first_2; iter_2 < last_2; ++iter_2) {
-            for (tIter iter_3 = first_3; iter_3 < last_3; ++iter_3) {
-                const auto current = func(iter_1, iter_2, iter_3);
+    for (tIndex index_1 = first_1; index_1 < last_1; ++index_1) {
+        for (tIndex index_2 = first_2; index_2 < last_2; ++index_2) {
+            for (tIndex index_3 = first_3; index_3 < last_3; ++index_3) {
+                const auto current = func(index_1, index_2, index_3);
                 min_init = std::min(min_init, current);
                 max_init = std::max(max_init, current);
             }

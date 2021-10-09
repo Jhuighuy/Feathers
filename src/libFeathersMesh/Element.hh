@@ -207,13 +207,13 @@ public:
  * Segmental element.
  * @verbatim
  *
- *  n0 @ f0
- *     \
- *      \         e0 = (n0,n1)
- *       v e0     f0 = (n0)
- *        \       f1 = (n1)
- *         \
- *       n1 @ f1
+ *  n0 O f0
+ *      \
+ *       \         e0 = (n0,n1)
+ *        v e0     f0 = (n0)
+ *         \       f1 = (n1)
+ *          \
+ *        n1 O f1
  *
  * @endverbatim
  */
@@ -238,13 +238,13 @@ public:
  * Triangular element.
  * @verbatim
  *           n2
- *           @           e0 = f0 = (n0,n1)
+ *           O           e0 = f0 = (n0,n1)
  *          / \          e1 = f1 = (n1,n2)
  *         /   \         e2 = f2 = (n2,n0)
  *  e2/f2 v     ^ e1/f1
  *       /       \
  *      /         \
- *  n0 @----->-----@ n1
+ *  n0 O----->-----O n1
  *        e0/f0
  * @endverbatim
  */
@@ -265,11 +265,11 @@ public:
  * Quadrangular element.
  * @verbatim
  *               e2/f2
- *       n3 @-----<-----@ n2    e0 = f0 = (n0,n1)
+ *       n3 O-----<-----O n2    e0 = f0 = (n0,n1)
  *         /           /        e1 = f2 = (n1,n2)
  *  e3/f3 v           ^ e1/f1   e2 = f2 = (n2,n3)
  *       /           /          e3 = f3 = (n3,n0)
- *   n0 @----->-----@ n1     split = ((n0,n1,n2),(n2,n3,n0))
+ *   n0 O----->-----O n1     split = ((n0,n1,n2),(n2,n3,n0))
  *          e0/f0
  * @endverbatim
  */
@@ -279,7 +279,6 @@ public:
     uint_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-
     tElementDescList get_simplicial_parts(uint_t partition_index) const final;
 };  // class cQuadrangle
 
@@ -291,23 +290,23 @@ public:
  * @verbatim
  *                    f3
  *               n3   ^
- *                @   |
+ *                O   |
  *         f1    /|\. |     f2         e0 = (n0,n1)
  *         ^    / | `\.     ^          e1 = (n1,n2)
- *          \  /  |f1 `\.  /           e2 = (n2,n0)
+ *          \  /  |   `\.  /           e2 = (n2,n0)
  *           \`   |   | `\/            e3 = (n0,n3)
  *           ,\   |   o  /`\           e4 = (n1,n3)
  *       e3 ^  *  |     *   `^.e5      e5 = (n2,n3)
  *         /   e4 ^           `\       f0 = (n0,n2,n1)
- *     n0 @-------|---------<---@ n2   f1 = (n0,n1,n3)
+ *     n0 O-------|--<----------O n2   f1 = (n0,n1,n3)
  *         \      |  e2       ,/       f2 = (n1,n2,n3)
  *          \     |     o   ,/`        f3 = (n2,n0,n3)
- *           \    ^ e7  | ,/`
+ *           \    ^ e4  | ,/`
  *         e0 v   |     ,^ e1
  *             \  |   ,/`
  *              \ | ,/` |
  *               \|/`   |
- *                @ n1  v
+ *                O n1  v
  *                      f0
  * @endverbatim
  */
@@ -327,7 +326,7 @@ public:
  * Pyramidal element.
  * @verbatim
  *                                n4                      e0 = (n0,n1)
- *                  f3           ,@                       e1 = (n1,n2)
+ *                  f3           ,O                       e1 = (n1,n2)
  *                   ^        ,/`/|\     f1               e2 = (n2,n3)
  *                    \    ,/`  / | \    ^                e3 = (n3,n0)
  *                     \,/`    /  |  \  /                 e4 = (n0,n4)
@@ -336,12 +335,12 @@ public:
  *             ,/`          /     |  *  \                 e7 = (n3,n4)
  *  f4 <------------*      /   e6 ^   o--\---------> f2   f0 = (n0,n3,n2,n1)
  *       ,/`              /       |       \               f1 = (n0,n1,n4)
- *   n3 @-----<----------/--------@  n2    ^ e5           f2 = (n1,n2,n4)
+ *   n3 O-----<----------/--------O  n2    ^ e5           f2 = (n1,n2,n4)
  *       `\.  e2        /          `\.      \             f3 = (n2,n3,n4)
  *          `>.        ^ e4           `\. e1 \            f4 = (n3,n0,n4)
  *          e3 `\.    /       o          `<.  \        split = ((n0,n1,n2,n4),
  *                `\./        |             `\.\                (n2,n3,n0,n4))
- *               n0 @-------------------->-----@ n1
+ *               n0 O-------------------->-----O n1
  *                            |          e0
  *                            |
  *                            v
@@ -354,7 +353,6 @@ public:
     uint_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-
     tElementDescList get_simplicial_parts(uint_t partition_index) const final;
 };  // class cPyramid
 
@@ -365,7 +363,7 @@ public:
  *                 ^  f2
  *                 |  ^
  *             e8  |  |
- *      n3 @---<---|-------------@ n5        e0 = (n0,n1)
+ *      n3 O---<---|-------------O n5        e0 = (n0,n1)
  *         |\      *  |        ,/|           e1 = (n1,n2)
  *         | \        o      ,/` |           e2 = (n2,n0)
  *         |  \         e7 ,^`   |           e3 = (n0,n3)
@@ -375,7 +373,7 @@ public:
  *         |      \ /`        *-------> f1   e7 = (n4,n5)
  *  f0 <-------*   @ n4          |           e8 = (n5,n3)
  *         |       |             |           f0 = (n0,n1,n4,n3)
- *      n0 @-------|---------<---@ n2        f1 = (n1,n2,n5,n4)
+ *      n0 O-------|---------<---O n2        f1 = (n1,n2,n5,n4)
  *          \      |        e2 ,/            f2 = (n2,n0,n3,n5)
  *           \     |     o   ,/`             f3 = (n0,n2,n1)
  *            \    ^ e4  | ,/`               f4 = (n3,n4,n5)
@@ -383,7 +381,7 @@ public:
  *              \  |   ,/|
  *               \ | ,/` |
  *                \|/`   |
- *                 @ n1  v
+ *                 O n1  v
  *                       f3
  * @endverbatim
  */
@@ -393,7 +391,6 @@ public:
     uint_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-
     tElementDescList get_simplicial_parts(uint_t partition_index) const final;
 };  // class cPyramid
 
@@ -404,21 +401,21 @@ public:
  *                      ^   f2
  *                      |   ^
  *                   e9 |   |
- *            n6 @---<--|----------@ n5         e0 = (n0,n1)
+ *            n6 O---<--|----------O n5         e0 = (n0,n1)
  *              /|      |   |     /|            e1 = (n1,n2)
  *             / |      |   o    / |            e2 = (n2,n3)
  *        e10 v  |      *    e8 ^  ^ e5         e3 = (n3,n0)
  *           /   ^ e6          /   |            e4 = (n0,n4)
  *          /    |      e11   /  *-------> f1   e5 = (n1,n5)
- *      n7 @------------->---@ n4  |            e6 = (n2,n6)
+ *      n7 O------------->---@ n4  |            e6 = (n2,n6)
  *  f3 <---|--o  |           |     |            e7 = (n3,n7)
- *         |  n2 @---<-------|-----@ n1         e8 = (n4,n5)
+ *         |  n2 O---<-------|-----O n1         e8 = (n4,n5)
  *         |    /    e1      |    /             e9 = (n5,n6)
  *      e7 ^   /          e4 ^   /             e10 = (n6,n7)
  *         |  v e2  *        |  ^ e0           e11 = (n7,n4)
  *         | /      |   o    | /                f0 = (n0,n3,n2,n1)
  *         |/       |   |    |/                 f1 = (n0,n1,n5,n4)
- *      n3 @--->----|--------@ n0               f2 = (n1,n2,n6,n5)
+ *      n3 O--->----|--------O n0               f2 = (n1,n2,n6,n5)
  *             e3   |   |                       f3 = (n2,n3,n7,n6)
  *                  |   v                       f4 = (n0,n4,n7,n3)
  *                  v   f0                      f5 = (n4,n5,n6,n7)
@@ -431,7 +428,6 @@ public:
     uint_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-
     tElementDescList get_simplicial_parts(uint_t partition_index) const final;
 };  // class cHexahedron
 

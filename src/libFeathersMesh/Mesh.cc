@@ -28,7 +28,7 @@
 #include "Mesh.hh"
 #include <libFeathersMesh/Element.hh>
 #include <libFeathersUtils/Parallel.hh>
-#include <libSkunkMisc/SkunkMiscReordering.hh>
+#include <libFeathersUtils/Permute.hh>
 
 #include <set>
 #include <map>
@@ -49,12 +49,13 @@ bool cMesh::read_triangle(const char *path) {
     uint_t num_nodes = 0;
     node_file >> num_nodes >> m_dim;
     std::getline(node_file, line);
+    reserve_nodes(num_nodes);
     for (uint_t i = 0; i < num_nodes; ++i) {
         uint_t node_index = 0;
         vec3_t node_coords(0.0);
         node_file >> node_index >> node_coords.x >> node_coords.y;
         std::getline(node_file, line);
-        FEATHERS_ENSURE(node_index == insert_node(node_coords));
+        FEATHERS_ENSURE(node_index == emplace_back_node(node_coords));
     }
 
     std::ifstream face_file(path + std::string("edge"));
@@ -62,13 +63,14 @@ bool cMesh::read_triangle(const char *path) {
     uint_t num_faces = 0;
     face_file >> num_faces;
     std::getline(face_file, line);
+    reserve_faces(num_faces);
     for (uint_t i = 0; i < num_faces; ++i) {
         uint_t face_index = 0;
         std::vector<uint_t> face_nodes(2, npos);
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> mark;
         FEATHERS_ENSURE(
-            face_index == insert_face(eShape::segment_2, face_nodes, mark));
+            face_index == emplace_back_face({eShape::segment_2, face_nodes}, mark));
         std::getline(face_file, line);
     }
 
@@ -77,12 +79,13 @@ bool cMesh::read_triangle(const char *path) {
     uint_t num_cells = 0;
     cell_file >> num_cells;
     std::getline(cell_file, line);
+    reserve_cells(num_cells);
     for (uint_t i = 0; i < num_cells; ++i) {
         uint_t cell_index = 0;
         std::vector<uint_t> cell_nodes(3, npos);
         cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2];
         FEATHERS_ENSURE(
-            cell_index == insert_cell(eShape::triangle_3, cell_nodes));
+            cell_index == emplace_back_cell({eShape::triangle_3, cell_nodes}));
         std::getline(cell_file, line);
     }
 
@@ -101,12 +104,13 @@ bool cMesh::read_tetgen(const char *path) {
     uint_t num_nodes = 0;
     node_file >> num_nodes >> m_dim;
     std::getline(node_file, line);
+    reserve_nodes(num_nodes);
     for (uint_t i = 0; i < num_nodes; ++i) {
         uint_t node_index = 0;
         vec3_t node_coords(0.0);
         node_file >> node_index >> node_coords.x >> node_coords.y >> node_coords.z;
         FEATHERS_ENSURE(
-            node_index == insert_node(node_coords));
+            node_index == emplace_back_node(node_coords));
         std::getline(node_file, line);
     }
 
@@ -115,13 +119,14 @@ bool cMesh::read_tetgen(const char *path) {
     uint_t num_faces = 0;
     face_file >> num_faces;
     std::getline(face_file, line);
+    reserve_faces(num_faces);
     for (uint_t i = 0; i < num_faces; ++i) {
         uint_t face_index = 0;
         std::vector<uint_t> face_nodes(3, npos);
         uint_t mark = 0;
         face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> face_nodes[2] >> mark;
         FEATHERS_ENSURE(
-            face_index == insert_face(eShape::triangle_3, face_nodes, mark));
+            face_index == emplace_back_face({eShape::triangle_3, face_nodes}, mark));
         std::getline(face_file, line);
     }
 
@@ -130,12 +135,13 @@ bool cMesh::read_tetgen(const char *path) {
     uint_t num_cells = 0;
     cell_file >> num_cells;
     std::getline(cell_file, line);
+    reserve_cells(num_cells);
     for (uint_t i = 0; i < num_cells; ++i) {
         uint_t cell_index = 0;
         std::vector<uint_t> cell_nodes(4, npos);
         cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2] >> cell_nodes[3];
         FEATHERS_ENSURE(
-            cell_index == insert_cell(eShape::tetrahedron_4, cell_nodes));
+            cell_index == emplace_back_cell({eShape::tetrahedron_4, cell_nodes}));
         std::getline(cell_file, line);
     }
 
@@ -196,76 +202,150 @@ void cMesh::compute_cell_shape_properties() {
 // ------------------------------------------------------------------------------------ //
 
 /**
- * Insert a new node into the mesh.
+ * Preallocate the node storage.
+ */
+void cMesh::reserve_nodes(uint_t node_capacity) {
+    m_node_marks.reserve(node_capacity);
+
+    m_node_coords.reserve(node_capacity);
+
+    m_node_nodes.reserve_rows(node_capacity);
+    m_node_edges.reserve_rows(node_capacity);
+    m_node_faces.reserve_rows(node_capacity);
+    m_node_cells.reserve_rows(node_capacity);
+}   // cMesh::reserve_nodes
+
+/**
+ * Preallocate the edge storage.
+ */
+void cMesh::reserve_edges(uint_t edge_capacity) {
+    m_edge_marks.reserve(edge_capacity);
+
+    m_edge_shapes.reserve(edge_capacity);
+    m_edge_lengths.reserve(edge_capacity);
+    m_edge_directions.reserve(edge_capacity);
+
+    m_edge_nodes.reserve_rows(edge_capacity);
+    m_edge_edges.reserve_rows(edge_capacity);
+    m_edge_faces.reserve_rows(edge_capacity);
+    m_edge_cells.reserve_rows(edge_capacity);
+}   // cMesh::reserve_edges
+
+/**
+ * Preallocate the face storage.
+ */
+void cMesh::reserve_faces(uint_t face_capacity) {
+    m_face_marks.reserve(face_capacity);
+
+    m_face_shapes.reserve(face_capacity);
+    m_face_areas.reserve(face_capacity);
+    m_face_normals.reserve(face_capacity);
+    m_face_center_coords.reserve(face_capacity);
+
+    m_face_nodes.reserve_rows(face_capacity);
+    m_face_edges.reserve_rows(face_capacity);
+    m_face_faces.reserve_rows(face_capacity);
+    m_face_cells.reserve_rows(face_capacity);
+}   // cMesh::reserve_faces
+
+/**
+ * Preallocate the cell storage.
+ */
+void cMesh::reserve_cells(uint_t cell_capacity) {
+    m_cell_marks.reserve(cell_capacity);
+
+    m_cell_shapes.reserve(cell_capacity);
+    m_cell_volumes.reserve(cell_capacity);
+    m_cell_center_coords.reserve(cell_capacity);
+
+    m_cell_nodes.reserve_rows(cell_capacity);
+    m_cell_edges.reserve_rows(cell_capacity);
+    m_cell_faces.reserve_rows(cell_capacity);
+    m_cell_cells.reserve_rows(cell_capacity);
+}   // cMesh::reserve_cells
+
+/**
+ * Emplace a new node into the mesh.
  * @returns Index of the inserted node.
  */
-uint_t cMesh::insert_node(const vec3_t& node_coords, uint_t mark) {
-    const uint_t node_index = m_num_nodes;
-    m_num_nodes += 1;
+uint_t cMesh::emplace_back_node(const vec3_t& node_coords, uint_t mark) {
+    const uint_t node_index = m_num_nodes++;
+
     m_node_marks.emplace_back(mark);
+
     m_node_coords.emplace_back(node_coords);
+
     m_node_nodes.emplace_back_row();
     m_node_edges.emplace_back_row();
     m_node_faces.emplace_back_row();
     m_node_cells.emplace_back_row();
+
     return node_index;
-}   // сMesh::insert_node
+}   // сMesh::emplace_back_node
 
 /**
- * Insert a new edge into the mesh.
+ * Emplace a new edge into the mesh.
  * @returns Index of the inserted edge.
  */
-uint_t cMesh::insert_edge(const std::unique_ptr<const iElement>& edge, uint_t mark) {
-    const uint_t edge_index = m_num_edges;
-    m_num_edges += 1;
+uint_t cMesh::emplace_back_edge(std::unique_ptr<iElement>&& edge, uint_t mark) {
+    const uint_t edge_index = m_num_edges++;
+
     m_edge_marks.emplace_back(mark);
+
     m_edge_shapes.emplace_back(edge->get_shape());
     m_edge_lengths.emplace_back(edge->get_length_or_area_or_volume());
     m_edge_directions.emplace_back(edge->get_direction());
+
     m_edge_nodes.emplace_back_row(edge->get_nodes().begin(), edge->get_nodes().end());
     m_edge_edges.emplace_back_row();
     m_edge_faces.emplace_back_row();
     m_edge_cells.emplace_back_row();
-    FEATHERS_NOT_IMPLEMENTED();
+
     return edge_index;
-}   // сMesh::insert_edge
+}   // сMesh::emplace_back_edge
 
 /**
- * Insert a new face into the mesh.
+ * Emplace a new face into the mesh.
  * @returns Index of the inserted face.
  */
-uint_t cMesh::insert_face(eShape face_shape, const std::vector<uint_t>& face_nodes, uint_t mark) {
-    const uint_t face_index = m_num_faces;
-    m_num_faces += 1;
+uint_t cMesh::emplace_back_face(std::unique_ptr<iElement>&& face, uint_t mark) {
+    const uint_t face_index = m_num_faces++;
+
     m_face_marks.emplace_back(mark);
-    m_face_shapes.emplace_back(face_shape);
-    m_face_areas.emplace_back();
-    m_face_normals.emplace_back();
-    m_face_center_coords.emplace_back();
-    m_face_nodes.emplace_back_row(face_nodes.begin(), face_nodes.end());
-    m_face_edges.emplace_back_row();
+
+    m_face_shapes.emplace_back(face->get_shape());
+    m_face_areas.emplace_back(face->get_length_or_area_or_volume());
+    m_face_normals.emplace_back(face->get_normal());
+    m_face_center_coords.emplace_back(face->get_center_coords());
+
+    m_face_nodes.emplace_back_row(face->get_nodes().begin(), face->get_nodes().end());
+    m_face_edges.emplace_back_row(face->num_edges());
     m_face_faces.emplace_back_row();
-    m_face_cells.emplace_back_row(2); // TODO
+    m_face_cells.emplace_back_row(2);
+
     return face_index;
-}   // сMesh::insert_face
+}   // сMesh::emplace_back_face
 
 /**
  * Insert a new cell into the mesh.
  * @returns Index of the inserted cell.
  */
-uint_t cMesh::insert_cell(eShape cell_shape, const std::vector<uint_t>& cell_nodes, uint_t mark) {
-    const uint_t cell_index = m_num_cells;
-    m_num_cells += 1;
+uint_t cMesh::emplace_back_cell(std::unique_ptr<iElement>&& cell, uint_t mark) {
+    const uint_t cell_index = m_num_cells++;
+
     m_cell_marks.emplace_back(mark);
-    m_cell_shapes.emplace_back(cell_shape);
-    m_cell_volumes.emplace_back();
-    m_cell_center_coords.emplace_back();
-    m_cell_nodes.emplace_back_row(cell_nodes.begin(), cell_nodes.end());
-    m_cell_edges.emplace_back_row();
-    m_cell_faces.emplace_back_row(3); // TODO
+
+    m_cell_shapes.emplace_back(cell->get_shape());
+    m_cell_volumes.emplace_back(cell->get_length_or_area_or_volume());
+    m_cell_center_coords.emplace_back(cell->get_center_coords());
+
+    m_cell_nodes.emplace_back_row(cell->get_nodes().begin(), cell->get_nodes().end());
+    m_cell_edges.emplace_back_row(cell->num_edges());
+    m_cell_faces.emplace_back_row(cell->num_faces());
     m_cell_cells.emplace_back_row();
+
     return cell_index;
-}   // сMesh::insert_cell
+}   // сMesh::emplace_back_cell
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -286,7 +366,8 @@ template<typename tTag>
 void cMesh::fix_permutation_and_adjacency_(tTag tag, std::vector<uint_t>& permutation) {
     /* Fix permutations by resorting it by marks.
      * Stable sort is used here to preserve the permutation in the best possible way. */
-    std::stable_sort(permutation.begin(), permutation.end(), [&](uint_t index_1, uint_t index_2) {
+    std::stable_sort(permutation.begin(),
+                     permutation.end(), [&](uint_t index_1, uint_t index_2) {
         return get_mark(tag, index_1) < get_mark(tag, index_2);
     });
     /* Fix adjacency lists. */
@@ -420,57 +501,43 @@ void cMesh::reorder_faces() {
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/* Face edge node index tables for various face types. */
-static const std::map<eShape, std::vector<std::vector<uint_t>>> g_face_to_edge_index = {
-    /* 1D faces. */
-    { eShape::node, { {0} } },
-    /* 2D faces. */
-    { eShape::segment_2, { {0}, {1} } },
-    /* 3D faces. */
-    { eShape::triangle_3, { {1, 2}, {2, 0}, {0, 1} } },
-    { eShape::quadrangle_4, { {0, 1}, {1, 2}, {2, 3}, {3, 0} } },
-};
-
 /**
  * Generate edges using the face to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
 void cMesh::generate_edges() {
-    /* Build a map of the existing edges.
-     * ( An edge is uniquely defined by a set of it's nodes. ) */
-    std::map<std::set<uint_t>, uint_t> edge_cache;
+    /* An edge lookup table.
+     * We assume that the edge can be uniquely identified by the set of its nodes. */
+    std::map<std::set<uint_t>, uint_t> edge_lookup_table;
+
     std::for_each(begin_edge(*this), end_edge(*this), [&](tEdgeIter edge) {
-        edge_cache.emplace(
-            std::set<uint_t>(edge.begin(eNodeTag), edge.end(eNodeTag)), edge);
+        std::set<uint_t> edge_lookup_key(edge.begin(eNodeTag), edge.end(eNodeTag));
+        edge_lookup_table.emplace(std::move(edge_lookup_key), edge);
     });
 
-    /* Generate missing edges. */
+    /* For each cell-to-edge adjacency table entry:
+     * find the face in the lookup table or emplace the new face. */
     std::for_each(begin_face(*this), end_face(*this), [&](tFaceMutableIter face) {
+        tElementDescList edges_desc =
+            face.get_element_object()->get_edges_desc();
         for (uint_t edge_local = 0; edge_local < face.num_edges(); ++edge_local) {
             uint_t& edge_index = face.begin(eEdgeTag)[edge_local];
             if (edge_index != npos) {
                 continue;
             }
 
-            /* Collect edge nodes using the table. */
-            std::set<uint_t> edge_nodes;
-            for (uint_t node_local : g_face_to_edge_index.at(face.get_shape()).at(edge_local)) {
-                FEATHERS_ASSERT(node_local < face.num_nodes());
-                const uint_t node_index = face.begin(eNodeTag)[node_local];
-                edge_nodes.insert(node_index);
-            }
-
             /* Create the face or add current cell to the adjacency list. */
-            const auto edge_cache_iter = edge_cache.find(edge_nodes);
-            if (edge_cache_iter != edge_cache.cend()) {
-                /* Locate the existing edge. */
-                edge_index = edge_cache_iter->second;
-            } else {
+            sElementDesc& edge_desc = edges_desc[edge_local];
+            std::set<uint_t> edge_lookup_key(
+                edge_desc.node_indices.begin(), edge_desc.node_indices.end());
+            if (edge_lookup_table.count(edge_lookup_key) == 0) {
                 /* Create a brand-new edge. */
-                edge_index = insert_edge( // TODO:
-                    { eShape::segment_2, std::vector<uint_t>(edge_nodes.begin(), edge_nodes.end()) });
-                edge_cache.emplace(edge_nodes, edge_index);
+                edge_index = emplace_back_edge(std::move(edge_desc));
+                edge_lookup_table.emplace(edge_lookup_key, edge_index);
                 set_mark(eEdgeTag, edge_index, face.get_mark());
+            } else {
+                /* Edge exists. */
+                edge_index = edge_lookup_table[edge_lookup_key];
             }
         }
     });
@@ -478,81 +545,62 @@ void cMesh::generate_edges() {
     /* Check faces:
      * each face should be connected to all edges. */
     for_each_face(*this, [](tFaceIter face) {
-        FEATHERS_ENSURE(
-            std::all_of(face.begin(eEdgeTag), face.end(eEdgeTag), is_not_npos));
+        FEATHERS_ENSURE(std::all_of(
+            face.begin(eEdgeTag), face.end(eEdgeTag), is_not_npos));
     });
 }   // сMesh::generate_edges
-
-/* Cell face node index tables for various cell types. */
-static const std::map<eShape, std::vector<std::vector<uint_t>>> g_shape_to_face_nodes = {
-    /* 1D cells. */
-    { eShape::segment_2,
-        { {0}, {1} } },
-    /* 2D cells. */
-    { eShape::triangle_3,
-        { {1, 2}, {2, 0}, {0, 1} } },
-    { eShape::quadrangle_4,
-        { {0, 1}, {1, 2}, {2, 3}, {3, 0} } },
-    /* 3D cells.
-     * TODO: Add other cell types! */
-    { eShape::tetrahedron_4,
-        { {0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3} } },
-    { eShape::hexahedron_8,
-        { {0, 4, 7, 3}, {1, 2, 6, 5}, {3, 7, 6, 2}, {0, 1, 5, 4}, {0, 3, 2, 1}, {4, 5, 6, 7} } },
-};
 
 /**
  * Generate faces using the cell to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
 void cMesh::generate_faces() {
-    /* Build a map of the existing faces.
-     * ( A face can be uniquely defined by the set of it's nodes. ) */
-    std::map<std::set<uint_t>, uint_t> face_cache;
+    /* A face lookup table.
+     * We assume that the face can be uniquely identified by the set of its nodes. */
+    std::map<std::set<uint_t>, uint_t> face_lookup_table;
+
+    /* Add the existing faces to the lookup table. */
     std::for_each(begin_face(*this), end_face(*this), [&](tFaceIter face) {
-        face_cache.emplace(
-            std::set<uint_t>(face.begin(eNodeTag), face.end(eNodeTag)), face);
+        std::set<uint_t> face_lookup_key(face.begin(eNodeTag), face.end(eNodeTag));
+        face_lookup_table.emplace(std::move(face_lookup_key), face);
     });
 
-    /* Generate missing faces. */
+    /* For each cell-to-face adjacency table entry:
+     * find the face in the lookup table or emplace the new face.
+     * Also fill the face-to-cell adjacency table. */
     std::for_each(begin_cell(*this), end_cell(*this), [&](tCellMutableIter cell) {
+        tElementDescList faces_desc =
+            cell.get_element_object()->get_faces_desc();
         for (uint_t face_local = 0; face_local < cell.num_faces(); ++face_local) {
             uint_t& face_index = cell.begin(eFaceTag)[face_local];
             if (face_index != npos) {
                 continue;
             }
 
-            /* Collect face nodes using the table. */
-            std::vector<uint_t> face_nodes;
-            for (uint_t node_local : g_shape_to_face_nodes.at(cell.get_shape()).at(face_local)) {
-                FEATHERS_ASSERT(node_local < cell.num_nodes());
-                const uint_t node_index = cell.begin(eNodeTag)[node_local];
-                face_nodes.push_back(node_index);
-            }
-
             /* Create the face or add current cell to the adjacency list. */
-            std::set<uint_t> face_nodes_set(face_nodes.begin(), face_nodes.end());
-            const auto face_cache_iter = face_cache.find(face_nodes_set);
-            if (face_cache_iter != face_cache.cend()) {
-                /* Locate the existing face.
-                 * ( We should be careful with face orientation here. ) */
-                face_index = face_cache_iter->second;
+            sElementDesc& face_desc = faces_desc[face_local];
+            std::set<uint_t> face_lookup_key(face_desc.node_indices.begin(), face_desc.node_indices.end());
+            if (face_lookup_table.count(face_lookup_key) == 0) {
+                /* Create a brand-new face.
+                 * Assign the current cell as the inner one. */
+                face_index = emplace_back_face(std::move(face_desc));
+                face_lookup_table.emplace(std::move(face_lookup_key), face_index);
+                begin_adjacent_face(eCellTag, face_index)[eFaceInnerCell] = cell;
+            } else {
+                /* Face exists.
+                 * Determine orientation and link it. */
+                face_index = face_lookup_table[face_lookup_key];
                 tFaceMutableIter face(*this, face_index);
-                if (std::equal(face.begin(eNodeTag), face.end(eNodeTag), face_nodes.cbegin())) {
+                if (std::equal(face.begin(eNodeTag), face.end(eNodeTag), face_desc.node_indices.begin())) {
+                    /* Face node order matches the order
+                     * in the face description: face is inner. */
                     FEATHERS_ASSERT(face.begin(eCellTag)[eFaceInnerCell] == npos);
                     face.begin(eCellTag)[eFaceInnerCell] = cell;
                 } else {
+                    /* Otherwise, the face is outer. */
                     FEATHERS_ASSERT(face.begin(eCellTag)[eFaceOuterCell] == npos);
                     face.begin(eCellTag)[eFaceOuterCell] = cell;
                 }
-            } else {
-                /* Create a brand-new face.
-                 * Assign the current cell as the inner one. */
-                // TODO: correct face shape!
-                face_index = insert_face(eShape::segment_2, face_nodes);
-                face_cache.emplace(face_nodes_set, face_index);
-                tFaceMutableIter face(*this, face_index);
-                face.begin(eCellTag)[eFaceInnerCell] = cell;
             }
         }
     });
@@ -560,18 +608,19 @@ void cMesh::generate_faces() {
     /* Check cells:
      * each cell should be connected to all faces. */
     for_each_cell(*this, [](tCellIter cell) {
-        FEATHERS_ENSURE(std::all_of(cell.begin(eFaceTag), cell.end(eFaceTag), is_not_npos));
+        FEATHERS_ENSURE(std::all_of(
+            cell.begin(eFaceTag), cell.end(eFaceTag), is_not_npos));
     });
     /* Check faces:
      * each internal face should be connected to two cells;
      * each boundary face should be connected to at least one cell. */
     for_each_face(*this, [](tFaceIter face) {
         if (face.get_mark() == 0) {
-            FEATHERS_ENSURE(
-                std::all_of(face.begin(eCellTag), face.end(eCellTag), is_not_npos));
+            FEATHERS_ENSURE(std::all_of(
+                face.begin(eCellTag), face.end(eCellTag), is_not_npos));
         } else {
-            FEATHERS_ENSURE(
-                std::any_of(face.begin(eCellTag), face.end(eCellTag), is_not_npos));
+            FEATHERS_ENSURE(std::any_of(
+                face.begin(eCellTag), face.end(eCellTag), is_not_npos));
         }
     });
 }   // сMesh::generate_faces
@@ -632,7 +681,7 @@ void cMesh::generate_boundary_cells() {
                 const vec3_t delta = node_coords - face.get_center_coords();
                 node_coords -= 2.0*glm::dot(delta, face.get_normal())*face.get_normal();
                 ghost_cell_nodes.push_back(
-                    insert_node(node_coords, face.get_mark()));
+                    emplace_back_node(node_coords, face.get_mark()));
             } else {
                 /* Insert a boundary face node. */
                 ghost_cell_nodes.push_back(node);
@@ -642,7 +691,7 @@ void cMesh::generate_boundary_cells() {
         /* Insert the boundary cell. */
         // TODO:
         const uint_t boundary_cell_index =
-            insert_cell(eShape::triangle_3, ghost_cell_nodes, face.get_mark());
+            emplace_back_cell({eShape::triangle_3, ghost_cell_nodes}, face.get_mark());
 #if 0
         Cell& boundary_cell = get_cell(boundary_cell_index);
         while (boundary_cell._num_faces() != 1) {

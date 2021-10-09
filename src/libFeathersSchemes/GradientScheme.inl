@@ -25,10 +25,6 @@
  * SOFTWARE.
  */
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /**
@@ -48,7 +44,7 @@ void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
     });
 
     /* Compute the least squares problem
-     * right hand statements for the boundary cells.
+     * right-hand statements for the boundary cells.
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
     for_each_boundary_face_cells(*m_mesh, [&](tCellIter cell_inner, tCellIter cell_outer) {
         mat3_t& mat = m_inverse_matrices[cell_outer][0] = mat3_t(0.0);
@@ -87,7 +83,7 @@ template</*template<int_t>*/ class tInField,
 void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>*/& grad_u,
                                                            const tInField/*<num_vars>*/& u) const {
     /* Compute the least-squares
-     * problem right hand statements for the interior cells. */
+     * problem right-hand statements for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
         grad_u[cell].fill(vec3_t(0.0));
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
@@ -100,7 +96,7 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
     });
 
     /* Compute the least squares problem
-     * right hand statements for the boundary cells.
+     * right-hand statements for the boundary cells.
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
     for_each_boundary_face_cells(*m_mesh, [&](tCellIter cell_inner, tCellIter cell_outer) {
         grad_u[cell_outer].fill(vec3_t(0.0));
@@ -111,18 +107,13 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients_(tOutField/*<num_vars>
         }
         cell_inner.for_each_face_cells([&](tCellIter cell_inner_inner,
                                            tCellIter cell_inner_outer) {
-            if (cell_inner_inner == cell_inner) {
-                const vec3_t dr_inner =
-                    cell_inner_outer.get_center_coords() - cell_inner.get_center_coords();
-                for (int_t i = 0; i < num_vars; ++i) {
-                    grad_u[cell_outer][i] += (u[cell_inner_outer][i] - u[cell_inner][i])*dr_inner;
-                }
-            } else if (cell_inner_outer == cell_inner) {
-                const vec3_t dr_inner =
-                    cell_inner_inner.get_center_coords() - cell_inner.get_center_coords();
-                for (int_t i = 0; i < num_vars; ++i) {
-                    grad_u[cell_outer][i] += (u[cell_inner_inner][i] - u[cell_inner][i])*dr_inner;
-                }
+            if (cell_inner_outer == cell_inner) {
+                std::swap(cell_inner_inner, cell_inner_outer);
+            }
+            const vec3_t dr_inner =
+                cell_inner_outer.get_center_coords() - cell_inner.get_center_coords();
+            for (int_t i = 0; i < num_vars; ++i) {
+                grad_u[cell_outer][i] += (u[cell_inner_outer][i] - u[cell_inner][i])*dr_inner;
             }
         });
     });

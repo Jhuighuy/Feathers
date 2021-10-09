@@ -213,7 +213,7 @@ public:
 
     /** Get element object. */
     std::unique_ptr<const iElement> get_element_object() const {
-        return m_mesh->get_element_object(tag, m_index);
+        return m_mesh->get_object(tag, m_index);
     }
 
     // ---------------------------------------------------------------------- //
@@ -493,7 +493,8 @@ public:
     }
     /** Set face barycenter. */
     template<typename uMesh = tMesh>
-    std::enable_if_t<!std::is_const_v<uMesh>> set_center_coords(const vec3_t& face_center_coords) const {
+    std::enable_if_t<!std::is_const_v<uMesh>>
+            set_center_coords(const vec3_t& face_center_coords) const {
         this->get_mesh().set_face_center_coords(this->get_index(), face_center_coords);
     }
 };  // class tFaceIterBase
@@ -546,7 +547,8 @@ public:
     }
     /** Set cell barycenter. */
     template<typename uMesh = tMesh>
-    std::enable_if_t<!std::is_const_v<uMesh>> set_center_coords(const vec3_t& cell_center_coords) const {
+    std::enable_if_t<!std::is_const_v<uMesh>>
+            set_center_coords(const vec3_t& cell_center_coords) const {
         this->get_mesh().set_cell_center_coords(this->get_index(), cell_center_coords);
     }
 };  // class tCellIterBase

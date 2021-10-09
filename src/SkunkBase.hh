@@ -52,9 +52,9 @@
 #include <type_traits>
 
 /* Configure GLM to show only the x,y,z,w components. */
-#define GLM_FORCE_XYZW_ONLY 1
+//#define GLM_FORCE_XYZW_ONLY 1
 /* Configure GLM to initialize vectors and matrices with zeroes. */
-#define GLM_FORCE_CTOR_INIT 1
+//#define GLM_FORCE_CTOR_INIT 1
 #include <glm/glm.hpp>
 #undef GLM_FORCE_XYZW_ONLY
 #undef GLM_FORCE_CTOR_INIT
@@ -209,13 +209,20 @@
 /**************************************************************************/
 
 /** @{ */
-#define FEATHERS_CONST_OVERLOAD_T(T, return_type, method_name, arguments, ...) \
+#define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name, arguments, ...) \
     /** @{ */ \
-    T return_type method_name arguments __VA_ARGS__ \
-    T const return_type method_name arguments const __VA_ARGS__ \
+    T type method_name arguments __VA_ARGS__ \
+    T const_type method_name arguments const __VA_ARGS__ \
     /** @} */
-#define FEATHERS_CONST_OVERLOAD(return_type, method_name, arguments, ...) \
-    FEATHERS_CONST_OVERLOAD_T(, return_type, method_name, arguments, __VA_ARGS__)
+#define FEATHERS_CONST_OVERLOAD_R(type, const_type, method_name, arguments, ...) \
+    FEATHERS_CONST_OVERLOAD_R_T( \
+        /*empty*/, type, const_type, method_name, arguments, __VA_ARGS__)
+#define FEATHERS_CONST_OVERLOAD_T(T, type, method_name, arguments, ...) \
+    FEATHERS_CONST_OVERLOAD_R_T( \
+        T, type, const type, method_name, arguments, __VA_ARGS__)
+#define FEATHERS_CONST_OVERLOAD(type, method_name, arguments, ...) \
+    FEATHERS_CONST_OVERLOAD_T( \
+        /*empty*/, type, method_name, arguments, __VA_ARGS__)
 /** @} */
 
 /* https://stackoverflow.com/a/67374211 */
@@ -487,6 +494,14 @@ auto shared_from_this(const obj_ptr_t& obj) {
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
+
+#define WILL_READ_ONLY 0
+#define WILL_READ_AND_WRITE 1
+#define LOCALITY_NONE 0
+#define LOCALITY_LOW 1
+#define LOCALITY_MED 2
+#define LOCALITY_HIGH 3
+#define PD 32
 
 #endif
 

@@ -33,6 +33,10 @@
 #include "libFeathersUtils/Table.hh"
 #include "Element.hh"
 
+#ifndef FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY
+#define FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY 1
+#endif
+
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
@@ -62,7 +66,7 @@ enum : uint_t {
  * Hybrid unstructured multidimensional mesh.
  */
 class cMesh : public tObject<cMesh> {
-private:
+public:
     uint_t m_dim;
 
     uint_t m_num_nodes = 0, m_num_edges = 0;
@@ -94,10 +98,17 @@ private:
     real_t m_min_face_area = 0.0, m_max_face_area = 0.0;
     real_t m_min_cell_volume = 0.0, m_max_cell_volume = 0.0;
 
+#if FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY
     cTable m_node_nodes, m_edge_nodes, m_face_nodes, m_cell_nodes;
     cTable m_node_edges, m_edge_edges, m_face_edges, m_cell_edges;
     cTable m_node_faces, m_edge_faces, m_face_faces, m_cell_faces;
     cTable m_node_cells, m_edge_cells, m_face_cells, m_cell_cells;
+#else
+    cDummyTable m_node_nodes; cTable m_edge_nodes, m_face_nodes, m_cell_nodes;
+    cDummyTable m_node_edges, m_edge_edges, m_face_edges; cTable m_cell_edges;
+    cDummyTable m_node_faces, m_edge_faces, m_face_faces; cTable m_cell_faces;
+    cDummyTable m_node_cells, m_edge_cells; cTable m_face_cells, m_cell_cells;
+#endif
 
 public:
 
@@ -301,18 +312,22 @@ public:
     /** @} */
 
     /** Make a mesh element from description. */
-    std::unique_ptr<const iElement> make_element(sElementDesc&& desc) const {
+    FEATHERS_CONST_OVERLOAD_R(
+    std::unique_ptr<iElement>,
+    std::unique_ptr<const iElement>, make_element, (sElementDesc&& desc), {
         return iElement::make(std::forward<sElementDesc>(desc),
                               m_num_nodes, m_node_coords.data());
-    }
+    })
 
     /** Get element object. */
-    template<typename tTag>
-    std::unique_ptr<const iElement> get_element_object(tTag tag, uint_t index) const {
+    FEATHERS_CONST_OVERLOAD_R_T(
+    template<typename tTag>,
+    std::unique_ptr<iElement>,
+    std::unique_ptr<const iElement>, get_object, (tTag tag, uint_t index), {
         return make_element({ get_shape(tag, index),
                               std::vector<uint_t>(begin_adjacent_node(tag, index),
                                                   end_adjacent_node(tag, index)) });
-    }
+    })
 
     /** Compute edge shape properties. */
     void compute_edge_shape_properties();
@@ -636,34 +651,53 @@ public:
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
-    /**
-     * Insert a new node into the mesh.
-     * @returns Index of the inserted node.
-     */
-    uint_t insert_node(const vec3_t& node_coords, uint_t mark = 0);
+    /** Preallocate the node storage. */
+    void reserve_nodes(uint_t node_capacity);
+    /** Preallocate the edge storage. */
+    void reserve_edges(uint_t edge_capacity);
+    /** Preallocate the face storage. */
+    void reserve_faces(uint_t face_capacity);
+    /** Preallocate the cell storage. */
+    void reserve_cells(uint_t cell_capacity);
 
     /**
-     * Insert a new edge into the mesh.
+     * Emplace a new node into the mesh.
+     * @returns Index of the inserted node.
+     */
+    uint_t emplace_back_node(const vec3_t& node_coords, uint_t mark = 0);
+
+    /**
+     * Emplace a new edge into the mesh.
      * @returns Index of the inserted edge.
      */
     /** @{ */
-    uint_t insert_edge(const std::unique_ptr<const iElement>& edge, uint_t mark = 0);
-    uint_t insert_edge(sElementDesc&& edge_desc, uint_t mark = 0) {
-        return insert_edge(make_element(std::forward<sElementDesc>(edge_desc)), mark);
+    uint_t emplace_back_edge(std::unique_ptr<iElement>&& edge, uint_t mark = 0);
+    uint_t emplace_back_edge(sElementDesc&& edge_desc, uint_t mark = 0) {
+        return emplace_back_edge(make_element(std::forward<sElementDesc>(edge_desc)), mark);
     }
     /** @} */
 
     /**
-     * Insert a new face into the mesh.
+     * Emplace a new face into the mesh.
      * @returns Index of the inserted face.
      */
-    uint_t insert_face(eShape face_shape, const std::vector<uint_t>& face_nodes, uint_t mark=0);
+    /** @{ */
+    uint_t emplace_back_face(std::unique_ptr<iElement>&& face, uint_t mark = 0);
+    uint_t emplace_back_face(sElementDesc&& face_desc, uint_t mark = 0) {
+        return emplace_back_face(make_element(std::forward<sElementDesc>(face_desc)), mark);
+    }
+    /** @} */
 
     /**
-     * Insert a new cell into the mesh.
+     * Emplace a new cell into the mesh.
      * @returns Index of the inserted cell.
      */
-    uint_t insert_cell(eShape cell_shape, const std::vector<uint_t>& cell_nodes, uint_t mark=0);
+    /** @{ */
+    uint_t emplace_back_cell(std::unique_ptr<iElement>&& cell, uint_t mark = 0);
+    uint_t emplace_back_cell(sElementDesc&& cell_desc, uint_t mark = 0) {
+        return emplace_back_cell(make_element(std::forward<sElementDesc>(cell_desc)), mark);
+    }
+    /** @} */
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
@@ -704,7 +738,7 @@ protected:
 
     /** Generate boundary cells to complete face connectivity. */
     void generate_boundary_cells();
-};  // class tMesh
+};  // class cMesh
 
 }   // namespace feathers
 

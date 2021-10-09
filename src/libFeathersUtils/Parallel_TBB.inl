@@ -54,42 +54,45 @@ static void set_max_num_threads(uint_t num_threads) {
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-template<typename tIter, typename tFunc>
-void for_range(tIter first, tIter last, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first, tIndex last, tFunc func) {
     tbb::parallel_for(
-        tbb::blocked_range<tIter>(first, last),
-        [&](const tbb::blocked_range<tIter>& range) {
-            for (tIter iter = range.begin(); iter < range.end(); ++iter) {
-                func(iter);
+        tbb::blocked_range<tIndex>(first, last),
+        [&](const tbb::blocked_range<tIndex>& range) {
+            for (tIndex index = range.begin(); index < range.end(); ++index) {
+                func(index);
             }
         });
 }
 #define FOR_RANGE_1_DEFINED_
-template<typename tIter, typename tFunc>
-void for_range(tIter first_1, tIter last_1,
-               tIter first_2, tIter last_2, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first_1, tIndex last_1,
+               tIndex first_2, tIndex last_2, tFunc func) {
     tbb::parallel_for(
-        tbb::blocked_range2d<tIter>(first_1, last_1, first_2, last_2),
-        [&](const tbb::blocked_range2d<tIter>& range) {
-            for (tIter iter_1 = range.rows().begin(); iter_1 < range.rows().end(); ++iter_1) {
-                for (tIter iter_2 = range.cols().begin(); iter_2 < range.cols().end(); ++iter_2) {
-                    func(iter_1, iter_2);
+        tbb::blocked_range2d<tIndex>(first_1, last_1, first_2, last_2),
+        [&](const tbb::blocked_range2d<tIndex>& range) {
+            const auto& rows = range.rows(), & cols = range.cols();
+            for (tIndex index_1 = rows.begin(); index_1 < rows.end(); ++index_1) {
+                for (tIndex index_2 = cols.begin(); index_2 < cols.end(); ++index_2) {
+                    func(index_1, index_2);
                 }
             }
         });
 }
 #define FOR_RANGE_2_DEFINED_
-template<typename tIter, typename tFunc>
-void for_range(tIter first_1, tIter last_1,
-               tIter first_2, tIter last_2,
-               tIter first_3, tIter last_3, tFunc func) {
+template<typename tIndex, typename tFunc>
+void for_range(tIndex first_1, tIndex last_1,
+               tIndex first_2, tIndex last_2,
+               tIndex first_3, tIndex last_3, tFunc func) {
     tbb::parallel_for(
-        tbb::blocked_range3d<tIter>(first_1, last_1, first_2, last_2, first_3, last_3),
-        [&](const tbb::blocked_range3d<tIter>& range) {
-            for (tIter iter_1 = range.pages().begin(); iter_1 < range.pages().end(); ++iter_1) {
-                for (tIter iter_2 = range.rows().begin(); iter_2 < range.rows().end(); ++iter_2) {
-                    for (tIter iter_3 = range.cols().begin(); iter_3 < range.cols().end(); ++iter_3) {
-                        func(iter_1, iter_2, iter_3);
+        tbb::blocked_range3d<tIndex>(first_1, last_1, first_2, last_2, first_3, last_3),
+        [&](const tbb::blocked_range3d<tIndex>& range) {
+            const auto& pages = range.pages();
+            const auto& rows = range.rows(), &cols = range.cols();
+            for (tIndex index_1 = pages.begin(); index_1 < pages.end(); ++index_1) {
+                for (tIndex index_2 = rows.begin(); index_2 < rows.end(); ++index_2) {
+                    for (tIndex index_3 = cols.begin(); index_3 < cols.end(); ++index_3) {
+                        func(index_1, index_2, index_3);
                     }
                 }
             }
@@ -100,32 +103,33 @@ void for_range(tIter first_1, tIter last_1,
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-template<typename tValue, typename tIter, typename tFunc, typename tReduceFunc>
-tValue for_range_reduce(tIter first, tIter last,
+template<typename tValue, typename tIndex, typename tFunc, typename tReduceFunc>
+tValue for_range_reduce(tIndex first, tIndex last,
                         tValue init, tFunc func, tReduceFunc reduce_func) {
     return tbb::parallel_reduce(
-        tbb::blocked_range<tIter>(first, last),
+        tbb::blocked_range<tIndex>(first, last),
         init,
-        [&](const tbb::blocked_range<tIter>& range, tValue current) {
-            for (tIter iter = range.begin(); iter < range.end(); ++iter) {
-                current = reduce_func(current, func(iter));
+        [&](const tbb::blocked_range<tIndex>& range, tValue current) {
+            for (tIndex index = range.begin(); index < range.end(); ++index) {
+                current = reduce_func(current, func(index));
             }
             return current;
         },
         reduce_func);
 }
 #define FOR_RANGE_REDUCE_1_DEFINED_
-template<typename tValue, typename tIter, typename tFunc, typename tReduceFunc>
-tValue for_range_reduce(tIter first_1, tIter last_1,
-                        tIter first_2, tIter last_2,
+template<typename tValue, typename tIndex, typename tFunc, typename tReduceFunc>
+tValue for_range_reduce(tIndex first_1, tIndex last_1,
+                        tIndex first_2, tIndex last_2,
                         tValue init, tFunc func, tReduceFunc reduce_func) {
     return tbb::parallel_reduce(
-        tbb::blocked_range2d<tIter>(first_1, last_1, first_2, last_2),
+        tbb::blocked_range2d<tIndex>(first_1, last_1, first_2, last_2),
         init,
-        [&](const tbb::blocked_range2d<tIter>& range, tValue current) {
-            for (tIter iter_1 = range.rows().begin(); iter_1 < range.rows().end(); ++iter_1) {
-                for (tIter iter_2 = range.cols().begin(); iter_2 < range.cols().end(); ++iter_2) {
-                    current = reduce_func(current, func(iter_1, iter_2));
+        [&](const tbb::blocked_range2d<tIndex>& range, tValue current) {
+            const auto& rows = range.rows(), &cols = range.cols();
+            for (tIndex index_1 = rows.begin(); index_1 < rows.end(); ++index_1) {
+                for (tIndex index_2 = cols.begin(); index_2 < cols.end(); ++index_2) {
+                    current = reduce_func(current, func(index_1, index_2));
                 }
             }
             return current;
@@ -133,19 +137,21 @@ tValue for_range_reduce(tIter first_1, tIter last_1,
         reduce_func);
 }
 #define FOR_RANGE_REDUCE_2_DEFINED_
-template<typename tValue, typename tIter, typename tFunc, typename tReduceFunc>
-tValue for_range_reduce(tIter first_1, tIter last_1,
-                        tIter first_2, tIter last_2,
-                        tIter first_3, tIter last_3,
+template<typename tValue, typename tIndex, typename tFunc, typename tReduceFunc>
+tValue for_range_reduce(tIndex first_1, tIndex last_1,
+                        tIndex first_2, tIndex last_2,
+                        tIndex first_3, tIndex last_3,
                         tValue init, tFunc func, tReduceFunc reduce_func) {
     return tbb::parallel_reduce(
-        tbb::blocked_range3d<tIter>(first_1, last_1, first_2, last_2, first_3, last_3),
+        tbb::blocked_range3d<tIndex>(first_1, last_1, first_2, last_2, first_3, last_3),
         init,
-        [&](const tbb::blocked_range3d<tIter>& range, tValue current) {
-            for (tIter iter_1 = range.pages().begin(); iter_1 < range.pages().end(); ++iter_1) {
-                for (tIter iter_2 = range.rows().begin(); iter_2 < range.rows().end(); ++iter_2) {
-                    for (tIter iter_3 = range.cols().begin(); iter_3 < range.cols().end(); ++iter_3) {
-                        current = reduce_func(current, func(iter_1, iter_2, iter_3));
+        [&](const tbb::blocked_range3d<tIndex>& range, tValue current) {
+            const auto& pages = range.pages();
+            const auto& rows = range.rows(), &cols = range.cols();
+            for (tIndex index_1 = pages.begin(); index_1 < pages.end(); ++index_1) {
+                for (tIndex index_2 = rows.begin(); index_2 < rows.end(); ++index_2) {
+                    for (tIndex index_3 = cols.begin(); index_3 < cols.end(); ++index_3) {
+                        current = reduce_func(current, func(index_1, index_2, index_3));
                     }
                 }
             }

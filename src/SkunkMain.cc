@@ -3,7 +3,7 @@
 #include <string>
 
 #include "SkunkBase.hh"
-#include "libSkunkMisc/SkunkMiscReordering.hh"
+#include "libFeathersUtils/Permute.hh"
 #include "libFeathersSchemes/SkunkFvSolver.hh"
 
 #include <chrono>
@@ -163,7 +163,6 @@ int main(int argc, char** argv) {
     system("rm out/*");
     const uint_t freq = 500;
     print_vtk<5>(0, *mesh, &uc[0]);
-    //print(0, *mesh, &uc[0]);
     real_t tt = 0.0;
     {
         std::chrono::high_resolution_clock::time_point t0, t1;
