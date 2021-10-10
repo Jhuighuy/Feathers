@@ -1,10 +1,11 @@
-/**
- *    ______             __     __  _____ _____
- *   / __/ /____ _____  / /__  /  |/  / // / _ \
- *  _\ \/  '_/ // / _ \/  '_/ / /|_/ / _  / // /
- * /___/_/\_\\_,_/_//_/_/\_\ /_/  /_/_//_/____/
+/*
+ *  ______  ______   ______   ______  __  __   ______   ______   ______
+ * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
+ * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
+ *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
+ *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
  *
- * Copyright (c) 2019 Oleg Butakov
+ * Copyright (c) 2021 Oleg Butakov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +43,7 @@ namespace feathers {
 template<int_t num_vars>
 class iConvectionScheme : public tObject<iConvectionScheme<num_vars>> {
 public:
+    /** Compute the nonlinear convection. */
     virtual void get_cell_convection(tScalarField<num_vars>& conv_u,
                                      const tScalarField<num_vars>& u) const = 0;
 }; // class iConvectionScheme
@@ -62,7 +64,7 @@ public:
         m_flux(new tHLLCFluxScheme<MhdPhysicsIdealGas>()) {
     }
 
-    /** Compute the first-order upwind convection. */
+    /** Compute the first-order upwind nonlinear convection. */
     void get_cell_convection(tScalarField<num_vars>& div_f,
                              const tScalarField<num_vars>& u) const final;
 }; // class tUpwindConvectionScheme
@@ -87,7 +89,7 @@ public:
         m_gradient_limiter_scheme(new tMinmodGradientLimiterScheme<num_vars>(m_mesh)) {
     }
 
-    /** Compute the second-order upwind convection. */
+    /** Compute the second-order upwind nonlinear convection. */
     void get_cell_convection(tScalarField<num_vars>& div_f,
                              const tScalarField<num_vars>& u) const final;
 }; // class tUpwindConvectionScheme

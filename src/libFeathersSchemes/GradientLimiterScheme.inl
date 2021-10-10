@@ -1,10 +1,11 @@
-/**
- *    ______             __     __  _____ _____
- *   / __/ /____ _____  / /__  /  |/  / // / _ \
- *  _\ \/  '_/ // / _ \/  '_/ / /|_/ / _  / // /
- * /___/_/\_\\_,_/_//_/_/\_\ /_/  /_/_//_/____/
+/*
+ *  ______  ______   ______   ______  __  __   ______   ______   ______
+ * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
+ * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
+ *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
+ *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
  *
- * Copyright (c) 2019 Oleg Butakov
+ * Copyright (c) 2021 Oleg Butakov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -175,7 +176,7 @@ real_t tCubicSecondLimiter::operator()(real_t limiter,
 // ------------------------------------------------------------------------------------ //
 
 /**
- * Compute cell-centered gradient limiter coefficients and averages. 
+ * Compute cell-centered gradient limiter coefficients.
  */
 template<int_t num_vars, class tSlopeLimiter, class tSecondLimiter>
 void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
@@ -191,14 +192,14 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
          * between values of and neighbor cells and the current cell. */
         std::array<real_t, num_vars> du_min(u[cell]), du_max(u[cell]);
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
-            for (int_t i = 0; i < num_vars; ++i) {
+            for (uint_t i = 0; i < num_vars; ++i) {
                 du_min[i] = std::min(du_min[i],
                                      std::min(u[cell_outer][i], u[cell_inner][i]));
                 du_max[i] = std::max(du_max[i],
                                      std::max(u[cell_outer][i], u[cell_inner][i]));
             }
         });
-        for (int_t i = 0; i < num_vars; ++i) {
+        for (uint_t i = 0; i < num_vars; ++i) {
             du_min[i] = std::min(0.0, du_min[i] - u[cell][i]);
             du_max[i] = std::max(0.0, du_max[i] - u[cell][i]);
         }
@@ -208,7 +209,7 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
         lim_u[cell].fill(1.0), cell.for_each_face([&](tFaceIter face) {
             const vec3_t dr =
                 face.get_center_coords() - cell.get_center_coords();
-            for (int_t i = 0; i < num_vars; ++i) {
+            for (uint_t i = 0; i < num_vars; ++i) {
                 const real_t du_face = glm::dot(grad_u[cell][i], dr);
                 const real_t limiter =
                     m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
@@ -218,7 +219,7 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
 
         /* Compute secondary limiting coefficients:
          * disable limiting near smooth regions. */
-        for (int_t i = 0; i < num_vars; ++i) {
+        for (uint_t i = 0; i < num_vars; ++i) {
             const real_t limiter =
                 m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
             lim_u[cell][i] = limiter;

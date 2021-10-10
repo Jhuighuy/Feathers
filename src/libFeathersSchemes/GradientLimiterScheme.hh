@@ -1,10 +1,11 @@
-/**
- *    ______             __     __  _____ _____
- *   / __/ /____ _____  / /__  /  |/  / // / _ \
- *  _\ \/  '_/ // / _ \/  '_/ / /|_/ / _  / // /
- * /___/_/\_\\_,_/_//_/_/\_\ /_/  /_/_//_/____/
+/*
+ *  ______  ______   ______   ______  __  __   ______   ______   ______
+ * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
+ * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
+ *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
+ *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
  *
- * Copyright (c) 2019 Oleg Butakov
+ * Copyright (c) 2021 Oleg Butakov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -115,7 +116,7 @@ public:
 template<int_t num_vars>
 class iGradientLimiterScheme : public tObject<iGradientLimiterScheme<num_vars>> {
 public:
-    /** Compute cell-centered gradient limiter coefficients and averages. */
+    /** Compute cell-centered gradient limiter coefficients. */
     virtual void get_cell_limiter(tScalarField<num_vars>& lim_u,
                                   const tScalarField<num_vars>& u,
                                   const tVectorField<num_vars>& grad_u) const = 0;
@@ -141,7 +142,7 @@ public:
         m_slope_limiter(slope_limiter), m_second_limiter(second_limiter) {
     }
 
-    /** Compute cell-centered gradient limiter coefficients and averages. */
+    /** Compute cell-centered gradient limiter coefficients. */
     void get_cell_limiter(tScalarField<num_vars>& lim_u,
                           const tScalarField<num_vars>& u,
                           const tVectorField<num_vars>& grad_u) const final;
