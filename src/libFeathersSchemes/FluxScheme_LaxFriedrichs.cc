@@ -27,10 +27,6 @@
 
 #include "FluxScheme.hh"
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /**
@@ -47,7 +43,7 @@ void tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3
                                                                       const tFluidState& ul,
                                                                       std::array<real_t, num_vars>& f) const {
     /* 
-     * Approximate |J| with it's maximum eigenvalue.
+     * Approximate |J| with its maximum eigenvalue.
      * [1] Eq. (10.55-10.56). 
      */
     const real_t ss = std::max(std::abs(ur.Vn) + ur.c_snd,
@@ -55,12 +51,8 @@ void tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3
     for (int_t i = 0; i < num_vars; ++i) {
         f[i] = 0.5*((ur.flux[i] + ul.flux[i]) - ss*(ur.cons[i] - ul.cons[i]));
     }
-}   // tLaxFriedrichsFluxScheme::get_numerical_flux
+} // tLaxFriedrichsFluxScheme::get_numerical_flux
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
+} // namespace feathers
 
 template class feathers::tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>;

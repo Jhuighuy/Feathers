@@ -32,10 +32,6 @@ const double gamma = Gamma;
 const double gamma_2 = (gamma + 1.0)/(2.0*gamma);
 }
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /**
@@ -64,7 +60,7 @@ void tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur,
      */
     sr = 0.5*(ur.Vn + ul.Vn) + cs;
     sl = 0.5*(ur.Vn + ul.Vn) - cs;
-}   // tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
+} // tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
 
 /**
  * @brief Calculate the Harten-Lax-van Leer-Einfeldt numerical flux.
@@ -105,7 +101,7 @@ void tHLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
         return;
     }
     FEATHERS_ENSURE(!"Broken signal velocities.");
-}   // tHLLFluxScheme::get_numerical_flux
+} // tHLLFluxScheme::get_numerical_flux
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -151,7 +147,7 @@ void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur
      */
     sr = ur.Vn + ur.c_snd*gp;
     sl = ul.Vn - ul.c_snd*gm;
-}   // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
+} // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
 
 #define HLLC_VARIATION 0
 
@@ -261,14 +257,10 @@ void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
         return;
     }
 #endif
-    assert(!"Broken signal velocities.");
-}   // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
+    FEATHERS_ENSURE(!"Broken signal velocities.");
+} // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
 
-}   // namespace feathers
+template class tHLLFluxScheme<MhdPhysicsIdealGas>;
+template class tHLLCFluxScheme<MhdPhysicsIdealGas>;
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-template class feathers::tHLLFluxScheme<MhdPhysicsIdealGas>;
-template class feathers::tHLLCFluxScheme<MhdPhysicsIdealGas>;
+} // namespace feathers

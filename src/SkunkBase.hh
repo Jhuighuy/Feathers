@@ -51,17 +51,10 @@
 #include <algorithm>
 #include <type_traits>
 
-/* Configure GLM to show only the x,y,z,w components. */
-//#define GLM_FORCE_XYZW_ONLY 1
-/* Configure GLM to initialize vectors and matrices with zeroes. */
-//#define GLM_FORCE_CTOR_INIT 1
 #include <glm/glm.hpp>
-#undef GLM_FORCE_XYZW_ONLY
-#undef GLM_FORCE_CTOR_INIT
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /** C++03 support. */
 /** @{ */
@@ -205,8 +198,8 @@
 #endif
 /** @} */
 
-/**************************************************************************/
-/**************************************************************************/
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 /** @{ */
 #define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name, arguments, ...) \
@@ -261,9 +254,8 @@
 #define FEATHERS_NOT_REACHABLE(...) \
     FEATHERS_ERROR_STOP("not reachable. " __VA_ARGS__)
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
+// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------ //
 
 namespace feathers {
 
@@ -286,11 +278,11 @@ static constexpr uint_t npos = std::numeric_limits<uint_t>::max();
 /** Check if index is npos. */
 static constexpr bool is_npos(uint_t ind) {
     return ind == npos;
-}   // is_npos
+} // is_npos
 /** Check if index is not npos. */
 static constexpr bool is_not_npos(uint_t ind) {
     return ind != npos;
-}   // is_not_npos
+} // is_not_npos
 
 /** Min value functor. */
 template<typename tValue>
@@ -299,7 +291,7 @@ public:
     constexpr tValue operator()(tValue value_1, tValue value_2) const {
         return std::min(value_1, value_2);
     }
-};  // class tMinFunc
+}; // class tMinFunc
 
 /** Max value functor. */
 template<typename tValue>
@@ -308,7 +300,7 @@ public:
     constexpr tValue operator()(tValue value_1, tValue value_2) const {
         return std::max(value_1, value_2);
     }
-};  // class tMaxFunc
+}; // class tMaxFunc
 
 /** Min-max value functor. */
 template<typename tValue>
@@ -332,7 +324,7 @@ public:
         return std::make_pair(std::min(value_1.first, value_2.first),
                               std::max(value_1.second, value_2.second));
     }
-};  // class tMinMaxFunc
+}; // class tMinMaxFunc
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -470,15 +462,7 @@ static const real_t c_sqrt1_2(std::sqrt(0.5));
 template<typename tValue>
 constexpr tValue safe_inverse(tValue x) {
     return x == tValue(0.0) ? tValue(0.0) : (tValue(1.0)/x);
-}   // safe_inverse
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
+} // safe_inverse
 
 /** Simple shortcut for @c std::enable_shared_from_this. */
 template<typename type_t>
@@ -487,21 +471,9 @@ using tObject = std::enable_shared_from_this<type_t>;
 template<typename obj_t, typename obj_ptr_t>
 auto shared_from_this(const obj_ptr_t& obj) {
     return std::static_pointer_cast<obj_t>(obj->shared_from_this());
-}   // shared_from_this
+} // shared_from_this
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-#define WILL_READ_ONLY 0
-#define WILL_READ_AND_WRITE 1
-#define LOCALITY_NONE 0
-#define LOCALITY_LOW 1
-#define LOCALITY_MED 2
-#define LOCALITY_HIGH 3
-#define PD 32
+} // namespace feathers
 
 #endif
 

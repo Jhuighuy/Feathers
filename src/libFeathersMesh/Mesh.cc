@@ -34,11 +34,6 @@
 #include <map>
 #include <fstream>
 
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 bool cMesh::read_triangle(const char *path) {
@@ -94,7 +89,7 @@ bool cMesh::read_triangle(const char *path) {
     reorder_faces();
     compute_all_shape_properties();
     return true;
-}   // сMesh::read_triangle
+} // сMesh::read_triangle
 
 bool cMesh::read_tetgen(const char *path) {
     std::string line;
@@ -150,7 +145,7 @@ bool cMesh::read_tetgen(const char *path) {
     reorder_faces();
     compute_all_shape_properties();
     return true;
-}   // сMesh::read_tetgen
+} // сMesh::read_tetgen
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -167,7 +162,7 @@ void cMesh::compute_edge_shape_properties() {
             edge.set_direction(edge_element->get_direction());
             return edge.get_length();
         });
-}   // сMesh::compute_edge_shape_properties
+} // сMesh::compute_edge_shape_properties
 
 /**
  * Compute face shape properties.
@@ -182,7 +177,7 @@ void cMesh::compute_face_shape_properties() {
             face.set_center_coords(face_element->get_center_coords());
             return face.get_area();
         });
-}   // сMesh::compute_face_shape_properties
+} // сMesh::compute_face_shape_properties
 
 /**
  * Compute cell shape properties.
@@ -196,7 +191,7 @@ void cMesh::compute_cell_shape_properties() {
             cell.set_center_coords(cell_element->get_center_coords());
             return cell.get_volume();
         });
-}   // сMesh::compute_cell_shape_properties
+} // сMesh::compute_cell_shape_properties
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -213,7 +208,7 @@ void cMesh::reserve_nodes(uint_t node_capacity) {
     m_node_edges.reserve_rows(node_capacity);
     m_node_faces.reserve_rows(node_capacity);
     m_node_cells.reserve_rows(node_capacity);
-}   // cMesh::reserve_nodes
+} // cMesh::reserve_nodes
 
 /**
  * Preallocate the edge storage.
@@ -229,7 +224,7 @@ void cMesh::reserve_edges(uint_t edge_capacity) {
     m_edge_edges.reserve_rows(edge_capacity);
     m_edge_faces.reserve_rows(edge_capacity);
     m_edge_cells.reserve_rows(edge_capacity);
-}   // cMesh::reserve_edges
+} // cMesh::reserve_edges
 
 /**
  * Preallocate the face storage.
@@ -246,7 +241,7 @@ void cMesh::reserve_faces(uint_t face_capacity) {
     m_face_edges.reserve_rows(face_capacity);
     m_face_faces.reserve_rows(face_capacity);
     m_face_cells.reserve_rows(face_capacity);
-}   // cMesh::reserve_faces
+} // cMesh::reserve_faces
 
 /**
  * Preallocate the cell storage.
@@ -262,7 +257,7 @@ void cMesh::reserve_cells(uint_t cell_capacity) {
     m_cell_edges.reserve_rows(cell_capacity);
     m_cell_faces.reserve_rows(cell_capacity);
     m_cell_cells.reserve_rows(cell_capacity);
-}   // cMesh::reserve_cells
+} // cMesh::reserve_cells
 
 /**
  * Emplace a new node into the mesh.
@@ -281,7 +276,7 @@ uint_t cMesh::emplace_back_node(const vec3_t& node_coords, uint_t mark) {
     m_node_cells.emplace_back_row();
 
     return node_index;
-}   // сMesh::emplace_back_node
+} // сMesh::emplace_back_node
 
 /**
  * Emplace a new edge into the mesh.
@@ -302,7 +297,7 @@ uint_t cMesh::emplace_back_edge(std::unique_ptr<iElement>&& edge, uint_t mark) {
     m_edge_cells.emplace_back_row();
 
     return edge_index;
-}   // сMesh::emplace_back_edge
+} // сMesh::emplace_back_edge
 
 /**
  * Emplace a new face into the mesh.
@@ -324,7 +319,7 @@ uint_t cMesh::emplace_back_face(std::unique_ptr<iElement>&& face, uint_t mark) {
     m_face_cells.emplace_back_row(2);
 
     return face_index;
-}   // сMesh::emplace_back_face
+} // сMesh::emplace_back_face
 
 /**
  * Insert a new cell into the mesh.
@@ -345,52 +340,43 @@ uint_t cMesh::emplace_back_cell(std::unique_ptr<iElement>&& cell, uint_t mark) {
     m_cell_cells.emplace_back_row();
 
     return cell_index;
-}   // сMesh::emplace_back_cell
+} // сMesh::emplace_back_cell
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
-
-class tReorderFunc {
-private:
-    const std::vector<uint_t>& m_indices;
-public:
-    explicit tReorderFunc(const std::vector<uint_t>& indices)
-        : m_indices(indices) {
-    }
-    uint_t operator()(uint_t index) const {
-        return index != npos ? m_indices.at(index) : npos;
-    }
-};  // class tReorderFunc
 
 template<typename tTag>
 void cMesh::fix_permutation_and_adjacency_(tTag tag, std::vector<uint_t>& permutation) {
+    //if (permutation.empty()) {
+    //    /* Generate identity permutation. */
+    //    permutation.reserve();
+    //}
     /* Fix permutations by resorting it by marks.
      * Stable sort is used here to preserve the permutation in the best possible way. */
-    std::stable_sort(permutation.begin(),
-                     permutation.end(), [&](uint_t index_1, uint_t index_2) {
+    std::stable_sort(permutation.begin(), permutation.end(),
+                     [&](uint_t index_1, uint_t index_2) {
         return get_mark(tag, index_1) < get_mark(tag, index_2);
     });
     /* Fix adjacency lists. */
-    std::vector<uint_t> ordering(permutation.size());
+    std::vector<uint_t> ordering(permutation.size(), npos);
     convert_permutation_to_ordering(
         permutation.begin(), permutation.end(), ordering.begin());
+    auto reorder_func = [&ordering](uint_t index) {
+        return index != npos ? ordering[index] : npos;
+    };
     for_each_node(*this, [&](tNodeMutableIter node) {
-        std::transform(node.begin(tag), node.end(tag),
-                       node.begin(tag), tReorderFunc(ordering));
+        std::transform(node.begin(tag), node.end(tag), node.begin(tag), reorder_func);
     });
     for_each_edge(*this, [&](tEdgeMutableIter edge) {
-        std::transform(edge.begin(tag), edge.end(tag),
-                       edge.begin(tag), tReorderFunc(ordering));
+        std::transform(edge.begin(tag), edge.end(tag), edge.begin(tag), reorder_func);
     });
     for_each_face(*this, [&](tFaceMutableIter face) {
-        std::transform(face.begin(tag), face.end(tag),
-                       face.begin(tag), tReorderFunc(ordering));
+        std::transform(face.begin(tag), face.end(tag), face.begin(tag), reorder_func);
     });
     for_each_cell(*this, [&](tCellMutableIter cell) {
-        std::transform(cell.begin(tag), cell.end(tag),
-                       cell.begin(tag), tReorderFunc(ordering));
+        std::transform(cell.begin(tag), cell.end(tag), cell.begin(tag), reorder_func);
     });
-}   // cMesh::fix_permutation_and_adjacency_
+} // cMesh::fix_permutation_and_adjacency_
 
 /**
  * Change order of all nodes.
@@ -403,7 +389,7 @@ void cMesh::permute_nodes(std::vector<uint_t>&& node_permutation) {
     permute_inplace(
         node_permutation.begin(), node_permutation.end(),
         m_node_marks.begin(), m_node_coords.begin());
-}   // сMesh::permute_nodes
+} // сMesh::permute_nodes
 
 /**
  * Change order of all edges.
@@ -417,7 +403,7 @@ void cMesh::permute_edges(std::vector<uint_t>&& edge_permutation) {
         edge_permutation.begin(), edge_permutation.end(),
         m_edge_marks.begin(), m_edge_shapes.begin(),
         m_edge_lengths.begin(), m_edge_directions.begin());
-}   // сMesh::permute_edges
+} // сMesh::permute_edges
 
 /**
  * Change order of all faces.
@@ -431,7 +417,7 @@ void cMesh::permute_faces(std::vector<uint_t>&& face_permutation) {
         face_permutation.begin(), face_permutation.end(),
         m_face_marks.begin(), m_face_shapes.begin(),
         m_face_areas.begin(), m_face_normals.begin(), m_face_center_coords.begin());
-}   // сMesh::permute_faces
+} // сMesh::permute_faces
 
 /**
  * Change order of all cells.
@@ -445,7 +431,7 @@ void cMesh::permute_cells(std::vector<uint_t>&& cell_permutation) {
         cell_permutation.begin(), cell_permutation.end(),
         m_cell_marks.begin(), m_cell_shapes.begin(),
         m_cell_volumes.begin(), m_cell_center_coords.begin());
-}   // сMesh::permute_cells
+} // сMesh::permute_cells
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -496,7 +482,7 @@ void cMesh::reorder_faces() {
         std::partial_sum(
             m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
     }
-}   // сMesh::permute_faces
+} // сMesh::permute_faces
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -548,7 +534,7 @@ void cMesh::generate_edges() {
         FEATHERS_ENSURE(std::all_of(
             face.begin(eEdgeTag), face.end(eEdgeTag), is_not_npos));
     });
-}   // сMesh::generate_edges
+} // сMesh::generate_edges
 
 /**
  * Generate faces using the cell to node connectivity.
@@ -623,7 +609,7 @@ void cMesh::generate_faces() {
                 face.begin(eCellTag), face.end(eCellTag), is_not_npos));
         }
     });
-}   // сMesh::generate_faces
+} // сMesh::generate_faces
 
 /* A node and edge flip table for various face types. */
 static const std::map<eShape, std::pair<std::vector<uint_t>, std::vector<uint_t>>>
@@ -701,10 +687,6 @@ void cMesh::generate_boundary_cells() {
 #endif
         face.begin(eCellTag)[eFaceOuterCell] = boundary_cell_index;
     });
-}   // сMesh::generate_boundary_cells
+} // сMesh::generate_boundary_cells
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
+} // namespace feathers

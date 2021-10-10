@@ -31,7 +31,6 @@
 
 #include "SkunkBase.hh"
 #include "libFeathersMesh/Mesh.hh"
-#include "libSkunkSparse/SkunkSparseFunction.hh"
 
 namespace feathers {
 
@@ -47,7 +46,7 @@ public:
     /** Compute local slope coefficient. */
     real_t operator()(real_t du_min, real_t du_max,
                       real_t du_face, real_t eps_sqr) const;
-};  // class tMinmodSlopeLimiter
+}; // class tMinmodSlopeLimiter
 
 /**
  * Venkatakrishnan
@@ -60,7 +59,7 @@ public:
     /** Compute local slope coefficient. */
     real_t operator()(real_t du_min, real_t du_max,
                       real_t du_face, real_t eps_sqr) const;
-};  // class tVenkatakrishnanSlopeLimiter
+}; // class tVenkatakrishnanSlopeLimiter
 
 /**
  * Michalak Ollivier-Gooch (cubic)
@@ -73,7 +72,7 @@ public:
     /** Compute local slope coefficient. */
     real_t operator()(real_t du_min, real_t du_max,
                       real_t du_face, real_t eps_sqr) const;
-};  // class tCubicSlopeLimiter
+}; // class tCubicSlopeLimiter
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -90,7 +89,7 @@ public:
     real_t operator()(real_t limiter,
                       real_t du_min, real_t du_max,
                       real_t eps_sqr) const;
-};  // class tDummySecondLimiter
+}; // class tDummySecondLimiter
 
 /**
  * Michalak Ollivier-Gooch cubic
@@ -104,7 +103,7 @@ public:
     real_t operator()(real_t limiter,
                       real_t du_min, real_t du_max,
                       real_t eps_sqr) const;
-};  // class tCubicSecondLimiter
+}; // class tCubicSecondLimiter
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -118,8 +117,9 @@ class iGradientLimiterScheme : public tObject<iGradientLimiterScheme<num_vars>> 
 public:
     /** Compute cell-centered gradient limiter coefficients and averages. */
     virtual void get_cell_limiter(tScalarField<num_vars>& lim_u,
-                                  const tPiecewiseLinearFunction<num_vars>& u) const = 0;
-};  // class iGradientLimiterScheme
+                                  const tScalarField<num_vars>& u,
+                                  const tVectorField<num_vars>& grad_u) const = 0;
+}; // class iGradientLimiterScheme
 
 /**
  * Gradient cell limiter estimation scheme:
@@ -143,16 +143,9 @@ public:
 
     /** Compute cell-centered gradient limiter coefficients and averages. */
     void get_cell_limiter(tScalarField<num_vars>& lim_u,
-                          const tPiecewiseLinearFunction<num_vars>& u) const final {
-        get_cell_limiter_(lim_u, u);
-    }
-
-private:
-    /** Compute cell-centered gradient limiter coefficients and averages. */
-    template<class tPiecewiseFunction>
-    void get_cell_limiter_(tScalarField<num_vars>& lim_u,
-                           const tPiecewiseFunction& u) const;
-};  // class iGradientLimiterScheme
+                          const tScalarField<num_vars>& u,
+                          const tVectorField<num_vars>& grad_u) const final;
+}; // class iGradientLimiterScheme
 
 template<int_t num_vars>
 using tMinmodGradientLimiterScheme =

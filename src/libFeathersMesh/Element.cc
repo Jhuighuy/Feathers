@@ -29,10 +29,6 @@
 
 #include <functional>
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /**
@@ -40,22 +36,22 @@ namespace feathers {
  */
 static std::unique_ptr<iElement> construct_element_(eShape shape) {
     switch (shape) {
-    case eShape::segment_2:
-        return std::make_unique<cSegment>();
-    case eShape::triangle_3:
-        return std::make_unique<cTriangle>();
-    case eShape::quadrangle_4:
-        return std::make_unique<cQuadrangle>();
-    case eShape::tetrahedron_4:
-        return std::make_unique<cTetrahedron>();
-    case eShape::pyramid_5:
-        return std::make_unique<cPyramid>();
-    case eShape::pentahedron_6:
-        return std::make_unique<cPentahedron>();
-    case eShape::hexahedron_8:
-        return std::make_unique<cHexahedron>();
-    default:
-        FEATHERS_NOT_REACHABLE();
+        case eShape::segment_2:
+            return std::make_unique<cSegment>();
+        case eShape::triangle_3:
+            return std::make_unique<cTriangle>();
+        case eShape::quadrangle_4:
+            return std::make_unique<cQuadrangle>();
+        case eShape::tetrahedron_4:
+            return std::make_unique<cTetrahedron>();
+        case eShape::pyramid_5:
+            return std::make_unique<cPyramid>();
+        case eShape::pentahedron_6:
+            return std::make_unique<cPentahedron>();
+        case eShape::hexahedron_8:
+            return std::make_unique<cHexahedron>();
+        default:
+            FEATHERS_NOT_REACHABLE();
     }
 }   // construct_element_
 
@@ -262,14 +258,14 @@ tElementDescList cQuadrangle::get_faces_desc() const {
 }
 tElementDescList cQuadrangle::get_simplicial_parts(uint_t partition_index) const {
     switch (partition_index) {
-    case 0:
-        return { get_part(eShape::triangle_3, 0, 1, 2),
-                 get_part(eShape::triangle_3, 2, 3, 0) };
-    case 1:
-        return { get_part(eShape::triangle_3, 0, 1, 3),
-                 get_part(eShape::triangle_3, 1, 2, 3) };
-    default:
-        return {};
+        case 0:
+            return { get_part(eShape::triangle_3, 0, 1, 2),
+                     get_part(eShape::triangle_3, 2, 3, 0) };
+        case 1:
+            return { get_part(eShape::triangle_3, 0, 1, 3),
+                     get_part(eShape::triangle_3, 1, 2, 3) };
+        default:
+            return {};
     }
 }
 
@@ -422,25 +418,26 @@ tElementDescList cHexahedron::get_faces_desc() const {
 }
 tElementDescList cHexahedron::get_simplicial_parts(uint_t partition_index) const {
     // TODO: alternative partitions!
-    return { get_part(eShape::tetrahedron_4, 0, 3, 1, 4),
-             get_part(eShape::tetrahedron_4, 3, 2, 1, 6),
-             get_part(eShape::tetrahedron_4, 4, 5, 6, 1),
-             get_part(eShape::tetrahedron_4, 4, 6, 7, 3),
-             get_part(eShape::tetrahedron_4, 4, 3, 1, 6) };
+    switch (partition_index) {
+        case 0:
+            return { get_part(eShape::tetrahedron_4, 0, 3, 1, 4),
+                     get_part(eShape::tetrahedron_4, 3, 2, 1, 6),
+                     get_part(eShape::tetrahedron_4, 4, 5, 6, 1),
+                     get_part(eShape::tetrahedron_4, 4, 6, 7, 3),
+                     get_part(eShape::tetrahedron_4, 4, 3, 1, 6) };
+        default:
+            return {};
+    }
 }
 
 } // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
 
 #if !FEATHERS_DOXYGEN
 /**
  * Alternative pyramid pictures.
  * @verbatim
  *                            n4
- *                            @    f1
+ *                            O    f1
  *                           /|\   ^
  *                          /`|`\./
  *                        ,// | `/
@@ -455,12 +452,12 @@ tElementDescList cHexahedron::get_simplicial_parts(uint_t partition_index) const
  *           /`   o  ,|       |     |
  *   <----------*    /`       |     \.
  *       ,/`        /         |     `\
- *   n3 @----<----,/----------@ n2   |
+ *   n3 O----<----,/----------O n2   |
  *       \.  e2   |`           \.    \.
  *        `\.    ,|          e1 `^.  `\
  *      e3 `v.   /`     o         `\. |
  *           `\ /       |            `\|
- *         n0 @------------------->---@ n1
+ *         n0 O------------------->---O n1
  *                      |        e0
  *                      |
  *                      v
@@ -470,18 +467,18 @@ tElementDescList cHexahedron::get_simplicial_parts(uint_t partition_index) const
  * @verbatim
  *                           f2
  *                     n4    ^
- *                     @.   /
+ *                     O.   /
  *                   ,/|`\./
  *              e7 ,^/ |  /\.
  *               ,/ /  | *  ^ e6
  *             ,/`,/   ^ e5 `\.
  *           ,/` /`    |      `\
- *       n3 @---/------|---<---@ n2
+ *       n3 O---/------|---<---O n2
  *         /   ^ e4    |  e2 ,/`
  *        /  ,/ *      |   ,/`
  *    e3 v /   / o     | ,^` e1
  *      /,/   /  |     |/`
- *  n0 @-----/----->---@ n1
+ *  n0 O-----/----->---O n1
  *          /    | e0
  *         /     |
  *        v      v

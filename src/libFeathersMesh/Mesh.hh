@@ -37,10 +37,6 @@
 #define FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY 1
 #endif
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /** Node element tag. */
@@ -58,9 +54,6 @@ enum : uint_t {
     /** Local index of the face outer cell. */
     eFaceOuterCell = 1
 };  // enum
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
 
 /**
  * Hybrid unstructured multidimensional mesh.
@@ -709,13 +702,13 @@ private:
 public:
 
     /** Change order of all nodes. */
-    void permute_nodes(std::vector<uint_t>&& node_permutation);
+    void permute_nodes(std::vector<uint_t>&& node_permutation = {});
     /** Change order of all edges. */
-    void permute_edges(std::vector<uint_t>&& edge_permutation);
+    void permute_edges(std::vector<uint_t>&& edge_permutation = {});
     /** Change order of all faces. */
-    void permute_faces(std::vector<uint_t>&& face_permutation);
+    void permute_faces(std::vector<uint_t>&& face_permutation = {});
     /** Change order of all cells. */
-    void permute_cells(std::vector<uint_t>&& cell_permutation);
+    void permute_cells(std::vector<uint_t>&& cell_permutation = {});
 
 protected:
 
@@ -741,10 +734,6 @@ protected:
 };  // class cMesh
 
 }   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
 
 /* Include iterators. */
 #include "MeshIterators.hh"

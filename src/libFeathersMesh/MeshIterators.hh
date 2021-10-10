@@ -333,7 +333,7 @@ public:
             func(tCellIterBase<tMesh>(*m_mesh, cell_index));
         });
     }
-};  // class tElementIterBase
+}; // class tElementIterBase
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -368,7 +368,7 @@ public:
     std::enable_if_t<!std::is_const_v<uMesh>> set_coords(const vec3_t& node_coords) {
         this->get_mesh().set_node_coords(this->get_index(), node_coords);
     }
-};  // class tNodeIterBase
+}; // class tNodeIterBase
 
 /**
  * Mesh nodes random-access iterator.
@@ -421,7 +421,7 @@ public:
     std::enable_if_t<!std::is_const_v<uMesh>> set_direction(const vec3_t& edge_direction) const {
         this->get_mesh().set_edge_direction(this->get_index(), edge_direction);
     }
-};  // class tEdgeIterBase
+}; // class tEdgeIterBase
 
 /**
  * Mesh edges random-access iterator.
@@ -497,7 +497,7 @@ public:
             set_center_coords(const vec3_t& face_center_coords) const {
         this->get_mesh().set_face_center_coords(this->get_index(), face_center_coords);
     }
-};  // class tFaceIterBase
+}; // class tFaceIterBase
 
 /**
  * Mesh faces random-access iterator.
@@ -551,7 +551,7 @@ public:
             set_center_coords(const vec3_t& cell_center_coords) const {
         this->get_mesh().set_cell_center_coords(this->get_index(), cell_center_coords);
     }
-};  // class tCellIterBase
+}; // class tCellIterBase
 
 /**
  * Mesh cells random-access iterator.

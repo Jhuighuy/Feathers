@@ -34,10 +34,6 @@
 #include "GradientLimiterScheme.hh"
 #include "GradientScheme.hh"
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /**
@@ -48,15 +44,7 @@ class iConvectionScheme : public tObject<iConvectionScheme<num_vars>> {
 public:
     virtual void get_cell_convection(tScalarField<num_vars>& conv_u,
                                      const tScalarField<num_vars>& u) const = 0;
-};  // class iConvectionScheme
-
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-namespace feathers {
+}; // class iConvectionScheme
 
 /**
  * Piecewise-constant upwind convection scheme.
@@ -77,10 +65,7 @@ public:
     /** Compute the first-order upwind convection. */
     void get_cell_convection(tScalarField<num_vars>& div_f,
                              const tScalarField<num_vars>& u) const final;
-};  // class tUpwindConvectionScheme
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+}; // class tUpwindConvectionScheme
 
 /**
  * Piecewise-linear upwind convection scheme.
@@ -105,12 +90,8 @@ public:
     /** Compute the second-order upwind convection. */
     void get_cell_convection(tScalarField<num_vars>& div_f,
                              const tScalarField<num_vars>& u) const final;
-};  // class tUpwindConvectionScheme
+}; // class tUpwindConvectionScheme
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
+} // namespace feathers
 
 #endif // CONVECTION_SCHEME_HH_

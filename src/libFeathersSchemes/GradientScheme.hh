@@ -39,11 +39,9 @@ template<int_t num_vars>
 class iGradientScheme : public tObject<iGradientScheme<num_vars>> {
 public:
     /** Compute cell-centered gradients. */
-    /** @{ */
     virtual void get_gradients(tVectorField<num_vars>& grad_u,
                                const tScalarField<num_vars>& u) const = 0;
-    /** @} */
-};  // class iGradientScheme
+}; // class iGradientScheme
 
 /**
  * Weighted Least-Squares gradient estimation scheme, cell-based:
@@ -66,24 +64,15 @@ public:
         init_gradients_();
     }
 
-    /** Compute cell-centered gradients. */
-    /** @{ */
-    void get_gradients(tVectorField<num_vars>& grad_u,
-                       const tScalarField<num_vars>& u) const final {
-        get_gradients_(grad_u, u);
-    }
-    /** @} */
-
 private:
-    /** Compute cell-centered gradients. */
-    /** @{ */
     void init_gradients_();
-    template</*template<int_t>*/ class tInField,
-             /*template<int_t>*/ class tOutField>
-    void get_gradients_(tOutField/*<num_vars>*/& grad_u,
-                        const tInField/*<num_vars>*/& u) const;
-    /** @} */
-};  // class tLeastSquaresGradientScheme
+
+public:
+
+    /** Compute cell-centered gradients. */
+    void get_gradients(tVectorField<num_vars>& grad_u,
+                       const tScalarField<num_vars>& u) const final;
+}; // class tLeastSquaresGradientScheme
 
 } // namespace feathers
 

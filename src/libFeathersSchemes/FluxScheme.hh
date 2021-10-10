@@ -50,7 +50,7 @@ public:
                                     const std::array<real_t, num_vars_t>& ur,
                                     const std::array<real_t, num_vars_t>& ul,
                                     std::array<real_t, num_vars_t>& flux) const = 0;
-};  // class iFluxScheme
+}; // class iFluxScheme
 
 /**
  * Abstract physics-based numerical flux.
@@ -77,7 +77,7 @@ public:
                                     const tFluidState& ul,
                                     std::array<real_t, num_vars>& f) const = 0;
     /** @} */
-};  // class iPhysFluxScheme
+}; // class iPhysFluxScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -99,7 +99,7 @@ public:
                             const tFluidState& ur,
                             const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const final;
-};  // class tLaxFriedrichsFluxScheme
+}; // class tLaxFriedrichsFluxScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -126,7 +126,7 @@ public:
                             const tFluidState& ur,
                             const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const final;
-};  // class tHLLFluxScheme
+}; // class tHLLFluxScheme
 
 /**
  * @brief Harten-Lax-van Leer-Contact numerical flux.
@@ -150,7 +150,7 @@ public:
                             const tFluidState& ur,
                             const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const override;
-};  // class tHLLCFluxScheme
+}; // class tHLLCFluxScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -173,12 +173,8 @@ public:
                              const tFluidState& ur,
                              const tFluidState& ul,
                              std::array<real_t, num_vars>& f) const override;
-};  // class tRoeFluxScheme
+}; // class tRoeFluxScheme
 
-}   // namespace feathers
-
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
+} // namespace feathers
 
 #endif  // ifndef FLUX_SCHEME_HH_
