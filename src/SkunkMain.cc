@@ -3,7 +3,7 @@
 #include <string>
 
 #include "SkunkBase.hh"
-#include "libFeathersUtils/Permute.hh"
+#include "libFeathersUtils/ChickenThoughts.hh"
 #include "libFeathersSchemes/SkunkFvSolver.hh"
 
 #include <chrono>
@@ -31,7 +31,7 @@ static void print(
         auto p = m.get_cell_center_coords(cell_ind);
         file << p.x << ',' << p.y << ',' << p.z-0.5 << ','
              << v.rho << ',' << v.p << ','
-             << v.V.x << ',' << v.V.y << ',' << v.V.z << ','
+             << v.vel.x << ',' << v.vel.y << ',' << v.vel.z << ','
              << std::endl;
     }
 }
@@ -85,6 +85,7 @@ static void print_vtk(feathers::uint_t nn,
 
 int main(int argc, char** argv) {
     set_max_num_threads(10);
+    print_cockatiel();
 
     std::shared_ptr<cMesh> mesh(new cMesh(2));
 

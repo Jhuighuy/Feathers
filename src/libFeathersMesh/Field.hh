@@ -31,20 +31,12 @@
 
 #include "SkunkBase.hh"
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
-//namespace feathers {
-
 template<int num_vars = 1>
 using tScalarField = std::vector<std::array<feathers::real_t, num_vars>>;
 template<int num_vars = 1>
 using tVectorField = std::vector<std::array<feathers::vec3_t, num_vars>>;
 template<int num_vars = 1>
 using tMatrixField = std::vector<std::array<feathers::mat3_t, num_vars>>;
-
-//}   // namespace feathers
 
 // ************************************************************************************ //
 // ************************************************************************************ //

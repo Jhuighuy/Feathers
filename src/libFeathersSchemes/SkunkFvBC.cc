@@ -56,9 +56,9 @@ void MhdFvBcNoSlipT<MhdPhysicsT>::get_ghost_state_(const feathers::vec3_t& n, co
                                                    MhdFluidStateT& u_ghost) const {
     u_ghost = u;
     if (vfunc != nullptr) {
-        u_ghost.V = vfunc(r_ghost);
+        u_ghost.vel = vfunc(r_ghost);
     } else {
-        u_ghost.V = {};
+        u_ghost.vel = {};
     }
 }   // MhdFvBcNoSlipT::get_ghost_state_
 
@@ -71,7 +71,7 @@ void MhdFvBcSlipT<MhdPhysicsT>::get_ghost_state_(const feathers::vec3_t& n, cons
                                                  const MhdFluidStateT& u,
                                                  MhdFluidStateT& u_ghost) const {
     u_ghost = u;
-    u_ghost.V -= u.Vn*n;
+    u_ghost.vel -= u.vel_n * n;
 }   // MhdFvBcSlipT::get_ghost_state_
 
 // ************************************************************************************ //

@@ -741,6 +741,6 @@ protected:
 
 /** @todo Remove me. */
 using cMesh = feathers::cMesh;
-#include "libSkunkSparse/SkunkSparseField.hh"
+#include "Field.hh"
 
 #endif  // ifndef MESH_HH_

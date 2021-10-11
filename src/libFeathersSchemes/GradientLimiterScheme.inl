@@ -26,10 +26,6 @@
  * SOFTWARE.
  */
 
-// ************************************************************************************ //
-// ************************************************************************************ //
-// ************************************************************************************ //
-
 namespace feathers {
 
 /**
@@ -160,16 +156,18 @@ real_t tCubicSecondLimiter::operator()(real_t limiter,
     const real_t du_sqr = std::pow(du_max - du_min, 2);
     if (du_sqr <= eps_sqr) {
         return 1.0;
-    } else if (eps_sqr < du_sqr && du_sqr < 2.0*eps_sqr) {
+    }
+    if (eps_sqr < du_sqr && du_sqr < 2.0*eps_sqr) {
         const real_t dy = (du_sqr - eps_sqr)/eps_sqr;
         const real_t dy_sqr = std::pow(dy, 2);
         const real_t weight = (2.0*dy - 3.0)*dy_sqr + 1.0;
         const real_t second_limiter = weight + (1.0 - weight)*limiter;
         return second_limiter;
-    } else if (2.0*eps_sqr <= du_sqr) {
+    }
+    if (du_sqr >= 2.0*eps_sqr) {
         return limiter;
     }
-    return 0.0;
+    FEATHERS_ENSURE(!"Broken cubic second limiter.");
 } // tCubicSecondLimiter::get_slope_coefficient
 
 // ------------------------------------------------------------------------------------ //

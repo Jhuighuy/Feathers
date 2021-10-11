@@ -36,52 +36,33 @@ const double gamma_2 = (gamma + 1.0)/(2.0*gamma);
 namespace feathers {
 
 /**
- * @brief Calculate signal speed estimates.
+ * Calculate the Harten-Lax-van Leer-Einfeldt numerical flux.
  * @verbatim
  * [1] Eleuterio F. Toro,
  *     "Riemann Solvers and Numerical Methods
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-template<>
-void tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur,
-                                                          const tFluidState& ul,
-                                                          real_t& sr, real_t& sl) const {
-    /*
-     * Calculate Roe average sound speed.
-     * [1] Eq. (10.53-10.54).
-     */
-    const real_t rr = std::sqrt(ur.rho);
-    const real_t rl = std::sqrt(ul.rho);
-    const real_t rs = 0.5 * rr * rl / std::pow(rr + rl, 2);
-    const real_t cs = std::sqrt((rr * ur.c2snd + rl * ul.c2snd) / (rr + rl) + rs*std::pow(ur.Vn - ul.Vn, 2));
-    /*
-     * Calculate signal speeds.
-     * [1], Eq. (10.52).
-     */
-    sr = 0.5*(ur.Vn + ul.Vn) + cs;
-    sl = 0.5*(ur.Vn + ul.Vn) - cs;
-} // tHLLFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
-
-/**
- * @brief Calculate the Harten-Lax-van Leer-Einfeldt numerical flux.
- * @verbatim
- * [1] Eleuterio F. Toro,
- *     "Riemann Solvers and Numerical Methods
- *      for Fluid Dynamics" (Third Edition, 2009).
- * @endverbatim
- */
-template<typename TPhysics>
-void tHLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
+template<typename tPhysics>
+void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
                                                   const tFluidState& ur,
                                                   const tFluidState& ul,
                                                   std::array<real_t, num_vars>& f) const {
-    /*
-     * Supersonic cases.
-     * [1], Eq. (10.20-10.21).
-     */
-    real_t sr, sl;
-    get_signal_speed(ur, ul, sr, sl);
+    /* Calculate Roe average sound speed.
+     * [1] Eq. (10.53-10.54). */
+    const real_t rr = std::sqrt(ur.rho);
+    const real_t rl = std::sqrt(ul.rho);
+    const real_t rs = 0.5*rr*rl/std::pow(rr + rl, 2);
+    const real_t cs = std::sqrt(
+        (rr*ur.c2snd + rl*ul.c2snd)/(rr + rl) + rs*std::pow(ur.vel_n - ul.vel_n, 2));
+
+    /* Calculate signal speeds.
+     * [1], Eq. (10.52). */
+    const real_t sr = 0.5*(ur.vel_n + ul.vel_n) + cs;
+    const real_t sl = 0.5*(ur.vel_n + ul.vel_n) - cs;
+
+    /* Supersonic cases.
+     * [1], Eq. (10.20-10.21). */
     if (sr <= 0.0) {
         f = ur.flux;
         return;
@@ -90,25 +71,24 @@ void tHLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
         f = ul.flux;
         return;
     }
-    /*
-     * Subsonic case.
-     * [1], Eq. (10.20-10.21).
-     */
+
+    /* Subsonic case.
+     * [1], Eq. (10.20-10.21). */
     if (sl <= 0.0 && 0.0 <= sr) {
-        const real_t is = 1.0 / (sr - sl);
-        for (int_t i = 0; i < num_vars; ++i) {
+        const real_t is = 1.0/(sr - sl);
+        for (uint_t i = 0; i < num_vars; ++i) {
             f[i] = is*(sr*ul.flux[i] - sl*ur.flux[i] + sr*sl*(ur.cons[i] - ul.cons[i]));
         }
         return;
     }
     FEATHERS_ENSURE(!"Broken signal velocities.");
-} // tHLLFluxScheme::get_numerical_flux
+} // tHllFluxScheme::get_numerical_flux
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
 /**
- * @brief Calculate pressure-based signal speed estimates.
+ * Calculate the Harten-Lax-van Leer-Contact numerical flux.
  * @verbatim
  * [1] Eleuterio F. Toro,
  *     "Riemann Solvers and Numerical Methods
@@ -116,20 +96,18 @@ void tHLLFluxScheme<TPhysics>::get_numerical_flux(const vec3_t& n,
  * @endverbatim
  */
 template<>
-void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur,
-                                                           const tFluidState& ul,
-                                                           real_t& sr, real_t& sl) const {
-    /*
-     * Calculate average variables.
-     * [1], Eq. (10.61-10.62).
-     */
-    const real_t rho = 0.5 * (ur.rho + ur.rho);
-    const real_t c_snd = 0.5 * (ur.c_snd + ur.c_snd);
-    const real_t p = std::max(0.5 * (ur.p + ul.p - rho * c_snd * (ur.Vn - ul.Vn)), 0.0);
-    /*
-     * Calculate sound speed coefficients.
-     * [1], Eq. (10.60).
-     */
+void tHllcFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
+                                                             const tFluidState& ur,
+                                                             const tFluidState& ul,
+                                                             std::array<real_t, num_vars>& f) const {
+    /* Calculate average variables.
+     * [1], Eq. (10.61-10.62). */
+    const real_t rho = 0.5*(ur.rho + ul.rho);
+    const real_t c_snd = 0.5*(ur.c_snd + ul.c_snd);
+    const real_t p = std::max(0.0, 0.5*(ur.p + ul.p - rho*c_snd*(ur.vel_n - ul.vel_n)));
+
+    /* Calculate sound speed coefficients.
+     * [1], Eq. (10.60). */
     real_t gp;
     if (p > ur.p) {
         gp = std::sqrt(1.0 + /*m_phys->*/gamma_2*(p/ur.p - 1.0));
@@ -142,35 +120,14 @@ void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed(const tFluidState& ur
     } else {
         gm = 1.0;
     }
-    /*
-     * Calculate signal speeds.
-     * [1], Eq. (10.59).
-     */
-    sr = ur.Vn + ur.c_snd*gp;
-    sl = ul.Vn - ul.c_snd*gm;
-} // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_signal_speed_
 
-#define HLLC_VARIATION 0
+    /* Calculate signal speeds.
+     * [1], Eq. (10.59). */
+    const real_t sr = ur.vel_n + ur.c_snd*gp;
+    const real_t sl = ul.vel_n - ul.c_snd*gm;
 
-/**
- * @brief Calculate the Harten-Lax-van Leer-Contact numerical flux.
- * @verbatim
- * [1] Eleuterio F. Toro,
- *     "Riemann Solvers and Numerical Methods
- *      for Fluid Dynamics" (Third Edition, 2009).
- * @endverbatim
- */
-template<>
-void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
-                                                             const tFluidState& ur,
-                                                             const tFluidState& ul,
-                                                             std::array<real_t, num_vars>& f) const {
-    /*
-     * Supersonic cases.
-     * [1], Eq. (10.20-10.21).
-     */
-    real_t sr, sl;
-    get_signal_speed(ur, ul, sr, sl);
+    /* Supersonic cases.
+     * [1], Eq. (10.20-10.21). */
     if (sr <= 0.0) {
         f = ur.flux;
         return;
@@ -179,89 +136,42 @@ void tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
         f = ul.flux;
         return;
     }
-    /*
-     * Subsonic cases.
-     * [1], Eq. (10.37).
-     */
+
+    /* Subsonic cases.
+     * [1], Eq. (10.37-10.39). */
     const real_t ss =
-        ((ur.rho*ur.Vn*(sr - ur.Vn) - ur.p) -
-         (ul.rho*ul.Vn*(sl - ul.Vn) - ul.p))/(ur.rho*(sr - ur.Vn) - ul.rho*(sl - ul.Vn));
-#if HLLC_VARIATION == 0
-    /*
-     * Original HLLC:
-     * [1], Eq. (10.38), (10.39).
-     */
+        ((ur.rho*ur.vel_n*(sr - ur.vel_n) - ur.p) -
+         (ul.rho*ul.vel_n*(sl - ul.vel_n) - ul.p)) /
+        (ur.rho*(sr - ur.vel_n) - ul.rho*(sl - ul.vel_n));
     if (ss <= 0.0 && 0.0 <= sr) {
         tFluidState us;
-        us.rho = ur.rho*(sr - ur.Vn)/(sr - ss);
-        us.nrg = ur.nrg + (ss - ur.Vn)*(ss + ur.p/ur.rho/(sr - ss));
-        us.V   = ur.V - n*(ur.Vn - ss);
+        const real_t is = 1.0/(sr - ss);
+        us.rho = ur.rho*(sr - ur.vel_n)*is;
+        us.nrg = ur.nrg + (ss - ur.vel_n)*(ss + ur.p/ur.rho*is);
+        us.vel = ur.vel + (ss - ur.vel_n)*n;
         us.make_cons();
-        for (int_t i = 0; i < num_vars; ++i) {
+        for (uint_t i = 0; i < num_vars; ++i) {
             f[i] = ur.flux[i] + sr*(us.cons[i] - ur.cons[i]);
         }
         return;
     }
     if (sl <= 0.0 && 0.0 <= ss)  {
         tFluidState us;
-        us.rho = ul.rho*(sl - ul.Vn)/(sl - ss);
-        us.nrg = ul.nrg + (ss - ul.Vn)*(ss + ul.p/ul.rho/(sl - ss));
-        us.V   = ul.V - n*(ul.Vn - ss);
+        const real_t is = 1.0/(sl - ss);
+        us.rho = ul.rho*(sl - ul.vel_n)*is;
+        us.nrg = ul.nrg + (ss - ul.vel_n)*(ss + ul.p/ul.rho*is);
+        us.vel = ul.vel + (ss - ul.vel_n)*n;
         us.make_cons();
-        for (int_t i = 0; i < num_vars; ++i) {
+        for (uint_t i = 0; i < num_vars; ++i) {
             f[i] = ul.flux[i] + sl*(us.cons[i] - ul.cons[i]);
         }
         return;
     }
-#elif HLLC_VARIATION == 1
-    /*
-     * Variation 1 of HLLC:
-     * [1], Eq. (10.40), (10.41).
-     */
-    const std::array<real_t, 5> ds{ 0.0, ss, n.x, n.y, n.z };
-    if (ss <= 0.0 && 0.0 <= sr) {
-        const real_t is = 1.0/(sr - ss);
-        for (int_t i = 0; i < num_vars; ++i) {
-            f[i] = is*(ss*(sr*ur.cons[i] - ur.flux[i]) +
-                       sr*(ur.p + ur.rho*(sr - ur.Vn)*(ss - ur.Vn))*ds[i]);
-        }
-        return;
-    }
-    if (sl <= 0.0 && 0.0 <= ss) {
-        const real_t is = 1.0/(sl - ss);
-        for (int_t i = 0; i < num_vars; ++i) {
-            f[i] = is*(ss*(sl*ul.cons[i] - ul.flux[i]) +
-                       sl*(ul.p + ul.rho*(sl - ul.Vn)*(ss - ul.Vn))*ds[i]);
-        }
-        return;
-    }
-#elif HLLC_VARIATION == 2
-    /*
-     * Variation 2 of HLLC:
-     * [1], Eq. (10.40), (10.42), (10.44).
-     */
-    const std::array<real_t, 5> ds{ 0.0, ss, n.x, n.y, n.z };
-    const real_t ps = 0.5*((ur.p + ur.rho*(sr - ur.Vn)*(ss - ur.Vn)) +
-                               (ul.p + ul.rho*(sl - ul.Vn)*(ss - ul.Vn)));
-    if (ss <= 0.0 && 0.0 <= sr) {
-        const real_t is = 1.0/(sr - ss);
-        for (int_t i = 0; i < num_vars; ++i) {
-            f[i] = is*(ss*(sr*ur.cons[i] - ur.flux[i]) + sr*ps*ds[i]);
-        }
-        return;
-    }
-    if (sl <= 0.0 && 0.0 <= ss) {
-        const real_t is = 1.0/(sl - ss);
-        for (int_t i = 0; i < num_vars; ++i) {
-            f[i] = is*(ss*(sl*ul.cons[i] - ul.flux[i]) + sl*ps*ds[i]);
-        }
-        return;
-    }
-#endif
-    FEATHERS_ENSURE(!"Broken signal velocities.");
-} // tHLLCFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
 
-template class tHLLFluxScheme<MhdPhysicsIdealGas>;
-template class tHLLCFluxScheme<MhdPhysicsIdealGas>;
+    FEATHERS_ENSURE(!"Broken signal velocities.");
+} // tHllcFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
+
+template class tHllFluxScheme<MhdPhysicsIdealGas>;
+template class tHllcFluxScheme<MhdPhysicsIdealGas>;
 
 } // namespace feathers

@@ -20,8 +20,8 @@ public:
     real_t rho;
     real_t nrg, eps, kin;
     real_t ent, p;
-    vec3_t V;
-    real_t Vn, V2;
+    vec3_t vel;
+    real_t vel_n, V2;
     real_t c_snd, c2snd;
     std::array<real_t, 5> prim;
     std::array<real_t, 5> cons;
@@ -36,13 +36,13 @@ public:
                           const real_t* q_prim = nullptr);
 public:
     void make_cons() {
-        //real_t pr[]{rho, p, V.x, V.y, V.z};
+        //real_t pr[]{rho, p, vel.x, vel.y, vel.z};
         //cons = MhdHydroVars({}, nullptr, pr).cons;
 #if 1
         cons = {
                 rho,
                 rho*nrg,
-                rho*V.x, rho*V.y, rho*V.z,
+            rho * vel.x, rho * vel.y, rho * vel.z,
         };
 #endif
     }
@@ -55,11 +55,11 @@ MhdHydroVars::MhdHydroVars(const vec3_t& n,
         rho = q_cons[0];
         if (rho == 0.0) return;
         nrg = q_cons[1]/rho;
-        V.x = q_cons[2]/rho;
-        V.y = q_cons[3]/rho;
-        V.z = q_cons[4]/rho;
-        Vn  = glm::dot(V, n);
-        V2  = glm::dot(V, V);
+        vel.x = q_cons[2] / rho;
+        vel.y = q_cons[3] / rho;
+        vel.z = q_cons[4] / rho;
+        vel_n  = glm::dot(vel, n);
+        V2  = glm::dot(vel, vel);
         kin = 0.5*V2;
         eps = nrg - kin;
         p   = Gamma1*rho*eps;
@@ -67,11 +67,11 @@ MhdHydroVars::MhdHydroVars(const vec3_t& n,
     } else if (q_prim != nullptr) {
         rho = q_prim[0];
         p   = q_prim[1];
-        V.x = q_prim[2];
-        V.y = q_prim[3];
-        V.z = q_prim[4];
-        Vn  = glm::dot(V, n);
-        V2  = glm::dot(V, V);
+        vel.x = q_prim[2];
+        vel.y = q_prim[3];
+        vel.z = q_prim[4];
+        vel_n  = glm::dot(vel, n);
+        V2  = glm::dot(vel, vel);
         kin = 0.5*V2;
         if (rho == 0.0) return;
         eps = p/rho/Gamma1;
@@ -84,19 +84,19 @@ MhdHydroVars::MhdHydroVars(const vec3_t& n,
         abort();
     }
     prim = {
-        rho, p, V.x, V.y, V.z,
+        rho, p, vel.x, vel.y, vel.z,
     };
     cons = {
         rho,
         rho*nrg,
-        rho*V.x, rho*V.y, rho*V.z,
+        rho * vel.x, rho * vel.y, rho * vel.z,
     };
     flux = {
-        rho*Vn,
-        rho*Vn*ent,
-        rho*Vn*V.x + p*n.x,
-        rho*Vn*V.y + p*n.y,
-        rho*Vn*V.z + p*n.z,
+        rho * vel_n,
+        rho * vel_n * ent,
+        rho * vel_n * vel.x + p * n.x,
+        rho * vel_n * vel.y + p * n.y,
+        rho * vel_n * vel.z + p * n.z,
     };
 }
 

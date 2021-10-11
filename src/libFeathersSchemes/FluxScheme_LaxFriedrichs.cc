@@ -47,9 +47,9 @@ void tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3
      * Approximate |J| with its maximum eigenvalue.
      * [1] Eq. (10.55-10.56). 
      */
-    const real_t ss = std::max(std::abs(ur.Vn) + ur.c_snd,
-                               std::abs(ul.Vn) + ul.c_snd);
-    for (int_t i = 0; i < num_vars; ++i) {
+    const real_t ss = std::max(std::abs(ur.vel_n) + ur.c_snd,
+                               std::abs(ul.vel_n) + ul.c_snd);
+    for (uint_t i = 0; i < num_vars; ++i) {
         f[i] = 0.5*((ur.flux[i] + ul.flux[i]) - ss*(ur.cons[i] - ul.cons[i]));
     }
 } // tLaxFriedrichsFluxScheme::get_numerical_flux

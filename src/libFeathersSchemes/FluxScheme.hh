@@ -112,7 +112,7 @@ public:
  * It should (almost) always work.
  */
 template<typename tPhysics>
-class tHLLFluxScheme : public iPhysFluxScheme<tPhysics> {
+class tHllFluxScheme : public iPhysFluxScheme<tPhysics> {
 public:
     using iPhysFluxScheme<tPhysics>::num_vars;
     using typename iPhysFluxScheme<tPhysics>::tFluidState;
@@ -127,7 +127,7 @@ public:
                             const tFluidState& ur,
                             const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const final;
-}; // class tHLLFluxScheme
+}; // class tHllFluxScheme
 
 /**
  * @brief Harten-Lax-van Leer-Contact numerical flux.
@@ -136,7 +136,7 @@ public:
  * In plasma physics case may be a bit more dissipative, but more consistent than HLLD/Roe.
  */
 template<typename tPhysics>
-class tHLLCFluxScheme : public iPhysFluxScheme<tPhysics> {
+class tHllcFluxScheme : public iPhysFluxScheme<tPhysics> {
 public:
     using iPhysFluxScheme<tPhysics>::num_vars;
     using typename iPhysFluxScheme<tPhysics>::tFluidState;
@@ -151,7 +151,7 @@ public:
                             const tFluidState& ur,
                             const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const override;
-}; // class tHLLCFluxScheme
+}; // class tHllcFluxScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
