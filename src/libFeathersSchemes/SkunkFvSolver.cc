@@ -65,4 +65,4 @@ void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-template class MhdFvSolverT<MhdPhysicsIdealGas>;
+template class MhdFvSolverT<tGasPhysics>;

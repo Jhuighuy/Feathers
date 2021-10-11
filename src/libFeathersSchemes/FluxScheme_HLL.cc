@@ -54,7 +54,8 @@ void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
     const real_t rl = std::sqrt(ul.rho);
     const real_t rs = 0.5*rr*rl/std::pow(rr + rl, 2);
     const real_t cs = std::sqrt(
-        (rr*ur.c2snd + rl*ul.c2snd)/(rr + rl) + rs*std::pow(ur.vel_n - ul.vel_n, 2));
+        (rr*std::pow(ur.c_snd, 2) + rl*std::pow(ul.c_snd, 2))/(rr + rl) +
+        rs*std::pow(ur.vel_n - ul.vel_n, 2));
 
     /* Calculate signal speeds.
      * [1], Eq. (10.52). */
@@ -81,6 +82,7 @@ void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
         }
         return;
     }
+
     FEATHERS_ENSURE(!"Broken signal velocities.");
 } // tHllFluxScheme::get_numerical_flux
 
@@ -96,10 +98,10 @@ void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
  * @endverbatim
  */
 template<>
-void tHllcFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
-                                                             const tFluidState& ur,
-                                                             const tFluidState& ul,
-                                                             std::array<real_t, num_vars>& f) const {
+void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
+                                                      const tFluidState& ur,
+                                                      const tFluidState& ul,
+                                                      std::array<real_t, num_vars>& f) const {
     /* Calculate average variables.
      * [1], Eq. (10.61-10.62). */
     const real_t rho = 0.5*(ur.rho + ul.rho);
@@ -169,9 +171,9 @@ void tHllcFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
     }
 
     FEATHERS_ENSURE(!"Broken signal velocities.");
-} // tHllcFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux
+} // tHllcFluxScheme<tGasPhysics>::get_numerical_flux
 
-template class tHllFluxScheme<MhdPhysicsIdealGas>;
-template class tHllcFluxScheme<MhdPhysicsIdealGas>;
+template class tHllFluxScheme<tGasPhysics>;
+template class tHllcFluxScheme<tGasPhysics>;
 
 } // namespace feathers

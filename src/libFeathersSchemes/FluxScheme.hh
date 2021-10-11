@@ -117,11 +117,6 @@ public:
     using iPhysFluxScheme<tPhysics>::num_vars;
     using typename iPhysFluxScheme<tPhysics>::tFluidState;
 
-    /** Compute the signal speed. */
-    void get_signal_speed(const tFluidState& ur,
-                          const tFluidState& ul,
-                          real_t& sr, real_t& sl) const;
-
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
                             const tFluidState& ur,
@@ -141,40 +136,12 @@ public:
     using iPhysFluxScheme<tPhysics>::num_vars;
     using typename iPhysFluxScheme<tPhysics>::tFluidState;
 
-    /** Compute the signal speed. */
-    void get_signal_speed(const tFluidState& ur,
-                          const tFluidState& ul,
-                          real_t& sr, real_t& sl) const;
-
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
                             const tFluidState& ur,
                             const tFluidState& ul,
                             std::array<real_t, num_vars>& f) const override;
 }; // class tHllcFluxScheme
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-/**
- * @brief Roe numerical flux.
- *
- * Another optimal choice for gas physics.
- * For plasma physics is significantly slower that the HLLC/HLLD fluxes,
- * but sometimes may produce great results.
- */
-template<typename tPhysics>
-class tRoeFluxScheme : public iPhysFluxScheme<tPhysics> {
-public:
-    using iPhysFluxScheme<tPhysics>::num_vars;
-    using typename iPhysFluxScheme<tPhysics>::tFluidState;
-
-    /** Compute the numerical flux. */
-    void get_numerical_flux_(const vec3_t& n,
-                             const tFluidState& ur,
-                             const tFluidState& ul,
-                             std::array<real_t, num_vars>& f) const override;
-}; // class tRoeFluxScheme
 
 } // namespace feathers
 

@@ -78,7 +78,7 @@ void MhdFvBcSlipT<MhdPhysicsT>::get_ghost_state_(const feathers::vec3_t& n, cons
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-template class MhdFvBcPT<MhdPhysicsIdealGas>;
-template class MhdFvBcFarFieldT<MhdPhysicsIdealGas>;
-template class MhdFvBcNoSlipT<MhdPhysicsIdealGas>;
-template class MhdFvBcSlipT<MhdPhysicsIdealGas>;
+template class MhdFvBcPT<tGasPhysics>;
+template class MhdFvBcFarFieldT<tGasPhysics>;
+template class MhdFvBcNoSlipT<tGasPhysics>;
+template class MhdFvBcSlipT<tGasPhysics>;

@@ -94,14 +94,14 @@ int main(int argc, char** argv) {
 
     tScalarField<5> uc(mesh->num_cells());
     tScalarField<5> up(mesh->num_cells());
-    MhdFvSolverT<MhdPhysicsIdealGas> solver(mesh);
+    MhdFvSolverT<tGasPhysics> solver(mesh);
     for (uint_t cell_ind = 0; cell_ind < mesh->num_cells(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
         double x = mesh->get_cell(cell_ind).get_center_coords().x;
         double y = mesh->get_cell(cell_ind).get_center_coords().y;
         d += 0.2*std::sin(M_PI*(x+y));
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
-        MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
+        tGasPhysics::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*double d, p;
@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
             }
         }
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
-        MhdPhysicsIdealGas::tFluidState qq({}, nullptr, q.data());
+        tGasPhysics::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*std::array<real_t, 5> q{ 1.4, 1.0, 3.0, 0.0, 0.0 };

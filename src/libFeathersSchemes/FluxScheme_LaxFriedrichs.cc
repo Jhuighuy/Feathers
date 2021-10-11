@@ -39,10 +39,10 @@ namespace feathers {
  * @endverbatim
  */
 template<>
-void tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3_t& n,
-                                                                      const tFluidState& ur,
-                                                                      const tFluidState& ul,
-                                                                      std::array<real_t, num_vars>& f) const {
+void tLaxFriedrichsFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
+                                                               const tFluidState& ur,
+                                                               const tFluidState& ul,
+                                                               std::array<real_t, num_vars>& f) const {
     /* 
      * Approximate |J| with its maximum eigenvalue.
      * [1] Eq. (10.55-10.56). 
@@ -56,4 +56,4 @@ void tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>::get_numerical_flux(const vec3
 
 } // namespace feathers
 
-template class feathers::tLaxFriedrichsFluxScheme<MhdPhysicsIdealGas>;
+template class feathers::tLaxFriedrichsFluxScheme<tGasPhysics>;
