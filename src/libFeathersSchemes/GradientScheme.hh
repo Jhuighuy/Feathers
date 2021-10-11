@@ -36,12 +36,12 @@
 namespace feathers {
 
 /** Abstract cell-centered gradient scheme. */
-template<int_t num_vars>
-class iGradientScheme : public tObject<iGradientScheme<num_vars>> {
+class iGradientScheme : public tObject<iGradientScheme> {
 public:
     /** Compute cell-centered gradients. */
-    virtual void get_gradients(tVectorField<num_vars>& grad_u,
-                               const tScalarField<num_vars>& u) const = 0;
+    virtual void get_gradients(uint_t num_vars,
+                               tVectorField& grad_u,
+                               const tScalarField& u) const = 0;
 }; // class iGradientScheme
 
 /**
@@ -51,15 +51,14 @@ public:
  * This gradient scheme is a second-order scheme for any meshes.
  * Also, this gradient scheme is by far the fastest one.
  */
-template<int_t num_vars>
-class tLeastSquaresGradientScheme final : public iGradientScheme<num_vars> {
+class cLeastSquaresGradientScheme final : public iGradientScheme {
 private:
     std::shared_ptr<const cMesh> m_mesh;
-    tMatrixField<> m_inverse_matrices;
+    tMatrixField m_inverse_matrices;
 
 public:
     /** Initialize the gradient scheme. */
-    explicit tLeastSquaresGradientScheme(std::shared_ptr<const cMesh> mesh):
+    explicit cLeastSquaresGradientScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
         m_inverse_matrices(1, m_mesh->num_cells()) {
         init_gradients_();
@@ -71,12 +70,11 @@ private:
 public:
 
     /** Compute cell-centered gradients. */
-    void get_gradients(tVectorField<num_vars>& grad_u,
-                       const tScalarField<num_vars>& u) const final;
-}; // class tLeastSquaresGradientScheme
+    void get_gradients(uint_t num_vars,
+                       tVectorField& grad_u,
+                       const tScalarField& u) const final;
+}; // class cLeastSquaresGradientScheme
 
 } // namespace feathers
-
-#include "GradientScheme.inl"
 
 #endif // GRADIENT_SCHEME_HH_

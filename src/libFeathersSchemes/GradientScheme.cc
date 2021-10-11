@@ -26,13 +26,14 @@
  * SOFTWARE.
  */
 
+#include "GradientScheme.hh"
+
 namespace feathers {
 
 /**
  * Init the gradient scheme.
  */
-template<int_t num_vars>
-void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
+void cLeastSquaresGradientScheme::init_gradients_() {
     /* Compute the least-squares
      * problem matrices for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
@@ -70,14 +71,14 @@ void tLeastSquaresGradientScheme<num_vars>::init_gradients_() {
         mat3_t& mat = m_inverse_matrices[cell][0];
         mat = glm::inverse(mat + eps);
     });
-} // tLeastSquaresGradientScheme::init_gradients_
+} // cLeastSquaresGradientScheme::init_gradients_
 
 /**
  * Compute cell-centered gradients using the Weighted Least-Squares, cell-based version.
  */
-template<int_t num_vars>
-void tLeastSquaresGradientScheme<num_vars>::get_gradients(tVectorField<num_vars>& grad_u,
-                                                          const tScalarField<num_vars>& u) const {
+void cLeastSquaresGradientScheme::get_gradients(uint_t num_vars,
+                                                tVectorField& grad_u,
+                                                const tScalarField& u) const {
     /* Compute the least-squares
      * problem right-hand statements for the interior cells. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
@@ -121,6 +122,6 @@ void tLeastSquaresGradientScheme<num_vars>::get_gradients(tVectorField<num_vars>
             grad_u[cell][i] = mat*grad_u[cell][i];
         }
     });
-} // tLeastSquaresGradientScheme::get_gradients
+} // cLeastSquaresGradientScheme::get_gradients
 
 } // namespace feathers

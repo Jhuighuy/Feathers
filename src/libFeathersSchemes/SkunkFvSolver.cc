@@ -24,8 +24,8 @@ MhdFvSolverT<MhdPhysicsT>::MhdFvSolverT(std::shared_ptr<const cMesh> mesh)
  * @brief Compute spacial discretization.
  */
 template<typename MhdPhysicsT>
-void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField<num_vars>& u,
-                                          feathers::tScalarField<num_vars>& u_out) const {
+void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
+                                          feathers::tScalarField& u_out) const {
     using namespace feathers;
     /*
      * Clear fields and apply boundary conditions.
@@ -48,8 +48,8 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField<num_vars>& u,
 
 template<typename MhdPhysicsT>
 void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
-                                          feathers::tScalarField<num_vars>& u,
-                                          feathers::tScalarField<num_vars>& u_hat) const {
+                                          feathers::tScalarField& u,
+                                          feathers::tScalarField& u_hat) const {
     /*
      * Compute.
      */

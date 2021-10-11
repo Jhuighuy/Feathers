@@ -26,6 +26,8 @@
  * SOFTWARE.
  */
 
+#include "GradientLimiterScheme.hh"
+
 namespace feathers {
 
 /**
@@ -176,11 +178,12 @@ real_t tCubicSecondLimiter::operator()(real_t limiter,
 /**
  * Compute cell-centered gradient limiter coefficients.
  */
-template<int_t num_vars, class tSlopeLimiter, class tSecondLimiter>
-void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
-        get_cell_limiter(tScalarField<num_vars>& lim_u,
-                         const tScalarField<num_vars>& u,
-                         const tVectorField<num_vars>& grad_u) const {
+template<class tSlopeLimiter, class tSecondLimiter>
+void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::
+                            get_cell_limiter(uint_t num_vars,
+                                             tScalarField& lim_u,
+                                             const tScalarField& u,
+                                             const tVectorField& grad_u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
@@ -188,7 +191,8 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
         const real_t eps_sqr = std::pow(k*cell.get_volume(), 3);
         /* Find the largest negative and positive differences
          * between values of and neighbor cells and the current cell. */
-        std::array<real_t, num_vars> du_min, du_max;
+        tScalarSubField du_min(FEATHERS_ALLOCA(real_t, num_vars));
+        tScalarSubField du_max(FEATHERS_ALLOCA(real_t, num_vars));
         std::copy_n(u[cell].data(), num_vars, du_min.data());
         std::copy_n(u[cell].data(), num_vars, du_max.data());
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
@@ -226,6 +230,12 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
             lim_u[cell][i] = limiter;
         }
    });
-} // iGradientLimiterScheme::get_cell_limiter
+} // tGradientLimiterScheme::get_cell_limiter
+
+template class tGradientLimiterScheme<tMinmodSlopeLimiter>;
+template class tGradientLimiterScheme<tVenkatakrishnanSlopeLimiter>;
+template class tGradientLimiterScheme<tVenkatakrishnanSlopeLimiter, tCubicSecondLimiter>;
+template class tGradientLimiterScheme<tCubicSlopeLimiter>;
+template class tGradientLimiterScheme<tCubicSlopeLimiter, tCubicSecondLimiter>;
 
 } // namespace feathers

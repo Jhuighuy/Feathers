@@ -113,21 +113,21 @@ public:
  * Gradient cell limiter estimation scheme:
  * computes cell-centered limiters and averages based on the cell-centered expansion.
  */
-template<int_t num_vars>
-class iGradientLimiterScheme : public tObject<iGradientLimiterScheme<num_vars>> {
+class iGradientLimiterScheme : public tObject<iGradientLimiterScheme> {
 public:
     /** Compute cell-centered gradient limiter coefficients. */
-    virtual void get_cell_limiter(tScalarField<num_vars>& lim_u,
-                                  const tScalarField<num_vars>& u,
-                                  const tVectorField<num_vars>& grad_u) const = 0;
+    virtual void get_cell_limiter(uint_t num_vars,
+                                  tScalarField& lim_u,
+                                  const tScalarField& u,
+                                  const tVectorField& grad_u) const = 0;
 }; // class iGradientLimiterScheme
 
 /**
  * Gradient cell limiter estimation scheme:
  * computes cell-centered limiters and averages based on the cell-centered expansion.
  */
-template<int_t num_vars, class tSlopeLimiter, class tSecondLimiter = tDummySecondLimiter>
-class tGradientLimiterScheme final : public iGradientLimiterScheme<num_vars> {
+template<class tSlopeLimiter, class tSecondLimiter = tDummySecondLimiter>
+class tGradientLimiterScheme final : public iGradientLimiterScheme {
 public:
     std::shared_ptr<const cMesh> m_mesh;
     tSlopeLimiter m_slope_limiter;
@@ -143,33 +143,27 @@ public:
     }
 
     /** Compute cell-centered gradient limiter coefficients. */
-    void get_cell_limiter(tScalarField<num_vars>& lim_u,
-                          const tScalarField<num_vars>& u,
-                          const tVectorField<num_vars>& grad_u) const final;
-}; // class iGradientLimiterScheme
+    void get_cell_limiter(uint_t num_vars,
+                          tScalarField& lim_u,
+                          const tScalarField& u,
+                          const tVectorField& grad_u) const final;
+}; // class tGradientLimiterScheme
 
-template<int_t num_vars>
-using tMinmodGradientLimiterScheme =
-    tGradientLimiterScheme<num_vars, tMinmodSlopeLimiter>;
+using cMinmodGradientLimiterScheme =
+    tGradientLimiterScheme<tMinmodSlopeLimiter>;
 
-template<int_t num_vars>
-using tVenkatakrishnanGradientLimiterScheme =
-    tGradientLimiterScheme<num_vars, tVenkatakrishnanSlopeLimiter>;
+using cVenkatakrishnanGradientLimiterScheme =
+    tGradientLimiterScheme<tVenkatakrishnanSlopeLimiter>;
 
-template<int_t num_vars>
-using tVenkatakrishnan2GradientLimiterScheme =
-    tGradientLimiterScheme<num_vars, tVenkatakrishnanSlopeLimiter, tCubicSecondLimiter>;
+using cVenkatakrishnan2GradientLimiterScheme =
+    tGradientLimiterScheme<tVenkatakrishnanSlopeLimiter, tCubicSecondLimiter>;
 
-template<int_t num_vars>
-using tCubicGradientLimiterScheme =
-    tGradientLimiterScheme<num_vars, tCubicSlopeLimiter>;
+using cCubicGradientLimiterScheme =
+    tGradientLimiterScheme<tCubicSlopeLimiter>;
 
-template<int_t num_vars>
-using tCubic2GradientLimiterScheme =
-    tGradientLimiterScheme<num_vars, tCubicSlopeLimiter, tCubicSecondLimiter>;
+using cCubic2GradientLimiterScheme =
+    tGradientLimiterScheme<tCubicSlopeLimiter, tCubicSecondLimiter>;
 
-}   // namespace feathers
-
-#include "GradientLimiterScheme.inl"
+} // namespace feathers
 
 #endif // GRADIENT_LIMITER_SCHEME_HH_

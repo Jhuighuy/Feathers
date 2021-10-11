@@ -33,6 +33,9 @@
 
 namespace feathers {
 
+#define FEATHERS_ALLOCA(data_t, size) \
+    (size), static_cast<data_t*>(alloca(sizeof(data_t)*(size)))
+
 template<typename data_t>
 class tGenericSubField {
 private:
@@ -52,6 +55,12 @@ public:
         } else {
             std::copy(other.begin(), other.end(), m_elements);
         }
+        return *this;
+    }
+    template<typename data_u = data_t,
+        typename = std::enable_if_t<!std::is_const_v<data_u>>>
+    tGenericSubField& operator=(const tGenericSubField<data_u>& other) {
+        std::copy_n(other.data(), m_num_vars, m_elements);
         return *this;
     }
 
@@ -96,25 +105,16 @@ public:
     }
 }; // class tGenericField
 
-template<uint_t = 0>
 using tScalarSubField = tGenericSubField<real_t>;
-template<uint_t = 0>
 using tVectorSubField = tGenericSubField<vec3_t>;
-template<uint_t = 0>
 using tMatrixSubField = tGenericSubField<mat3_t>;
 
-template<uint_t = 0>
 using tScalarConstSubField = tGenericSubField<const real_t>;
-template<uint_t = 0>
 using tVectorConstSubField = tGenericSubField<const vec3_t>;
-template<uint_t = 0>
 using tMatrixConstSubField = tGenericSubField<const mat3_t>;
 
-template<uint_t = 0>
 using tScalarField = tGenericField<real_t>;
-template<uint_t = 0>
 using tVectorField = tGenericField<vec3_t, real_t>;
-template<uint_t = 0>
 using tMatrixField = tGenericField<mat3_t, real_t>;
 
 } // namespace feathers
