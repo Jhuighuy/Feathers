@@ -94,7 +94,8 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f
             face.get_center_coords() - cell_outer.get_center_coords();
         const vec3_t dr_inner =
             face.get_center_coords() - cell_inner.get_center_coords();
-        std::array<real_t, num_vars> u_outer{}, u_inner{};
+        FEATHERS_TMP_SCALAR_FIELD(u_outer, num_vars);
+        FEATHERS_TMP_SCALAR_FIELD(u_inner, num_vars);
         for (uint_t i = 0; i < num_vars; ++i) {
             u_outer[i] = u[cell_outer][i] +
                 lim_u[cell_outer][i]*glm::dot(grad_u[cell_outer][i], dr_outer);

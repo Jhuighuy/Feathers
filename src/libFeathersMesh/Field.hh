@@ -33,8 +33,8 @@
 
 namespace feathers {
 
-#define FEATHERS_ALLOCA(data_t, size) \
-    (size), static_cast<data_t*>(alloca(sizeof(data_t)*(size)))
+#define FEATHERS_ALLOCA(T, size) \
+    static_cast<T*>(alloca(sizeof(T)*(size)))
 
 template<typename data_t>
 class tGenericSubField {
@@ -57,9 +57,16 @@ public:
         }
         return *this;
     }
+
     template<typename data_u = data_t,
         typename = std::enable_if_t<!std::is_const_v<data_u>>>
     tGenericSubField& operator=(const tGenericSubField<data_u>& other) {
+        std::copy_n(other.data(), m_num_vars, m_elements);
+        return *this;
+    }
+    template<typename data_u = data_t,
+        typename = std::enable_if_t<!std::is_const_v<data_u>>>
+    tGenericSubField& operator=(const tGenericSubField<const data_u>& other) {
         std::copy_n(other.data(), m_num_vars, m_elements);
         return *this;
     }
@@ -77,6 +84,17 @@ public:
         return m_elements[i];
     }
 };
+
+using tScalarSubField = tGenericSubField<real_t>;
+using tVectorSubField = tGenericSubField<vec3_t>;
+using tMatrixSubField = tGenericSubField<mat3_t>;
+
+using tScalarConstSubField = tGenericSubField<const real_t>;
+using tVectorConstSubField = tGenericSubField<const vec3_t>;
+using tMatrixConstSubField = tGenericSubField<const mat3_t>;
+
+#define FEATHERS_TMP_SCALAR_FIELD(name, num_vars) \
+    tScalarSubField name((num_vars), FEATHERS_ALLOCA(real_t, (num_vars)))
 
 template<typename type_t, typename component_type_t = type_t,
     uint_t num_components = sizeof(type_t)/sizeof(component_type_t)>
@@ -104,14 +122,6 @@ public:
         std::swap(m_elements, other.m_elements);
     }
 }; // class tGenericField
-
-using tScalarSubField = tGenericSubField<real_t>;
-using tVectorSubField = tGenericSubField<vec3_t>;
-using tMatrixSubField = tGenericSubField<mat3_t>;
-
-using tScalarConstSubField = tGenericSubField<const real_t>;
-using tVectorConstSubField = tGenericSubField<const vec3_t>;
-using tMatrixConstSubField = tGenericSubField<const mat3_t>;
 
 using tScalarField = tGenericField<real_t>;
 using tVectorField = tGenericField<vec3_t, real_t>;

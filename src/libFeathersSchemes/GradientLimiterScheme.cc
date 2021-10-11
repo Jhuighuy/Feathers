@@ -179,11 +179,8 @@ real_t tCubicSecondLimiter::operator()(real_t limiter,
  * Compute cell-centered gradient limiter coefficients.
  */
 template<class tSlopeLimiter, class tSecondLimiter>
-void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::
-                            get_cell_limiter(uint_t num_vars,
-                                             tScalarField& lim_u,
-                                             const tScalarField& u,
-                                             const tVectorField& grad_u) const {
+void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
+        uint_t num_vars, tScalarField& lim_u, const tScalarField& u, const tVectorField& grad_u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
@@ -191,10 +188,8 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::
         const real_t eps_sqr = std::pow(k*cell.get_volume(), 3);
         /* Find the largest negative and positive differences
          * between values of and neighbor cells and the current cell. */
-        tScalarSubField du_min(FEATHERS_ALLOCA(real_t, num_vars));
-        tScalarSubField du_max(FEATHERS_ALLOCA(real_t, num_vars));
-        std::copy_n(u[cell].data(), num_vars, du_min.data());
-        std::copy_n(u[cell].data(), num_vars, du_max.data());
+        FEATHERS_TMP_SCALAR_FIELD(du_min, num_vars); du_min = u[cell];
+        FEATHERS_TMP_SCALAR_FIELD(du_max, num_vars); du_max = u[cell];
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             for (uint_t i = 0; i < num_vars; ++i) {
                 du_min[i] = std::min(du_min[i],
