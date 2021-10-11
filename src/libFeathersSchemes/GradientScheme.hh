@@ -61,7 +61,7 @@ public:
     /** Initialize the gradient scheme. */
     explicit tLeastSquaresGradientScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_inverse_matrices(m_mesh->num_cells()) {
+        m_inverse_matrices(1, m_mesh->num_cells()) {
         init_gradients_();
     }
 

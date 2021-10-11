@@ -71,17 +71,18 @@ public:
     /** @brief Compute the ghost states. */
     void get_ghost_state(const feathers::vec3_t& n,
                          const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
-                         const std::array<real_t, num_vars>& u,
-                         std::array<real_t, num_vars>& u_ghost) const {
-        MhdFluidStateT u_state(n, u.data()), u_ghost_state;
+                         const real_t* u, real_t* u_ghost) const {
+        MhdFluidStateT u_state(n, u), u_ghost_state;
         get_ghost_state_(n, r, r_ghost, u_state, u_ghost_state);
         u_ghost_state.make_cons();
-        u_ghost = u_ghost_state.cons;
+        std::copy_n(u_ghost_state.cons.data(), 5, u_ghost);
     }
 
 private:
     /** @brief Compute the ghost state. */
-    virtual void get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
+    virtual void get_ghost_state_(const feathers::vec3_t& n,
+                                  const feathers::vec3_t& r,
+                                  const feathers::vec3_t& r_ghost,
                                   const MhdFluidStateT& u,
                                   MhdFluidStateT& u_ghost) const = 0;
 };  // MhdFvBcT

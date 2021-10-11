@@ -37,36 +37,36 @@ template<int_t num_vars>
 void tUpwindConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_vars>& div_f,
                                                             const tScalarField<num_vars>& u) const {
     /* Compute the first order numerical fluxes. */
-    tScalarField<num_vars> flux_u(m_mesh->num_faces());
+    tScalarField<> flux_u(num_vars, m_mesh->num_faces());
     for_each_face(*m_mesh, [&](tFaceIter face) {
         const tCellIter cell_outer = face.get_outer_cell();
         const tCellIter cell_inner = face.get_inner_cell();
 
-        std::array<real_t, num_vars>& flux = (flux_u[face] = {});
+        tScalarSubField<> flux = (flux_u[face] = {});
         m_flux->get_numerical_flux(face.get_normal(),
-                                   u[cell_outer], u[cell_inner], flux);
+                                   u[cell_outer].data(), u[cell_inner].data(), flux.data());
     });
 
     /* Compute the first order convection. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        std::array<real_t, num_vars>& conv = div_f[cell];
-        conv.fill(0.0), cell.for_each_face([&](tFaceIter face) {
+        div_f[cell] = {};
+        cell.for_each_face([&](tFaceIter face) {
             const tCellIter cell_outer = face.get_outer_cell();
             const tCellIter cell_inner = face.get_inner_cell();
             const real_t ds = face.get_area();
             if (cell_outer == cell) {
                 for (uint_t i = 0; i < num_vars; ++i) {
-                    conv[i] -= flux_u[face][i] * ds;
+                    div_f[cell][i] -= flux_u[face][i] * ds;
                 }
             } else if (cell_inner == cell) {
                 for (uint_t i = 0; i < num_vars; ++i) {
-                    conv[i] += flux_u[face][i] * ds;
+                    div_f[cell][i] += flux_u[face][i] * ds;
                 }
             }
         });
         const real_t inv_dv = 1.0/cell.get_volume();
         for (uint_t i = 0; i < num_vars; ++i) {
-            conv[i] *= inv_dv;
+            div_f[cell][i] *= inv_dv;
         }
     });
 } // tUpwindConvectionScheme<num_vars>::get_cell_convection
@@ -78,15 +78,15 @@ template<int_t num_vars>
 void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_vars>& div_f,
                                                              const tScalarField<num_vars>& u) const {
     /* Compute the second order limited gradients. */
-    tVectorField<num_vars> grad_u(u.size());
+    tVectorField<num_vars> grad_u(num_vars, m_mesh->num_cells());
     m_gradient_scheme->get_gradients(grad_u, u);
 
-    tScalarField<num_vars> lim_u(m_mesh->num_cells());
+    tScalarField<num_vars> lim_u(num_vars, m_mesh->num_cells());
     m_gradient_limiter_scheme->get_cell_limiter(lim_u, u, grad_u);
 
     /* Compute the second order numerical fluxes:
      * integrate the numerical flux over the face nodes. */
-    tScalarField<num_vars> flux_f(m_mesh->num_faces());
+    tScalarField<num_vars> flux_f(num_vars, m_mesh->num_faces());
     for_each_face(*m_mesh, [&](tFaceIter face) {
         const tCellIter cell_outer = face.get_outer_cell();
         const tCellIter cell_inner = face.get_inner_cell();
@@ -102,13 +102,14 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField<num_va
                 lim_u[cell_inner][i]*glm::dot(grad_u[cell_inner][i], dr_inner);
         }
 
-        std::array<real_t, num_vars>& flux = (flux_f[face] = {});
-        m_flux->get_numerical_flux(face.get_normal(), u_outer, u_inner, flux);
+        tScalarSubField<> flux = (flux_f[face] = {});
+        m_flux->get_numerical_flux(
+            face.get_normal(), u_outer.data(), u_inner.data(), flux.data());
     });
 
     /* Compute the second order convection. */
     for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        div_f[cell].fill(0.0);
+        div_f[cell] = {};
         cell.for_each_face([&](tFaceIter face) {
             const tCellIter cell_outer = face.get_outer_cell();
             const tCellIter cell_inner = face.get_inner_cell();

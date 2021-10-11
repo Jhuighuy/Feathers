@@ -92,8 +92,8 @@ int main(int argc, char** argv) {
 #if 1
     mesh->read_triangle("mesh/step_.1.");
 
-    tScalarField<5> uc(mesh->num_cells());
-    tScalarField<5> up(mesh->num_cells());
+    tScalarField<5> uc(5, mesh->num_cells());
+    tScalarField<5> up(5, mesh->num_cells());
     MhdFvSolverT<tGasPhysics> solver(mesh);
     for (uint_t cell_ind = 0; cell_ind < mesh->num_cells(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
@@ -156,14 +156,14 @@ int main(int argc, char** argv) {
 
         std::array<real_t, 5> q{ 1.0, 1.0, 1.0, 0.0, 0.0 };
         MhdHydroVars v({}, nullptr, q.data());
-        uc[cell_ind] = v.cons;
+        std::copy_n(v.cons.begin(), 5, uc[cell_ind].data());
     }
     real_t dt = 1e-4;
 #endif
 
     system("rm out/*");
     const uint_t freq = 500;
-    print_vtk<5>(0, *mesh, &uc[0]);
+    print_vtk<5>(0, *mesh, (std::array<real_t, 5>*)uc[0].data());
     real_t tt = 0.0;
     {
         std::chrono::high_resolution_clock::time_point t0, t1;
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
 
             if (l%freq == 0) {
                 std::cout << l/freq << "\t" << tt << "\t" << std::endl;
-                print_vtk<5>(l/freq, *mesh, &up[0]);
+                print_vtk<5>(l/freq, *mesh, (std::array<real_t, 5>*)up[0].data());
                 tt = 0.0;
             }
 

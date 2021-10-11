@@ -188,7 +188,9 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
         const real_t eps_sqr = std::pow(k*cell.get_volume(), 3);
         /* Find the largest negative and positive differences
          * between values of and neighbor cells and the current cell. */
-        std::array<real_t, num_vars> du_min(u[cell]), du_max(u[cell]);
+        std::array<real_t, num_vars> du_min, du_max;
+        std::copy_n(u[cell].data(), num_vars, du_min.data());
+        std::copy_n(u[cell].data(), num_vars, du_max.data());
         cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
             for (uint_t i = 0; i < num_vars; ++i) {
                 du_min[i] = std::min(du_min[i],
@@ -204,7 +206,8 @@ void tGradientLimiterScheme<num_vars, tSlopeLimiter, tSecondLimiter>::
 
         /* Compute slope limiting coefficients:
          * clamp the node delta with computed local delta extrema. */
-        lim_u[cell].fill(1.0), cell.for_each_face([&](tFaceIter face) {
+        lim_u[cell].fill(1.0);
+        cell.for_each_face([&](tFaceIter face) {
             const vec3_t dr =
                 face.get_center_coords() - cell.get_center_coords();
             for (uint_t i = 0; i < num_vars; ++i) {

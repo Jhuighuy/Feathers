@@ -24,8 +24,8 @@ MhdFvSolverT<MhdPhysicsT>::MhdFvSolverT(std::shared_ptr<const cMesh> mesh)
  * @brief Compute spacial discretization.
  */
 template<typename MhdPhysicsT>
-void MhdFvSolverT<MhdPhysicsT>::calc_func(tScalarField<num_vars>& u,
-                                          tScalarField<num_vars>& u_out) const {
+void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField<num_vars>& u,
+                                          feathers::tScalarField<num_vars>& u_out) const {
     using namespace feathers;
     /*
      * Clear fields and apply boundary conditions.
@@ -39,8 +39,8 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(tScalarField<num_vars>& u,
             bc->get_ghost_state(face.get_normal(),
                                 face.get_inner_cell().get_center_coords(),
                                 face.get_outer_cell().get_center_coords(),
-                                u[face.get_inner_cell()],
-                                u[face.get_outer_cell()]);
+                                u[face.get_inner_cell()].data(),
+                                u[face.get_outer_cell()].data());
         });
     }
     m_conv->get_cell_convection(u_out, u);
@@ -48,8 +48,8 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(tScalarField<num_vars>& u,
 
 template<typename MhdPhysicsT>
 void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
-                                          tScalarField<num_vars>& u,
-                                          tScalarField<num_vars>& u_hat) const {
+                                          feathers::tScalarField<num_vars>& u,
+                                          feathers::tScalarField<num_vars>& u_hat) const {
     /*
      * Compute.
      */

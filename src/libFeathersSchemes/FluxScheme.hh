@@ -32,6 +32,7 @@
 
 #include "SkunkBase.hh"
 #include "SkunkHydro.hh"
+#include "libFeathersMesh/Field.hh"
 //#include "SkunkFluidPhysics.hh"
 
 // ************************************************************************************ //
@@ -48,9 +49,9 @@ class iFluxScheme : public tObject<iFluxScheme<num_vars_t>> {
 public:
     /** Compute the numerical flux. */
     virtual void get_numerical_flux(const vec3_t& n,
-                                    const std::array<real_t, num_vars_t>& ur,
-                                    const std::array<real_t, num_vars_t>& ul,
-                                    std::array<real_t, num_vars_t>& flux) const = 0;
+                                    const real_t* ur,
+                                    const real_t* ul,
+                                    real_t* flux) const = 0;
 }; // class iFluxScheme
 
 /**
@@ -66,17 +67,15 @@ public:
     /** Compute the numerical flux. */
     /** @{ */
     void get_numerical_flux(const vec3_t& n,
-                            const std::array<real_t, num_vars>& ur,
-                            const std::array<real_t, num_vars>& ul,
-                            std::array<real_t, num_vars>& f) const final {
-        get_numerical_flux(n,
-                           tFluidState(n, ur.data()),
-                           tFluidState(n, ul.data()), f);
+                            const real_t* ur,
+                            const real_t* ul,
+                            real_t* flux) const final {
+        get_numerical_flux(n, tFluidState(n, ur), tFluidState(n, ul), flux);
     }
     virtual void get_numerical_flux(const vec3_t& n,
                                     const tFluidState& ur,
                                     const tFluidState& ul,
-                                    std::array<real_t, num_vars>& f) const = 0;
+                                    real_t* flux) const = 0;
     /** @} */
 }; // class iPhysFluxScheme
 
@@ -89,18 +88,22 @@ public:
  * Use this numerical flux if all other fails. 
  * It should always work.
  */
+/** @{ */
 template<typename tPhysics>
-class tLaxFriedrichsFluxScheme final : public iPhysFluxScheme<tPhysics> {
+class tLaxFriedrichsFluxScheme;
+template<>
+class tLaxFriedrichsFluxScheme<tGasPhysics> final : public iPhysFluxScheme<tGasPhysics> {
 public:
-    using iPhysFluxScheme<tPhysics>::num_vars;
-    using typename iPhysFluxScheme<tPhysics>::tFluidState;
+    using iPhysFluxScheme<tGasPhysics>::num_vars;
+    using typename iPhysFluxScheme<tGasPhysics>::tFluidState;
 
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
                             const tFluidState& ur,
                             const tFluidState& ul,
-                            std::array<real_t, num_vars>& f) const final;
-}; // class tLaxFriedrichsFluxScheme
+                            real_t* flux) const final;
+}; // class tLaxFriedrichsFluxScheme<tGasPhysics>
+/** @} */
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -111,18 +114,22 @@ public:
  * Use this numerical flux if HLLC fails. 
  * It should (almost) always work.
  */
+/** @{ */
 template<typename tPhysics>
-class tHllFluxScheme : public iPhysFluxScheme<tPhysics> {
+class tHllFluxScheme;
+template<>
+class tHllFluxScheme<tGasPhysics> : public iPhysFluxScheme<tGasPhysics> {
 public:
-    using iPhysFluxScheme<tPhysics>::num_vars;
-    using typename iPhysFluxScheme<tPhysics>::tFluidState;
+    using iPhysFluxScheme<tGasPhysics>::num_vars;
+    using typename iPhysFluxScheme<tGasPhysics>::tFluidState;
 
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
                             const tFluidState& ur,
                             const tFluidState& ul,
-                            std::array<real_t, num_vars>& f) const final;
-}; // class tHllFluxScheme
+                            real_t* flux) const final;
+}; // class tHllFluxScheme<tGasPhysics>
+/** @} */
 
 /**
  * @brief Harten-Lax-van Leer-Contact numerical flux.
@@ -130,18 +137,22 @@ public:
  * Optimal choice for both gas and plasma physics.
  * In plasma physics case may be a bit more dissipative, but more consistent than HLLD/Roe.
  */
+/** @{ */
 template<typename tPhysics>
-class tHllcFluxScheme : public iPhysFluxScheme<tPhysics> {
+class tHllcFluxScheme;
+template<>
+class tHllcFluxScheme<tGasPhysics> : public iPhysFluxScheme<tGasPhysics> {
 public:
-    using iPhysFluxScheme<tPhysics>::num_vars;
-    using typename iPhysFluxScheme<tPhysics>::tFluidState;
+    using iPhysFluxScheme<tGasPhysics>::num_vars;
+    using typename iPhysFluxScheme<tGasPhysics>::tFluidState;
 
     /** Compute the numerical flux. */
     void get_numerical_flux(const vec3_t& n,
                             const tFluidState& ur,
                             const tFluidState& ul,
-                            std::array<real_t, num_vars>& f) const override;
-}; // class tHllcFluxScheme
+                            real_t* flux) const override;
+}; // class tHllcFluxScheme<tGasPhysics>
+/** @} */
 
 } // namespace feathers
 

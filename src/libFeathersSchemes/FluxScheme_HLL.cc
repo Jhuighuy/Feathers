@@ -43,11 +43,10 @@ namespace feathers {
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-template<typename tPhysics>
-void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
-                                                  const tFluidState& ur,
-                                                  const tFluidState& ul,
-                                                  std::array<real_t, num_vars>& f) const {
+void tHllFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
+                                                     const tFluidState& ur,
+                                                     const tFluidState& ul,
+                                                     real_t* f) const {
     /* Calculate Roe average sound speed.
      * [1] Eq. (10.53-10.54). */
     const real_t rr = std::sqrt(ur.rho);
@@ -65,11 +64,11 @@ void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
     /* Supersonic cases.
      * [1], Eq. (10.20-10.21). */
     if (sr <= 0.0) {
-        f = ur.flux;
+        for (uint_t i = 0; i < num_vars; ++i) f[i] = ur.flux[i];
         return;
     }
     if (sl >= 0.0) {
-        f = ul.flux;
+        for (uint_t i = 0; i < num_vars; ++i) f[i] = ul.flux[i];
         return;
     }
 
@@ -97,11 +96,10 @@ void tHllFluxScheme<tPhysics>::get_numerical_flux(const vec3_t& n,
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-template<>
 void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
                                                       const tFluidState& ur,
                                                       const tFluidState& ul,
-                                                      std::array<real_t, num_vars>& f) const {
+                                                      real_t* f) const {
     /* Calculate average variables.
      * [1], Eq. (10.61-10.62). */
     const real_t rho = 0.5*(ur.rho + ul.rho);
@@ -131,11 +129,11 @@ void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
     /* Supersonic cases.
      * [1], Eq. (10.20-10.21). */
     if (sr <= 0.0) {
-        f = ur.flux;
+        for (uint_t i = 0; i < num_vars; ++i) f[i] = ur.flux[i];
         return;
     }
     if (sl >= 0.0) {
-        f = ul.flux;
+        for (uint_t i = 0; i < num_vars; ++i) f[i] = ul.flux[i];
         return;
     }
 
@@ -172,8 +170,5 @@ void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
 
     FEATHERS_ENSURE(!"Broken signal velocities.");
 } // tHllcFluxScheme<tGasPhysics>::get_numerical_flux
-
-template class tHllFluxScheme<tGasPhysics>;
-template class tHllcFluxScheme<tGasPhysics>;
 
 } // namespace feathers

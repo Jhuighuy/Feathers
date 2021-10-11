@@ -36,11 +36,11 @@ public:
     explicit MhdFvSolverT(std::shared_ptr<const cMesh> mesh);
 
 public:
-    void calc_func(tScalarField<num_vars>& u,
-                   tScalarField<num_vars>& u_out) const;
+    void calc_func(feathers::tScalarField<num_vars>& u,
+                   feathers::tScalarField<num_vars>& u_out) const;
     void calc_step(real_t& dt,
-                   tScalarField<num_vars>& u,
-                   tScalarField<num_vars>& u_hat) const;
+                   feathers::tScalarField<num_vars>& u,
+                   feathers::tScalarField<num_vars>& u_hat) const;
 };  // class MhdFvSolverT
 
 // ************************************************************************************ //

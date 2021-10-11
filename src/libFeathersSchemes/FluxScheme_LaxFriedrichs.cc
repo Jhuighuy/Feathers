@@ -38,11 +38,10 @@ namespace feathers {
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-template<>
 void tLaxFriedrichsFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
                                                                const tFluidState& ur,
                                                                const tFluidState& ul,
-                                                               std::array<real_t, num_vars>& f) const {
+                                                               real_t* f) const {
     /* 
      * Approximate |J| with its maximum eigenvalue.
      * [1] Eq. (10.55-10.56). 
@@ -55,5 +54,3 @@ void tLaxFriedrichsFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
 } // tLaxFriedrichsFluxScheme::get_numerical_flux
 
 } // namespace feathers
-
-template class feathers::tLaxFriedrichsFluxScheme<tGasPhysics>;
