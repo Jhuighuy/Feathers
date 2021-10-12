@@ -44,40 +44,15 @@ namespace feathers {
 /**
  * Abstract numerical flux.
  */
-template<int_t num_vars_t>
-class iFluxScheme : public tObject<iFluxScheme<num_vars_t>> {
+class iFluxScheme : public tObject<iFluxScheme> {
 public:
     /** Compute the numerical flux. */
-    virtual void get_numerical_flux(const vec3_t& n,
-                                    const real_t* ur,
-                                    const real_t* ul,
-                                    real_t* flux) const = 0;
+    virtual void get_numerical_flux(uint_t num_vars,
+                                    const vec3_t& n,
+                                    tScalarConstSubField cons_r,
+                                    tScalarConstSubField cons_l,
+                                    tScalarSubField flux) const = 0;
 }; // class iFluxScheme
-
-/**
- * Abstract physics-based numerical flux.
- */
-template<typename tPhysics>
-class iPhysFluxScheme : public iFluxScheme<tPhysics::num_vars> {
-public:
-    static constexpr int_t num_vars = tPhysics::num_vars;
-    using tFluidState = typename tPhysics::MhdFluidStateT;
-
-public:
-    /** Compute the numerical flux. */
-    /** @{ */
-    void get_numerical_flux(const vec3_t& n,
-                            const real_t* ur,
-                            const real_t* ul,
-                            real_t* flux) const final {
-        get_numerical_flux(n, tFluidState(n, ur), tFluidState(n, ul), flux);
-    }
-    virtual void get_numerical_flux(const vec3_t& n,
-                                    const tFluidState& ur,
-                                    const tFluidState& ul,
-                                    real_t* flux) const = 0;
-    /** @} */
-}; // class iPhysFluxScheme
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -92,16 +67,14 @@ public:
 template<typename tPhysics>
 class tLaxFriedrichsFluxScheme;
 template<>
-class tLaxFriedrichsFluxScheme<tGasPhysics> final : public iPhysFluxScheme<tGasPhysics> {
+class tLaxFriedrichsFluxScheme<tGasPhysics> final : public iFluxScheme {
 public:
-    using iPhysFluxScheme<tGasPhysics>::num_vars;
-    using typename iPhysFluxScheme<tGasPhysics>::tFluidState;
-
     /** Compute the numerical flux. */
-    void get_numerical_flux(const vec3_t& n,
-                            const tFluidState& ur,
-                            const tFluidState& ul,
-                            real_t* flux) const final;
+    void get_numerical_flux(uint_t num_vars,
+                            const vec3_t& n,
+                            tScalarConstSubField cons_r,
+                            tScalarConstSubField cons_l,
+                            tScalarSubField flux) const final;
 }; // class tLaxFriedrichsFluxScheme<tGasPhysics>
 /** @} */
 
@@ -118,16 +91,14 @@ public:
 template<typename tPhysics>
 class tHllFluxScheme;
 template<>
-class tHllFluxScheme<tGasPhysics> : public iPhysFluxScheme<tGasPhysics> {
+class tHllFluxScheme<tGasPhysics> : public iFluxScheme {
 public:
-    using iPhysFluxScheme<tGasPhysics>::num_vars;
-    using typename iPhysFluxScheme<tGasPhysics>::tFluidState;
-
     /** Compute the numerical flux. */
-    void get_numerical_flux(const vec3_t& n,
-                            const tFluidState& ur,
-                            const tFluidState& ul,
-                            real_t* flux) const final;
+    void get_numerical_flux(uint_t num_vars,
+                            const vec3_t& n,
+                            tScalarConstSubField cons_r,
+                            tScalarConstSubField cons_l,
+                            tScalarSubField flux) const final;
 }; // class tHllFluxScheme<tGasPhysics>
 /** @} */
 
@@ -141,16 +112,14 @@ public:
 template<typename tPhysics>
 class tHllcFluxScheme;
 template<>
-class tHllcFluxScheme<tGasPhysics> : public iPhysFluxScheme<tGasPhysics> {
+class tHllcFluxScheme<tGasPhysics> : public iFluxScheme {
 public:
-    using iPhysFluxScheme<tGasPhysics>::num_vars;
-    using typename iPhysFluxScheme<tGasPhysics>::tFluidState;
-
     /** Compute the numerical flux. */
-    void get_numerical_flux(const vec3_t& n,
-                            const tFluidState& ur,
-                            const tFluidState& ul,
-                            real_t* flux) const override;
+    void get_numerical_flux(uint_t num_vars,
+                            const vec3_t& n,
+                            tScalarConstSubField cons_r,
+                            tScalarConstSubField cons_l,
+                            tScalarSubField flux) const override;
 }; // class tHllcFluxScheme<tGasPhysics>
 /** @} */
 

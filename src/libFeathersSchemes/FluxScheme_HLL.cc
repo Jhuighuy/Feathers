@@ -43,10 +43,14 @@ namespace feathers {
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-void tHllFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
-                                                     const tFluidState& ur,
-                                                     const tFluidState& ul,
-                                                     real_t* f) const {
+void tHllFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
+                                                     const vec3_t& n,
+                                                     tScalarConstSubField cons_r,
+                                                     tScalarConstSubField cons_l,
+                                                     tScalarSubField flux) const {
+    const tGasPhysics::tFluidState ur(n, cons_r.data());
+    const tGasPhysics::tFluidState ul(n, cons_l.data());
+
     /* Calculate Roe average sound speed.
      * [1] Eq. (10.53-10.54). */
     const real_t rr = std::sqrt(ur.rho);
@@ -64,20 +68,24 @@ void tHllFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
     /* Supersonic cases.
      * [1], Eq. (10.20-10.21). */
     if (sr <= 0.0) {
-        for (uint_t i = 0; i < num_vars; ++i) f[i] = ur.flux[i];
+        ur.make_flux(num_vars, n, flux.data());
         return;
     }
     if (sl >= 0.0) {
-        for (uint_t i = 0; i < num_vars; ++i) f[i] = ul.flux[i];
+        ul.make_flux(num_vars, n, flux.data());
         return;
     }
 
     /* Subsonic case.
      * [1], Eq. (10.20-10.21). */
+    FEATHERS_TMP_SCALAR_FIELD(flux_r, num_vars);
+    FEATHERS_TMP_SCALAR_FIELD(flux_l, num_vars);
+    ur.make_flux(num_vars, n, flux_r.data());
+    ul.make_flux(num_vars, n, flux_l.data());
     if (sl <= 0.0 && 0.0 <= sr) {
         const real_t is = 1.0/(sr - sl);
         for (uint_t i = 0; i < num_vars; ++i) {
-            f[i] = is*(sr*ul.flux[i] - sl*ur.flux[i] + sr*sl*(ur.cons[i] - ul.cons[i]));
+            flux[i] = is*((sr*flux_l[i] - sl*flux_r[i]) + sr*sl*(cons_r[i] - cons_l[i]));
         }
         return;
     }
@@ -96,10 +104,14 @@ void tHllFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
-                                                      const tFluidState& ur,
-                                                      const tFluidState& ul,
-                                                      real_t* f) const {
+void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
+                                                      const vec3_t& n,
+                                                      tScalarConstSubField cons_r,
+                                                      tScalarConstSubField cons_l,
+                                                      tScalarSubField flux) const {
+    const tGasPhysics::tFluidState ur(n, cons_r.data());
+    const tGasPhysics::tFluidState ul(n, cons_l.data());
+
     /* Calculate average variables.
      * [1], Eq. (10.61-10.62). */
     const real_t rho = 0.5*(ur.rho + ul.rho);
@@ -129,11 +141,11 @@ void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
     /* Supersonic cases.
      * [1], Eq. (10.20-10.21). */
     if (sr <= 0.0) {
-        for (uint_t i = 0; i < num_vars; ++i) f[i] = ur.flux[i];
+        ur.make_flux(num_vars, n, flux.data());
         return;
     }
     if (sl >= 0.0) {
-        for (uint_t i = 0; i < num_vars; ++i) f[i] = ul.flux[i];
+        ul.make_flux(num_vars, n, flux.data());
         return;
     }
 
@@ -144,26 +156,30 @@ void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(const vec3_t& n,
          (ul.rho*ul.vel_n*(sl - ul.vel_n) - ul.p)) /
         (ur.rho*(sr - ur.vel_n) - ul.rho*(sl - ul.vel_n));
     if (ss <= 0.0 && 0.0 <= sr) {
-        tFluidState us;
+        tGasPhysics::tFluidState us;
         const real_t is = 1.0/(sr - ss);
         us.rho = ur.rho*(sr - ur.vel_n)*is;
         us.nrg = ur.nrg + (ss - ur.vel_n)*(ss + ur.p/ur.rho*is);
         us.vel = ur.vel + (ss - ur.vel_n)*n;
-        us.make_cons();
+        FEATHERS_TMP_SCALAR_FIELD(cons_s, num_vars);
+        us.make_cons(num_vars, cons_s.data());
+        ur.make_flux(num_vars, n, flux.data());
         for (uint_t i = 0; i < num_vars; ++i) {
-            f[i] = ur.flux[i] + sr*(us.cons[i] - ur.cons[i]);
+            flux[i] += sr*(cons_s[i] - cons_r[i]);
         }
         return;
     }
     if (sl <= 0.0 && 0.0 <= ss)  {
-        tFluidState us;
+        tGasPhysics::tFluidState us;
         const real_t is = 1.0/(sl - ss);
         us.rho = ul.rho*(sl - ul.vel_n)*is;
         us.nrg = ul.nrg + (ss - ul.vel_n)*(ss + ul.p/ul.rho*is);
         us.vel = ul.vel + (ss - ul.vel_n)*n;
-        us.make_cons();
+        FEATHERS_TMP_SCALAR_FIELD(cons_s, num_vars);
+        us.make_cons(num_vars, cons_s.data());
+        ul.make_flux(num_vars, n, flux.data());
         for (uint_t i = 0; i < num_vars; ++i) {
-            f[i] = ul.flux[i] + sl*(us.cons[i] - ul.cons[i]);
+            flux[i] += sl*(cons_s[i] - cons_l[i]);
         }
         return;
     }

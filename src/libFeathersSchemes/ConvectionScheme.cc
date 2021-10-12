@@ -33,9 +33,9 @@ namespace feathers {
 /**
  * Compute the first-order upwind convection.
  */
-template<int_t num_vars>
-void tUpwindConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f,
-                                                            const tScalarField& u) const {
+void tUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
+                                                  tScalarField& div_f,
+                                                  const tScalarField& u) const {
     /* Compute the first order numerical fluxes. */
     tScalarField flux_u(num_vars, m_mesh->num_faces());
     for_each_face(*m_mesh, [&](tFaceIter face) {
@@ -43,8 +43,8 @@ void tUpwindConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f,
         const tCellIter cell_inner = face.get_inner_cell();
 
         tScalarSubField flux = (flux_u[face] = {});
-        m_flux->get_numerical_flux(face.get_normal(),
-                                   u[cell_outer].data(), u[cell_inner].data(), flux.data());
+        m_flux->get_numerical_flux(num_vars, face.get_normal(),
+                                   u[cell_outer], u[cell_inner], flux);
     });
 
     /* Compute the first order convection. */
@@ -74,9 +74,9 @@ void tUpwindConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f,
 /**
  * Compute the second-order upwind convection.
  */
-template<int_t num_vars>
-void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f,
-                                                             const tScalarField& u) const {
+void tUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
+                                                   tScalarField& div_f,
+                                                   const tScalarField& u) const {
     /* Compute the second order limited gradients. */
     tVectorField grad_u(num_vars, m_mesh->num_cells());
     m_gradient_scheme->get_gradients(num_vars, grad_u, u);
@@ -104,8 +104,7 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f
         }
 
         tScalarSubField flux = (flux_f[face] = {});
-        m_flux->get_numerical_flux(
-            face.get_normal(), u_outer.data(), u_inner.data(), flux.data());
+        m_flux->get_numerical_flux(num_vars, face.get_normal(), u_outer, u_inner, flux);
     });
 
     /* Compute the second order convection. */
@@ -133,6 +132,3 @@ void tUpwind2ConvectionScheme<num_vars>::get_cell_convection(tScalarField& div_f
 } // tUpwind2ConvectionScheme::get_cell_convection
 
 } // namespace feathers
-
-template class feathers::tUpwindConvectionScheme<5>;
-template class feathers::tUpwind2ConvectionScheme<5>;

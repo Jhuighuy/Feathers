@@ -12,7 +12,7 @@
 template<typename MhdPhysicsT>
 MhdFvSolverT<MhdPhysicsT>::MhdFvSolverT(std::shared_ptr<const cMesh> mesh)
     : m_mesh(mesh),
-      m_conv(new feathers::tUpwind2ConvectionScheme<num_vars>(mesh)) {
+      m_conv(new feathers::tUpwind2ConvectionScheme(mesh)) {
     m_bcs[1] = std::make_shared<MhdFvBcFarFieldT<MhdPhysicsT>>();
     m_bcs[2] = std::make_shared<MhdFvBcSlipT<MhdPhysicsT>>();
 }
@@ -43,7 +43,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
                                 u[face.get_outer_cell()].data());
         });
     }
-    m_conv->get_cell_convection(u_out, u);
+    m_conv->get_cell_convection(5, u_out, u);
 }   // MhdFvSolverT::calc_func
 
 template<typename MhdPhysicsT>

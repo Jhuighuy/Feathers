@@ -26,10 +26,11 @@ public:
     real_t nrg   = 0.0; /**< Fluid specific total energy, 𝐸 = 𝐾 + 𝜀. */
     real_t ent   = 0.0; /**< Fluid specific enthalpy, 𝐻 = 𝐸 + 𝑝/𝜌. */
     real_t c_snd = 0.0; /**< Fluid sound speed, 𝑐 = (∂𝑝/∂𝜌)¹ᐟ². */
+    const real_t* rest_prim = nullptr; /**< Additional advected scalars, 𝑞ᵢ. */
+    const real_t* rest_cons = nullptr; /**< Additional advected scalars, 𝑢ᵢ = 𝜌𝑞ᵢ. */
 
-    std::array<real_t, 5> prim = {}; /**< Primitive variables, 𝑷 = (𝜌,𝑝,𝒗)ᵀ. */
-    std::array<real_t, 5> cons = {}; /**< Conserved variables, 𝑼 = (𝜌,𝜌𝐸,𝜌𝒗)ᵀ. */
-    std::array<real_t, 5> flux = {}; /**< Flux variables, 𝑭ₙ = (𝜌𝒗ₙ,𝜌𝐻𝒗ₙ,𝜌𝒗𝒗ₙ)ᵀ. */
+    std::array<real_t, 5> prim = {}; /**< Primitive variables, 𝑸 = (𝜌,𝑝,𝒗,𝑞ᵢ,…)ᵀ. */
+    std::array<real_t, 5> cons = {}; /**< Conserved variables, 𝑼 = (𝜌,𝜌𝐸,𝜌𝒗,𝜌𝑞ᵢ,…)ᵀ. */
 
 public:
     explicit MhdHydroVars() = default;
@@ -40,6 +41,34 @@ public:
 public:
     void make_cons() {
         cons = { rho, rho*nrg, rho*vel.x, rho*vel.y, rho*vel.z };
+    }
+
+    real_t* make_cons(uint_t num_vars, real_t* cons) const {
+        *reinterpret_cast<std::array<real_t, 5>*>(cons) =
+            { rho, rho*nrg, rho*vel.x, rho*vel.y, rho*vel.z };
+        for (uint_t i = 5; i < num_vars; ++i) {
+            if (rest_cons != nullptr) {
+                cons[i] = rest_cons[i - 5];
+            } else if (rest_prim != nullptr) {
+                cons[i] = rho*rest_prim[i - 5];
+            }
+        }
+        return cons;
+    }
+
+    /** Make flux variables, 𝑭ₙ = (𝜌𝒗ₙ,𝜌𝐻𝒗ₙ,𝜌𝒗𝒗ₙ,𝜌𝑞ᵢ𝒗ₙ,…)ᵀ. */
+    real_t* make_flux(uint_t num_vars, const vec3_t& n, real_t* flux) const {
+        *reinterpret_cast<std::array<real_t, 5>*>(flux) =
+            { rho*vel_n, rho*vel_n*ent, rho*vel_n*vel.x + p*n.x,
+              rho*vel_n*vel.y + p*n.y, rho*vel_n*vel.z + p*n.z };
+        for (uint_t i = 5; i < num_vars; ++i) {
+            if (rest_cons != nullptr) {
+                flux[i] = vel_n*rest_cons[i - 5];
+            } else if (rest_prim != nullptr) {
+                flux[i] = rho*vel_n*rest_prim[i - 5];
+            }
+        }
+        return flux;
     }
 };
 
@@ -73,8 +102,6 @@ MhdHydroVars::MhdHydroVars(const vec3_t& n,
     c_snd = std::sqrt(Gamma*p/rho);
     prim = { rho, p, vel.x, vel.y, vel.z };
     cons = { rho, rho*nrg, rho*vel.x, rho*vel.y, rho*vel.z };
-    flux = { rho*vel_n, rho*vel_n* ent, rho*vel_n*vel.x + p*n.x,
-             rho*vel_n*vel.y + p*n.y, rho*vel_n*vel.z + p*n.z };
 }
 
 typedef class MhdHydroVars MhdFluidVarsIdealGas;
@@ -83,4 +110,5 @@ class tGasPhysics {
 public:
     static constexpr int_t num_vars = 5;
     typedef MhdFluidVarsIdealGas MhdFluidStateT;
+    typedef MhdFluidVarsIdealGas tFluidState;
 }; // class tGasPhysics

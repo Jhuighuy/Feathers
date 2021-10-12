@@ -43,7 +43,8 @@ namespace feathers {
 class iConvectionScheme : public tObject<iConvectionScheme> {
 public:
     /** Compute the nonlinear convection. */
-    virtual void get_cell_convection(tScalarField& conv_u,
+    virtual void get_cell_convection(uint_t num_vars,
+                                     tScalarField& conv_u,
                                      const tScalarField& u) const = 0;
 }; // class iConvectionScheme
 
@@ -51,20 +52,20 @@ public:
  * Piecewise-constant upwind convection scheme.
  * This is a first-order scheme.
  */
-template<int_t num_vars>
 class tUpwindConvectionScheme final : public iConvectionScheme {
 public:
     std::shared_ptr<const cMesh> m_mesh;
-    std::shared_ptr<iFluxScheme<num_vars>> m_flux;
+    std::shared_ptr<iFluxScheme> m_flux;
 
 public:
     explicit tUpwindConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_flux(new tHllcFluxScheme<tGasPhysics>()) {
+        m_flux(new tLaxFriedrichsFluxScheme<tGasPhysics>()) {
     }
 
     /** Compute the first-order upwind nonlinear convection. */
-    void get_cell_convection(tScalarField& div_f,
+    void get_cell_convection(uint_t num_vars,
+                             tScalarField& div_f,
                              const tScalarField& u) const final;
 }; // class tUpwindConvectionScheme
 
@@ -72,24 +73,24 @@ public:
  * Piecewise-linear upwind convection scheme.
  * This is a second-order scheme.
  */
-template<int_t num_vars>
 class tUpwind2ConvectionScheme final : public iConvectionScheme {
 public:
     std::shared_ptr<const cMesh> m_mesh;
-    std::shared_ptr<iFluxScheme<num_vars>> m_flux;
+    std::shared_ptr<iFluxScheme> m_flux;
     std::shared_ptr<iGradientScheme> m_gradient_scheme;
     std::shared_ptr<iGradientLimiterScheme> m_gradient_limiter_scheme;
 
 public:
     explicit tUpwind2ConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
-        m_flux(new tHllcFluxScheme<tGasPhysics>()),
+        m_flux(new tHllFluxScheme<tGasPhysics>()),
         m_gradient_scheme(new cLeastSquaresGradientScheme(m_mesh)),
         m_gradient_limiter_scheme(new cMinmodGradientLimiterScheme(m_mesh)) {
     }
 
     /** Compute the second-order upwind nonlinear convection. */
-    void get_cell_convection(tScalarField& div_f,
+    void get_cell_convection(uint_t num_vars,
+                             tScalarField& div_f,
                              const tScalarField& u) const final;
 }; // class tUpwindConvectionScheme
 

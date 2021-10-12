@@ -39,12 +39,18 @@ namespace feathers {
 template<typename data_t>
 class tGenericSubField {
 private:
+    friend class tGenericSubField<const data_t>;
     uint_t m_num_vars;
     data_t* m_elements;
 
 public:
     tGenericSubField(uint_t num_vars, data_t* elements):
         m_num_vars(num_vars), m_elements(elements) {
+    }
+
+    tGenericSubField( // NOLINT(google-explicit-constructor)
+           const tGenericSubField<std::remove_const_t<data_t>>& other):
+        m_num_vars(other.m_num_vars), m_elements(other.m_elements) {
     }
 
     template<typename data_u = data_t,
