@@ -4,6 +4,7 @@
 
 #include "SkunkBase.hh"
 #include "libFeathersUtils/ChickenThoughts.hh"
+#include "libFeathersUtils/Image.hh"
 #include "libFeathersSchemes/SkunkFvSolver.hh"
 
 #include <chrono>
@@ -89,6 +90,11 @@ int main(int argc, char** argv) {
     print_cockatiel();
 
     std::shared_ptr<cMesh> mesh(new cMesh(2));
+
+    cImage image;
+    image.init(2048, 2048);
+    //image.load("mesh/img/Domain-318.ppm");
+    image.store("mesh/img/Domain-318.jpg");
 
 #if 1
     mesh->read_triangle("mesh/step_.1.");

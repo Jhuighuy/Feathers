@@ -58,7 +58,7 @@ public:
 // ------------------------------------------------------------------------------------ //
 
 /**
- * @brief Local Lax-Friedrichs (Rusanov) numerical flux.
+ * Local Lax-Friedrichs (Rusanov) numerical flux.
  *
  * Use this numerical flux if all other fails. 
  * It should always work.
@@ -82,7 +82,7 @@ public:
 // ------------------------------------------------------------------------------------ //
 
 /**
- * @brief Harten-Lax-van Leer-Einfeldt numerical flux.
+ * Harten-Lax-van Leer-Einfeldt numerical flux.
  *
  * Use this numerical flux if HLLC fails. 
  * It should (almost) always work.
@@ -103,7 +103,7 @@ public:
 /** @} */
 
 /**
- * @brief Harten-Lax-van Leer-Contact numerical flux.
+ * Harten-Lax-van Leer-Contact numerical flux.
  *
  * Optimal choice for both gas and plasma physics.
  * In plasma physics case may be a bit more dissipative, but more consistent than HLLD/Roe.

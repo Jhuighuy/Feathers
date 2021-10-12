@@ -12,6 +12,9 @@ add_executable(Feathers ${SOURCES})
 ## ------------------------------------------------------------------------------------ ##
 ## ------------------------------------------------------------------------------------ ##
 
+target_include_directories(Feathers PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+
 # Set path to custom modules.
 list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/lib/cmake")
