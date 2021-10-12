@@ -37,6 +37,7 @@ namespace feathers {
 
 /**
  * Calculate the Harten-Lax-van Leer-Einfeldt numerical flux.
+ *
  * @verbatim
  * [1] Eleuterio F. Toro,
  *     "Riemann Solvers and Numerical Methods
@@ -98,6 +99,7 @@ void tHllFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
 
 /**
  * Calculate the Harten-Lax-van Leer-Contact numerical flux.
+ *
  * @verbatim
  * [1] Eleuterio F. Toro,
  *     "Riemann Solvers and Numerical Methods

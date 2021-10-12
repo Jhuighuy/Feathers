@@ -33,7 +33,7 @@ namespace feathers {
 /**
  * Compute the first-order upwind convection.
  */
-void tUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
+void cUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
                                                   tScalarField& div_f,
                                                   const tScalarField& u) const {
     /* Compute the first order numerical fluxes. */
@@ -69,12 +69,12 @@ void tUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
             div_f[cell][i] *= inv_dv;
         }
     });
-} // tUpwindConvectionScheme<num_vars>::get_cell_convection
+} // cUpwindConvectionScheme::get_cell_convection
 
 /**
  * Compute the second-order upwind convection.
  */
-void tUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
+void cUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
                                                    tScalarField& div_f,
                                                    const tScalarField& u) const {
     /* Compute the second order limited gradients. */
@@ -129,6 +129,6 @@ void tUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
             div_f[cell][i] *= inv_dv;
         }
     });
-} // tUpwind2ConvectionScheme::get_cell_convection
+} // cUpwind2ConvectionScheme::get_cell_convection
 
 } // namespace feathers

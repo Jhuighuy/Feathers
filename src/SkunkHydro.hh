@@ -21,16 +21,12 @@ public:
     real_t p     = 0.0; /**< Fluid pressure, 𝑝. */
     vec3_t vel   = { }; /**< Fluid velocity, 𝒗. */
     real_t vel_n = 0.0; /**< Fluid velocity normal component, 𝒗ₙ = 𝒗⋅𝒏. */
-    real_t kin   = 0.0; /**< Fluid specific kinetic energy, 𝐾 = ½𝒗². */
     real_t eps   = 0.0; /**< Fluid internal energy, 𝜀. */
-    real_t nrg   = 0.0; /**< Fluid specific total energy, 𝐸 = 𝐾 + 𝜀. */
+    real_t nrg   = 0.0; /**< Fluid specific total energy, 𝐸 = ½𝒗² + 𝜀. */
     real_t ent   = 0.0; /**< Fluid specific enthalpy, 𝐻 = 𝐸 + 𝑝/𝜌. */
     real_t c_snd = 0.0; /**< Fluid sound speed, 𝑐 = (∂𝑝/∂𝜌)¹ᐟ². */
     const real_t* rest_prim = nullptr; /**< Additional advected scalars, 𝑞ᵢ. */
     const real_t* rest_cons = nullptr; /**< Additional advected scalars, 𝑢ᵢ = 𝜌𝑞ᵢ. */
-
-    std::array<real_t, 5> prim = {}; /**< Primitive variables, 𝑸 = (𝜌,𝑝,𝒗,𝑞ᵢ,…)ᵀ. */
-    std::array<real_t, 5> cons = {}; /**< Conserved variables, 𝑼 = (𝜌,𝜌𝐸,𝜌𝒗,𝜌𝑞ᵢ,…)ᵀ. */
 
 public:
     explicit MhdHydroVars() = default;
@@ -39,10 +35,14 @@ public:
                           const real_t* q_prim = nullptr);
 
 public:
-    void make_cons() {
-        cons = { rho, rho*nrg, rho*vel.x, rho*vel.y, rho*vel.z };
+    /** Make primitive variables, 𝑸 = (𝜌,𝑝,𝒗,𝑞ᵢ,…)ᵀ. */
+    real_t* make_prim(uint_t num_vars, real_t* prim) const {
+        *reinterpret_cast<std::array<real_t, 5>*>(prim) =
+            { rho, p, vel.x, vel.y, vel.z };
+        return prim;
     }
 
+    /** Make conserved variables, 𝑼 = (𝜌,𝜌𝐸,𝜌𝒗,𝜌𝑞ᵢ,…)ᵀ. */
     real_t* make_cons(uint_t num_vars, real_t* cons) const {
         *reinterpret_cast<std::array<real_t, 5>*>(cons) =
             { rho, rho*nrg, rho*vel.x, rho*vel.y, rho*vel.z };
@@ -82,8 +82,7 @@ MhdHydroVars::MhdHydroVars(const vec3_t& n,
         vel.y = q_cons[3]/rho;
         vel.z = q_cons[4]/rho;
         vel_n = glm::dot(vel, n);
-        kin = 0.5*glm::dot(vel, vel);
-        eps = nrg - kin;
+        eps = nrg - 0.5*glm::dot(vel, vel);
         p   = Gamma1*rho*eps;
         ent = nrg + p/rho;
     } else if (q_prim != nullptr) {
@@ -93,15 +92,11 @@ MhdHydroVars::MhdHydroVars(const vec3_t& n,
         vel.y = q_prim[3];
         vel.z = q_prim[4];
         vel_n = glm::dot(vel, n);
-        kin = 0.5*glm::dot(vel, vel);
         eps = p/rho/Gamma1;
-        nrg = eps + kin;
+        nrg = eps + 0.5*glm::dot(vel, vel);
         ent = nrg + p/rho;
     }
-
     c_snd = std::sqrt(Gamma*p/rho);
-    prim = { rho, p, vel.x, vel.y, vel.z };
-    cons = { rho, rho*nrg, rho*vel.x, rho*vel.y, rho*vel.z };
 }
 
 typedef class MhdHydroVars MhdFluidVarsIdealGas;

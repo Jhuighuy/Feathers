@@ -74,8 +74,7 @@ public:
                          const real_t* u, real_t* u_ghost) const {
         MhdFluidStateT u_state(n, u), u_ghost_state;
         get_ghost_state_(n, r, r_ghost, u_state, u_ghost_state);
-        u_ghost_state.make_cons();
-        std::copy_n(u_ghost_state.cons.data(), 5, u_ghost);
+        u_ghost_state.make_cons(5, u_ghost);
     }
 
 private:

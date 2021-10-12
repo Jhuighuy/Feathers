@@ -75,11 +75,12 @@ static void print_vtk(feathers::uint_t nn,
         file << "LOOKUP_TABLE default" << std::endl;
         std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
             MhdHydroVars v({}, u[cell].data());
-            file << v.prim[i] << std::endl;
+            std::array<real_t, 5> prim{};
+            v.make_prim(5, prim.data());
+            file << prim[i] << std::endl;
         });
     }
 }
-
 
 #if 1
 
@@ -156,7 +157,7 @@ int main(int argc, char** argv) {
 
         std::array<real_t, 5> q{ 1.0, 1.0, 1.0, 0.0, 0.0 };
         MhdHydroVars v({}, nullptr, q.data());
-        std::copy_n(v.cons.begin(), 5, uc[cell_ind].data());
+        v.make_cons(5, uc[cell_ind].data());
     }
     real_t dt = 1e-4;
 #endif

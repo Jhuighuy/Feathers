@@ -52,13 +52,13 @@ public:
  * Piecewise-constant upwind convection scheme.
  * This is a first-order scheme.
  */
-class tUpwindConvectionScheme final : public iConvectionScheme {
+class cUpwindConvectionScheme final : public iConvectionScheme {
 public:
     std::shared_ptr<const cMesh> m_mesh;
     std::shared_ptr<iFluxScheme> m_flux;
 
 public:
-    explicit tUpwindConvectionScheme(std::shared_ptr<const cMesh> mesh):
+    explicit cUpwindConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
         m_flux(new tLaxFriedrichsFluxScheme<tGasPhysics>()) {
     }
@@ -67,13 +67,13 @@ public:
     void get_cell_convection(uint_t num_vars,
                              tScalarField& div_f,
                              const tScalarField& u) const final;
-}; // class tUpwindConvectionScheme
+}; // class cUpwindConvectionScheme
 
 /**
  * Piecewise-linear upwind convection scheme.
  * This is a second-order scheme.
  */
-class tUpwind2ConvectionScheme final : public iConvectionScheme {
+class cUpwind2ConvectionScheme final : public iConvectionScheme {
 public:
     std::shared_ptr<const cMesh> m_mesh;
     std::shared_ptr<iFluxScheme> m_flux;
@@ -81,7 +81,7 @@ public:
     std::shared_ptr<iGradientLimiterScheme> m_gradient_limiter_scheme;
 
 public:
-    explicit tUpwind2ConvectionScheme(std::shared_ptr<const cMesh> mesh):
+    explicit cUpwind2ConvectionScheme(std::shared_ptr<const cMesh> mesh):
         m_mesh(std::move(mesh)),
         m_flux(new tHllFluxScheme<tGasPhysics>()),
         m_gradient_scheme(new cLeastSquaresGradientScheme(m_mesh)),
@@ -92,7 +92,7 @@ public:
     void get_cell_convection(uint_t num_vars,
                              tScalarField& div_f,
                              const tScalarField& u) const final;
-}; // class tUpwindConvectionScheme
+}; // class cUpwindConvectionScheme
 
 } // namespace feathers
 
