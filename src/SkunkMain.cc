@@ -38,51 +38,6 @@ static void print(
 }
 #endif
 
-template<unsigned N>
-static void print_vtk(feathers::uint_t nn,
-                      const cMesh& m,
-                      const std::array<real_t, N>* u) {
-    using namespace feathers;
-    std::ofstream file("out/fields-" + my_to_string(nn) + ".vtk");
-    file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
-    file << "# vtk DataFile Version 2.0" << std::endl;
-    file << "kek" << std::endl;
-    file << "ASCII" << std::endl;
-    file << "DATASET UNSTRUCTURED_GRID" << std::endl;
-
-    file << "POINTS " << m.num_nodes() << " double" << std::endl;
-    std::for_each(begin_node(m), end_node(m), [&](tNodeIter node) {
-        const vec3_t& coords = node.get_coords();
-        file << coords.x << " " << coords.y << " " << coords.z << std::endl;
-    });
-
-    file << "CELLS " << m.num_marked_cells(0) << " " << m.num_marked_cells(0)*4 << std::endl;
-    std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
-        file << "3 ";
-        cell.for_each_node([&](uint_t node_index) {
-            file << node_index << " ";
-        });
-        file << std::endl;
-    });
-    file << "CELL_TYPES " << m.num_marked_cells(0) << std::endl;
-    std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
-        file << "5" << std::endl;
-    });
-
-    file << "CELL_DATA " << m.num_marked_cells(0) << std::endl;
-    for (uint_t i = 0; i < 1; ++i) {
-        const char* const names[]{"rho", "p", "vx", "vy", "vz", "bx", "by", "bz"};
-        file << "SCALARS " << names[i] << " double 1" << std::endl;
-        file << "LOOKUP_TABLE default" << std::endl;
-        std::for_each(begin_interior_cell(m), end_interior_cell(m), [&](tCellIter cell) {
-            MhdHydroVars v({}, u[cell].data());
-            std::array<real_t, 5> prim{};
-            v.make_prim(5, prim.data());
-            file << prim[i] << std::endl;
-        });
-    }
-}
-
 #if 1
 
 int main(int argc, char** argv) {
@@ -91,12 +46,16 @@ int main(int argc, char** argv) {
 
     std::shared_ptr<cMesh> mesh(new cMesh(2));
 
-    cImage image;
-    image.init(2048, 2048);
+    //cImage image;
+    //image.init(2048, 2048);
     //image.load("mesh/img/Domain-318.ppm");
-    image.store("mesh/img/Domain-318.jpg");
+    //image.store("mesh/img/Domain-318.jpg");
 
 #if 1
+    //mesh->read_image("mesh/img/Domain-318.ppm", {{eWhitePixel, 1}, {eRedPixel, 2}});
+    //mesh->save_vtk("mesh/img/Domain-318.vtk", {});
+    //return 1;
+
     mesh->read_triangle("mesh/step_.1.");
 
     tScalarField uc(5, mesh->num_cells());
@@ -170,7 +129,9 @@ int main(int argc, char** argv) {
 
     system("rm out/*");
     const uint_t freq = 500;
-    print_vtk<5>(0, *mesh, (std::array<real_t, 5>*)uc[0].data());
+    mesh->save_vtk(("out/fields-" + my_to_string(0) + ".vtk").c_str(),
+                   { { "rho", 1, &uc } });
+    //print_vtk<5>(0, *mesh, (std::array<real_t, 5>*)uc[0].data());
     real_t tt = 0.0;
     {
         std::chrono::high_resolution_clock::time_point t0, t1;
@@ -182,7 +143,9 @@ int main(int argc, char** argv) {
 
             if (l%freq == 0) {
                 std::cout << l/freq << "\t" << tt << "\t" << std::endl;
-                print_vtk<5>(l/freq, *mesh, (std::array<real_t, 5>*)up[0].data());
+                //print_vtk<5>(l/freq, *mesh, (std::array<real_t, 5>*)up[0].data());
+                mesh->save_vtk(("out/fields-" + my_to_string(l/freq) + ".vtk").c_str(),
+                               { { "rho", 1, &uc } });
                 tt = 0.0;
             }
 

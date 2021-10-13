@@ -32,7 +32,11 @@
 
 #include "SkunkBase.hh"
 #include "libFeathersUtils/Table.hh"
+#include "libFeathersUtils/Image.hh"
+#include "Field.hh"
 #include "Element.hh"
+
+#include <map>
 
 #ifndef FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY
 #define FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY 1
@@ -119,6 +123,13 @@ public:
 
     bool read_triangle(const char* path);
     bool read_tetgen(const char* path);
+    bool read_image(const char* path,
+                    const std::map<sPixel, uint_t>& mark_colors,
+                    sPixel fluid_color = eBlackPixel,
+                    vec2_t pixel_size = vec2_t(1.0, 1.0));
+
+    void save_vtk(const char* path,
+                  const std::vector<sFieldDesc>& fields) const;
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //

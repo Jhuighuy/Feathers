@@ -47,11 +47,12 @@ cImage::~cImage() {
 /**
  * Init an image.
  */
-void cImage::init(uint_t width, uint_t height) {
+void cImage::init(uint_t width, uint_t height, sPixel pixel) {
     FEATHERS_ASSERT(m_pixels == nullptr);
     m_width = width, m_height = height;
     m_pixels = static_cast<sPixel*>(
         malloc(size_t(m_width)*m_height*sizeof(*m_pixels)));
+    std::fill_n(m_pixels, size_t(m_width)*m_height, pixel);
 } // cImage::init
 
 /**
@@ -71,7 +72,7 @@ bool cImage::load(const char* path) {
  */
 bool cImage::store(const char* path) {
     const char* ext = path + strlen(path);
-    while (*ext != '.') ext -= 1;
+    while (*ext != '.' && ext != path) ext -= 1;
     int result = 1;
     if (strcmp(ext, ".png") == 0) {
         result = stbi_write_png(

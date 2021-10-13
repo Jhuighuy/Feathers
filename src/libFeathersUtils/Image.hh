@@ -34,9 +34,35 @@
 
 namespace feathers {
 
+/**
+ * RGBA
+ */
 struct sPixel {
-    byte_t r = 0, g = 0, b = 0, a = 255;
+    union {
+        uint_t rgba;
+        struct {
+            byte_t r, g, b, a;
+        };
+    };
+
+    constexpr sPixel(uint_t rgba = 0):
+        rgba(rgba) {
+    }
+    constexpr sPixel(byte_t r, byte_t g, byte_t b, byte_t a = 255):
+        r(r), g(g), b(b), a(a) {
+    }
 }; // struct sPixel
+
+static constexpr bool operator<(sPixel a, sPixel b) {
+    return a.rgba < b.rgba;
+}
+
+static constexpr sPixel eBlackPixel(000, 000, 000, 255);
+static constexpr sPixel eWhitePixel(255, 255, 255, 255);
+
+static constexpr sPixel   eRedPixel(255, 000, 000, 255);
+static constexpr sPixel eGreenPixel(000, 255, 000, 255);
+static constexpr sPixel  eBluePixel(000, 000, 255, 255);
 
 /**
  * 2D RGBA 8-bit Image.
@@ -51,7 +77,7 @@ public:
     ~cImage();
 
     /** Init an image. */
-    void init(uint_t width, uint_t height);
+    void init(uint_t width, uint_t height, sPixel pixel = {});
 
     /** Load an image. */
     bool load(const char* path);
@@ -71,7 +97,8 @@ public:
     /** Access a pixel. */
     FEATHERS_CONST_OVERLOAD_R(
             sPixel&, const sPixel&, operator(), (uint_t x, uint_t y), {
-        FEATHERS_ASSERT((x <= m_width) && (y <= m_height));
+        FEATHERS_ASSERT((x < m_width) && (y < m_height));
+        y = m_height - 1 - y;
         return m_pixels[x + y*m_width];
     })
 }; // class cImage

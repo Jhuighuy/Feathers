@@ -133,6 +133,12 @@ using tScalarField = tGenericField<real_t>;
 using tVectorField = tGenericField<vec3_t, real_t>;
 using tMatrixField = tGenericField<mat3_t, real_t>;
 
+struct sFieldDesc {
+    const char* name;
+    uint_t var_index;
+    tScalarField* scalar;
+}; // struct sFieldDesc
+
 } // namespace feathers
 
 #endif // FIELD_HH_

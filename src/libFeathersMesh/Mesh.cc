@@ -34,6 +34,7 @@
 #include <set>
 #include <map>
 #include <fstream>
+#include <iomanip>
 
 namespace feathers {
 
@@ -147,6 +148,138 @@ bool cMesh::read_tetgen(const char *path) {
     compute_all_shape_properties();
     return true;
 } // сMesh::read_tetgen
+
+bool cMesh::read_image(const char *path,
+                       const std::map<sPixel, uint_t>& mark_colors,
+                       sPixel fluid_color,
+                       vec2_t pixel_size) {
+    cImage image;
+    image.load(path);
+
+    cImage nodes_image;
+    nodes_image.init(image.width() + 1, image.height() + 1, sPixel(0, 0, 0, 0));
+
+    uint_t node_index = 0;
+    for (uint_t y = 1; y < image.height() - 1; ++y) {
+        for (uint_t x = 1; x < image.width() - 1; ++x) {
+            if (image(x, y).rgba != fluid_color.rgba) {
+                continue;
+            }
+
+            const vec2_t cell_center_coords = pixel_size * vec2_t(x - 0.5, y - 0.5);
+
+            /* Insert or query the cell nodes. */
+            uint_t& node_index_ll = nodes_image(x + 0, y + 0).rgba;
+            if (node_index_ll == 0) {
+                node_index_ll = node_index++;
+                const vec3_t node_coords(
+                    cell_center_coords + pixel_size*vec2_t(-0.5, -0.5), 0.0);
+                FEATHERS_ENSURE(node_index_ll == emplace_back_node(node_coords));
+            }
+            uint_t& node_index_lr = nodes_image(x + 1, y + 0).rgba;
+            if (node_index_lr == 0) {
+                node_index_lr = node_index++;
+                const vec3_t node_coords(
+                    cell_center_coords + pixel_size*vec2_t(+0.5, -0.5), 0.0);
+                FEATHERS_ENSURE(node_index_lr == emplace_back_node(node_coords));
+            }
+            uint_t& node_index_ur = nodes_image(x + 1, y + 1).rgba;
+            if (node_index_ur == 0) {
+                node_index_ur = node_index++;
+                const vec3_t node_coords(
+                    cell_center_coords + pixel_size*vec2_t(+0.5, +0.5), 0.0);
+                FEATHERS_ENSURE(node_index_ur == emplace_back_node(node_coords));
+            }
+            uint_t& node_index_ul = nodes_image(x + 0, y + 1).rgba;
+            if (node_index_ul == 0) {
+                node_index_ul = node_index++;
+                const vec3_t node_coords(
+                    cell_center_coords + pixel_size*vec2_t(-0.5, +0.5), 0.0);
+                FEATHERS_ENSURE(node_index_ul == emplace_back_node(node_coords));
+            }
+
+            /* Insert the cell. */
+            emplace_back_cell(
+                {eShape::quadrangle_4, {node_index_ll, node_index_lr, node_index_ur, node_index_ul}});
+
+            /* Insert the boundary faces. */
+            if (const sPixel lower_pixel = image(x, y - 1); lower_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(lower_pixel);
+                emplace_back_face({eShape::segment_2, {node_index_ll, node_index_lr}}, mark);
+            }
+            if (const sPixel right_pixel = image(x + 1, y); right_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(right_pixel);
+                emplace_back_face({eShape::segment_2, {node_index_lr, node_index_ur}}, mark);
+            }
+            if (const sPixel upper_pixel = image(x, y + 1); upper_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(upper_pixel);
+                emplace_back_face({eShape::segment_2, {node_index_ur, node_index_ul}}, mark);
+            }
+            if (const sPixel left_pixel = image(x - 1, y); left_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(left_pixel);
+                emplace_back_face({eShape::segment_2, {node_index_ul, node_index_ll}}, mark);
+            }
+        }
+    }
+    
+    generate_faces();
+    generate_boundary_cells();
+    reorder_faces();
+    compute_all_shape_properties();
+    return true;
+} // cMesh::read_image
+
+void cMesh::save_vtk(const char* path,
+                     const std::vector<sFieldDesc>& fields) const {
+    std::ofstream file(path);
+    file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
+    file << "# vtk DataFile Version 2.0" << std::endl;
+    file << "kek" << std::endl;
+    file << "ASCII" << std::endl;
+    file << "DATASET UNSTRUCTURED_GRID" << std::endl;
+
+    file << "POINTS " << num_nodes() << " double" << std::endl;
+    std::for_each(begin_node(*this), end_node(*this), [&](tNodeIter node) {
+        const vec3_t& node_coords = node.get_coords();
+        file << node_coords.x << " " << node_coords.y << " " << node_coords.z << std::endl;
+    });
+    file << std::endl;
+
+    const size_t total_num_cell_nodes = for_range_sum(
+        begin_interior_cell(*this), end_interior_cell(*this), size_t(0), [](tCellIter cell) {
+            return cell.num_nodes() + 1;
+        });
+    file << "CELLS " << num_marked_cells(0) << " " << total_num_cell_nodes << std::endl;
+    std::for_each(begin_interior_cell(*this), end_interior_cell(*this), [&](tCellIter cell) {
+        file << cell.num_nodes() << " ";
+        cell.for_each_node([&](uint_t node_index) {
+            file << node_index << " ";
+        });
+        file << std::endl;
+    });
+    file << std::endl;
+
+    file << "CELL_TYPES " << num_marked_cells(0) << std::endl;
+    std::for_each(begin_interior_cell(*this), end_interior_cell(*this), [&](tCellIter cell) {
+        static const std::map<eShape, const char*> shapes = {
+            { eShape::node, "1" }, { eShape::segment_2, "2" },
+            { eShape::triangle_3, "5" }, { eShape::quadrangle_4, "9" },
+            { eShape::tetrahedron_4, "10" }, { eShape::pyramid_5, "14" },
+            { eShape::pentahedron_6, "13" }, { eShape::hexahedron_8, "12" }
+        };
+        file << shapes.at(cell.get_shape()) << std::endl;
+    });
+    file << std::endl;
+
+    file << "CELL_DATA " << num_marked_cells(0) << std::endl;
+    for (const sFieldDesc& field : fields) {
+        file << "SCALARS " << field.name << " double 1" << std::endl;
+        file << "LOOKUP_TABLE default" << std::endl;
+        std::for_each(begin_interior_cell(*this), end_interior_cell(*this), [&](tCellIter cell) {
+            file << (*field.scalar)[cell][field.var_index] << std::endl;
+        });
+    }
+} // cMesh::save_vtk
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -572,7 +705,7 @@ void cMesh::generate_faces() {
                  * Assign the current cell as the inner one. */
                 face_index = emplace_back_face(std::move(face_desc));
                 face_lookup_table.emplace(std::move(face_lookup_key), face_index);
-                begin_adjacent_face(eCellTag, face_index)[eFaceInnerCell] = cell;
+                begin_adjacent_cell(eFaceTag, face_index)[eFaceInnerCell] = cell;
             } else {
                 /* Face exists.
                  * Determine orientation and link it. */
@@ -603,6 +736,7 @@ void cMesh::generate_faces() {
      * each boundary face should be connected to at least one cell. */
     for_each_face(*this, [](tFaceIter face) {
         if (face.get_mark() == 0) {
+            std::vector c(face.begin(eCellTag), face.end(eCellTag));
             FEATHERS_ENSURE(std::all_of(
                 face.begin(eCellTag), face.end(eCellTag), is_not_npos));
         } else {
@@ -678,7 +812,7 @@ void cMesh::generate_boundary_cells() {
         /* Insert the boundary cell. */
         // TODO:
         const uint_t boundary_cell_index =
-            emplace_back_cell({eShape::triangle_3, ghost_cell_nodes}, face.get_mark());
+            emplace_back_cell({cell.get_shape(), ghost_cell_nodes}, face.get_mark());
 #if 0
         Cell& boundary_cell = get_cell(boundary_cell_index);
         while (boundary_cell._num_faces() != 1) {
