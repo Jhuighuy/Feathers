@@ -40,37 +40,37 @@ namespace feathers {
 /**
  * Unload an image.
  */
-cImage::~cImage() {
+cImage2D::~cImage2D() {
     free(m_pixels);
-} // cImage::~cImage
+} // cImage2D::cImage2D2D
 
 /**
  * Init an image.
  */
-void cImage::init(uint_t width, uint_t height, sPixel pixel) {
+void cImage2D::init(uint_t width, uint_t height, sPixel pixel) {
     FEATHERS_ASSERT(m_pixels == nullptr);
     m_width = width, m_height = height;
     m_pixels = static_cast<sPixel*>(
         malloc(size_t(m_width)*m_height*sizeof(*m_pixels)));
     std::fill_n(m_pixels, size_t(m_width)*m_height, pixel);
-} // cImage::init
+} // cImage2D::init
 
 /**
  * Load an image.
  */
-bool cImage::load(const char* path) {
+bool cImage2D::load(const char* path) {
     FEATHERS_ASSERT(m_pixels == nullptr);
     int channels_in_file;
     m_pixels = reinterpret_cast<sPixel*>(stbi_load(path,
         reinterpret_cast<int*>(&m_width), reinterpret_cast<int*>(&m_height),
         &channels_in_file, STBI_rgb_alpha));
     return m_pixels != nullptr;
-} // cImage::load
+} // cImage2D::load
 
 /**
  * Store an image.
  */
-bool cImage::store(const char* path) {
+bool cImage2D::store(const char* path) {
     const char* ext = path + strlen(path);
     while (*ext != '.' && ext != path) ext -= 1;
     int result = 1;
@@ -88,6 +88,6 @@ bool cImage::store(const char* path) {
             path, int(m_width), int(m_height), STBI_rgb_alpha, m_pixels, 95);
     }
     return result == 0;
-} // cImage::store
+} // cImage2D::store
 
 } // feathers

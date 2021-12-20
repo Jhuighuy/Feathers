@@ -17,43 +17,23 @@ inline std::string my_to_string(feathers::uint_t i) {
     return z + s;
 }
 
-#if 0
-static void print(
-        feathers::int_t nn,
-        const cMesh & m,
-        const std::array<real_t, 5>* u) {
-    std::cout << nn << std::endl;
-    std::ofstream file("out/fields-" + my_to_string(nn) + ".csv");
-    file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
-    file << "x,y,z,r,p,vx,vy,vz" << std::endl;
-    for (uint_t cell_ind = m.begin_marked_cell(0); cell_ind != m.end_marked_cell(0); ++cell_ind) {
-        const auto& c = m.get_cell(cell_ind);
-        MhdHydroVars v({}, u[cell_ind].data());
-        auto p = m.get_cell_center_coords(cell_ind);
-        file << p.x << ',' << p.y << ',' << p.z-0.5 << ','
-             << v.rho << ',' << v.p << ','
-             << v.vel.x << ',' << v.vel.y << ',' << v.vel.z << ','
-             << std::endl;
-    }
-}
-#endif
-
 #if 1
-
 int main(int argc, char** argv) {
     set_max_num_threads(10);
     print_cockatiel();
 
     std::shared_ptr<cMesh> mesh(new cMesh(2));
 
-    //cImage image;
+    //cImage2D image;
     //image.init(2048, 2048);
     //image.load("mesh/img/Domain-318.ppm");
     //image.store("mesh/img/Domain-318.jpg");
 
 #if 1
-    //mesh->read_image("mesh/img/Domain-318.ppm", {{eWhitePixel, 1}, {eRedPixel, 2}});
+    //mesh->read_image2D("mesh/img/Domain-100-Tube.ppm",
+    //                   {{eWhitePixel, 1}, {eRedPixel, 2}, {eGreenPixel, 3}, {eBluePixel, 4}});
     //mesh->save_vtk("mesh/img/Domain-318.vtk", {});
+    //mesh->save_strm("mesh/img/Domain-318.strm");
     //return 1;
 
     mesh->read_triangle("mesh/step_.1.");

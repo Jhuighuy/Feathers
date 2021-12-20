@@ -86,10 +86,7 @@ bool cMesh::read_triangle(const char *path) {
         std::getline(cell_file, line);
     }
 
-    generate_faces();
-    generate_boundary_cells();
-    reorder_faces();
-    compute_all_shape_properties();
+    finalize();
     return true;
 } // сMesh::read_triangle
 
@@ -142,21 +139,18 @@ bool cMesh::read_tetgen(const char *path) {
         std::getline(cell_file, line);
     }
 
-    generate_faces();
-    generate_boundary_cells();
-    reorder_faces();
-    compute_all_shape_properties();
+    finalize();
     return true;
 } // сMesh::read_tetgen
 
-bool cMesh::read_image(const char *path,
-                       const std::map<sPixel, uint_t>& mark_colors,
-                       sPixel fluid_color,
-                       vec2_t pixel_size) {
-    cImage image;
+bool cMesh::read_image2D(const char *path,
+                         const std::map<sPixel, uint_t>& mark_colors,
+                         sPixel fluid_color,
+                         vec2_t pixel_size) {
+    cImage2D image;
     image.load(path);
 
-    cImage nodes_image;
+    cImage2D nodes_image;
     nodes_image.init(image.width() + 1, image.height() + 1, sPixel(0, 0, 0, 0));
 
     uint_t node_index = 0;
@@ -166,75 +160,68 @@ bool cMesh::read_image(const char *path,
                 continue;
             }
 
-            const vec2_t cell_center_coords = pixel_size * vec2_t(x - 0.5, y - 0.5);
+            const vec2_t cell_center_coords = pixel_size*vec2_t(x - 0.5, y - 0.5);
 
             /* Insert or query the cell nodes. */
-            uint_t& node_index_ll = nodes_image(x + 0, y + 0).rgba;
-            if (node_index_ll == 0) {
-                node_index_ll = node_index++;
-                const vec3_t node_coords(
-                    cell_center_coords + pixel_size*vec2_t(-0.5, -0.5), 0.0);
-                FEATHERS_ENSURE(node_index_ll == emplace_back_node(node_coords));
+            uint_t& lw_lt_node_index = nodes_image(x + 0, y + 0).rgba;
+            if (lw_lt_node_index == 0) {
+                lw_lt_node_index = node_index++;
+                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(-0.5, -0.5), 0.0);
+                FEATHERS_ENSURE(lw_lt_node_index == emplace_back_node(node_coords));
             }
-            uint_t& node_index_lr = nodes_image(x + 1, y + 0).rgba;
-            if (node_index_lr == 0) {
-                node_index_lr = node_index++;
-                const vec3_t node_coords(
-                    cell_center_coords + pixel_size*vec2_t(+0.5, -0.5), 0.0);
-                FEATHERS_ENSURE(node_index_lr == emplace_back_node(node_coords));
+            uint_t& lw_rt_node_index = nodes_image(x + 1, y + 0).rgba;
+            if (lw_rt_node_index == 0) {
+                lw_rt_node_index = node_index++;
+                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(+0.5, -0.5), 0.0);
+                FEATHERS_ENSURE(lw_rt_node_index == emplace_back_node(node_coords));
             }
-            uint_t& node_index_ur = nodes_image(x + 1, y + 1).rgba;
-            if (node_index_ur == 0) {
-                node_index_ur = node_index++;
-                const vec3_t node_coords(
-                    cell_center_coords + pixel_size*vec2_t(+0.5, +0.5), 0.0);
-                FEATHERS_ENSURE(node_index_ur == emplace_back_node(node_coords));
+            uint_t& up_rt_node_index = nodes_image(x + 1, y + 1).rgba;
+            if (up_rt_node_index == 0) {
+                up_rt_node_index = node_index++;
+                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(+0.5, +0.5), 0.0);
+                FEATHERS_ENSURE(up_rt_node_index == emplace_back_node(node_coords));
             }
-            uint_t& node_index_ul = nodes_image(x + 0, y + 1).rgba;
-            if (node_index_ul == 0) {
-                node_index_ul = node_index++;
-                const vec3_t node_coords(
-                    cell_center_coords + pixel_size*vec2_t(-0.5, +0.5), 0.0);
-                FEATHERS_ENSURE(node_index_ul == emplace_back_node(node_coords));
+            uint_t& up_lt_node_index = nodes_image(x + 0, y + 1).rgba;
+            if (up_lt_node_index == 0) {
+                up_lt_node_index = node_index++;
+                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(-0.5, +0.5), 0.0);
+                FEATHERS_ENSURE(up_lt_node_index == emplace_back_node(node_coords));
             }
 
             /* Insert the cell. */
-            emplace_back_cell(
-                {eShape::quadrangle_4, {node_index_ll, node_index_lr, node_index_ur, node_index_ul}});
+            emplace_back_cell({ eShape::quadrangle_4,
+                { lw_lt_node_index, lw_rt_node_index, up_rt_node_index, up_lt_node_index } });
 
             /* Insert the boundary faces. */
-            if (const sPixel lower_pixel = image(x, y - 1); lower_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(lower_pixel);
-                emplace_back_face({eShape::segment_2, {node_index_ll, node_index_lr}}, mark);
+            if (const sPixel lw_pixel = image(x, y - 1); lw_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(lw_pixel);
+                emplace_back_face({ eShape::segment_2, { lw_lt_node_index, lw_rt_node_index } }, mark);
             }
-            if (const sPixel right_pixel = image(x + 1, y); right_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(right_pixel);
-                emplace_back_face({eShape::segment_2, {node_index_lr, node_index_ur}}, mark);
+            if (const sPixel rt_pixel = image(x + 1, y); rt_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(rt_pixel);
+                emplace_back_face({ eShape::segment_2, { lw_rt_node_index, up_rt_node_index } }, mark);
             }
-            if (const sPixel upper_pixel = image(x, y + 1); upper_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(upper_pixel);
-                emplace_back_face({eShape::segment_2, {node_index_ur, node_index_ul}}, mark);
+            if (const sPixel up_pixel = image(x, y + 1); up_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(up_pixel);
+                emplace_back_face({ eShape::segment_2, { up_rt_node_index, up_lt_node_index } }, mark);
             }
-            if (const sPixel left_pixel = image(x - 1, y); left_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(left_pixel);
-                emplace_back_face({eShape::segment_2, {node_index_ul, node_index_ll}}, mark);
+            if (const sPixel lt_pixel = image(x - 1, y); lt_pixel.rgba != fluid_color.rgba) {
+                const uint_t mark = mark_colors.at(lt_pixel);
+                emplace_back_face({ eShape::segment_2, { up_lt_node_index, lw_lt_node_index } }, mark);
             }
         }
     }
-    
-    generate_faces();
-    generate_boundary_cells();
-    reorder_faces();
-    compute_all_shape_properties();
+
+    finalize();
     return true;
-} // cMesh::read_image
+} // cMesh::read_image2D
 
 void cMesh::save_vtk(const char* path,
                      const std::vector<sFieldDesc>& fields) const {
     std::ofstream file(path);
     file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
     file << "# vtk DataFile Version 2.0" << std::endl;
-    file << "kek" << std::endl;
+    file << "# Generated by Feathers/StormRuler/Mesh2VTK" << std::endl;
     file << "ASCII" << std::endl;
     file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
@@ -279,6 +266,7 @@ void cMesh::save_vtk(const char* path,
             file << (*field.scalar)[cell][field.var_index] << std::endl;
         });
     }
+    file << std::endl;
 } // cMesh::save_vtk
 
 // ------------------------------------------------------------------------------------ //
@@ -516,6 +504,7 @@ void cMesh::fix_permutation_and_adjacency_(tTag tag, std::vector<uint_t>& permut
  * Change order of all nodes.
  */
 void cMesh::permute_nodes(std::vector<uint_t>&& node_permutation) {
+    /* Permute data. */
     fix_permutation_and_adjacency_(eNodeTag, node_permutation);
     permute_rows(
         node_permutation.begin(), node_permutation.end(),
@@ -523,12 +512,22 @@ void cMesh::permute_nodes(std::vector<uint_t>&& node_permutation) {
     permute_inplace(
         node_permutation.begin(), node_permutation.end(),
         m_node_marks.begin(), m_node_coords.begin());
+    
+    /* Generate mark ranges. */
+    m_marked_node_ranges.clear();
+    std::for_each(begin_node(*this), end_node(*this), [&](tNodeIter node) {
+        m_marked_node_ranges.resize(node.get_mark() + 2);
+        m_marked_node_ranges[node.get_mark() + 1] += 1;
+    });
+    std::partial_sum(
+        m_marked_node_ranges.begin(), m_marked_node_ranges.end(), m_marked_node_ranges.begin());
 } // сMesh::permute_nodes
 
 /**
  * Change order of all edges.
  */
 void cMesh::permute_edges(std::vector<uint_t>&& edge_permutation) {
+    /* Permute data. */
     fix_permutation_and_adjacency_(eEdgeTag, edge_permutation);
     permute_rows(
         edge_permutation.begin(), edge_permutation.end(),
@@ -537,12 +536,22 @@ void cMesh::permute_edges(std::vector<uint_t>&& edge_permutation) {
         edge_permutation.begin(), edge_permutation.end(),
         m_edge_marks.begin(), m_edge_shapes.begin(),
         m_edge_lengths.begin(), m_edge_directions.begin());
+    
+    /* Generate mark ranges. */
+    m_marked_edge_ranges.clear();
+    std::for_each(begin_edge(*this), end_edge(*this), [&](tEdgeIter edge) {
+        m_marked_edge_ranges.resize(edge.get_mark() + 2);
+        m_marked_edge_ranges[edge.get_mark() + 1] += 1;
+    });
+    std::partial_sum(
+        m_marked_edge_ranges.begin(), m_marked_edge_ranges.end(), m_marked_edge_ranges.begin());
 } // сMesh::permute_edges
 
 /**
  * Change order of all faces.
  */
 void cMesh::permute_faces(std::vector<uint_t>&& face_permutation) {
+    /* Permute data. */
     fix_permutation_and_adjacency_(eFaceTag, face_permutation);
     permute_rows(
         face_permutation.begin(), face_permutation.end(),
@@ -551,12 +560,22 @@ void cMesh::permute_faces(std::vector<uint_t>&& face_permutation) {
         face_permutation.begin(), face_permutation.end(),
         m_face_marks.begin(), m_face_shapes.begin(),
         m_face_areas.begin(), m_face_normals.begin(), m_face_center_coords.begin());
+    
+    /* Generate mark ranges. */
+    m_marked_face_ranges.clear();
+    std::for_each(begin_face(*this), end_face(*this), [&](tFaceIter face) {
+        m_marked_face_ranges.resize(face.get_mark() + 2);
+        m_marked_face_ranges[face.get_mark() + 1] += 1;
+    });
+    std::partial_sum(
+        m_marked_face_ranges.begin(), m_marked_face_ranges.end(), m_marked_face_ranges.begin());
 } // сMesh::permute_faces
 
 /**
  * Change order of all cells.
  */
 void cMesh::permute_cells(std::vector<uint_t>&& cell_permutation) {
+    /* Permute data. */
     fix_permutation_and_adjacency_(eCellTag, cell_permutation);
     permute_rows(
         cell_permutation.begin(), cell_permutation.end(),
@@ -565,56 +584,76 @@ void cMesh::permute_cells(std::vector<uint_t>&& cell_permutation) {
         cell_permutation.begin(), cell_permutation.end(),
         m_cell_marks.begin(), m_cell_shapes.begin(),
         m_cell_volumes.begin(), m_cell_center_coords.begin());
+    
+    /* Generate mark ranges. */
+    m_marked_cell_ranges.clear();
+    std::for_each(begin_cell(*this), end_cell(*this), [&](tCellIter cell) {
+        m_marked_cell_ranges.resize(cell.get_mark() + 2);
+        m_marked_cell_ranges[cell.get_mark() + 1] += 1;
+    });
+    std::partial_sum(
+        m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
 } // сMesh::permute_cells
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
 void cMesh::reorder_faces() {
+    {
+#if 1
+        m_cell_cells = m_cell_faces;
+        for_each_cell(*this, [&](tCellMutableIter cell) {
+            std::for_each(cell.begin(eCellTag), cell.end(eCellTag), [&](uint_t& cell_index) {
+                if (cell_index == npos) {
+                    return;
+                }
+                tFaceIter face(*this, cell_index);
+                if (face.get_inner_cell() == cell) {
+                    cell_index = face.get_outer_cell();
+                } else if (face.get_outer_cell() == cell) {
+                    cell_index = face.get_inner_cell();
+                }
+            });
+        });
+#else
+        m_cell_cells.clear();
+        std::vector<std::pair<uint_t, uint_t>> cell_cells;
+        std::for_each(begin_face(*this), end_face(*this), [&](tFaceIter face) {
+            cell_cells.emplace_back(face.get_outer_cell(), face.get_inner_cell());
+            cell_cells.emplace_back(face.get_inner_cell(), face.get_outer_cell());
+        });
+        std::sort(cell_cells.begin(), cell_cells.end());
+        for (auto first_index = cell_cells.begin(), last_index = first_index;
+                    last_index != cell_cells.end(); first_index = last_index) {
+            std::vector<uint_t> row;
+            do {
+                row.push_back(last_index->second);
+                ++last_index;
+            } while (last_index->first == first_index->first);
+            m_cell_cells.emplace_back_row(row.begin(), row.end());
+        }
+#endif
+    }
     /** @todo Refactor me! */
     {
         std::vector<uint_t> node_reordering(num_nodes());
         std::iota(node_reordering.begin(), node_reordering.end(), 0);
         permute_nodes(std::move(node_reordering));
-        for (uint_t node_index = 0; node_index < num_nodes(); ++node_index) {
-            m_marked_node_ranges.resize(get_mark(eNodeTag, node_index) + 2);
-            m_marked_node_ranges[get_mark(eNodeTag, node_index) + 1] += 1;
-        }
-        std::partial_sum(
-            m_marked_node_ranges.begin(), m_marked_node_ranges.end(), m_marked_node_ranges.begin());
     }
     {
         std::vector<uint_t> edge_reordering(num_edges());
         std::iota(edge_reordering.begin(), edge_reordering.end(), 0);
         permute_edges(std::move(edge_reordering));
-        for (uint_t edge_index = 0; edge_index < num_edges(); ++edge_index) {
-            m_marked_edge_ranges.resize(get_mark(eEdgeTag, edge_index) + 2);
-            m_marked_edge_ranges[get_mark(eEdgeTag, edge_index) + 1] += 1;
-        }
-        std::partial_sum(
-            m_marked_edge_ranges.begin(), m_marked_edge_ranges.end(), m_marked_edge_ranges.begin());
     }
     {
         std::vector<uint_t> face_reordering(num_faces());
         std::iota(face_reordering.begin(), face_reordering.end(), 0);
         permute_faces(std::move(face_reordering));
-        for (uint_t face_index = 0; face_index < num_faces(); ++face_index) {
-            m_marked_face_ranges.resize(get_mark(eFaceTag, face_index) + 2);
-            m_marked_face_ranges[get_mark(eFaceTag, face_index) + 1] += 1;
-        }
-        std::partial_sum(
-            m_marked_face_ranges.begin(), m_marked_face_ranges.end(), m_marked_face_ranges.begin());
     }
     {
         std::vector<uint_t> cell_reordering(num_cells());
         std::iota(cell_reordering.begin(), cell_reordering.end(), 0);
         permute_cells(std::move(cell_reordering));
-        for (uint_t cell_index = 0; cell_index < num_cells(); ++cell_index) {
-            m_marked_cell_ranges.resize(get_mark(eCellTag, cell_index) + 2);
-            m_marked_cell_ranges[get_mark(eCellTag, cell_index) + 1] += 1;
-        }
-        std::partial_sum(
-            m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
     }
 } // сMesh::permute_faces
 
@@ -638,8 +677,7 @@ void cMesh::generate_edges() {
     /* For each cell-to-edge adjacency table entry:
      * find the face in the lookup table or emplace the new face. */
     std::for_each(begin_face(*this), end_face(*this), [&](tFaceMutableIter face) {
-        tElementDescList edges_desc =
-            face.get_element_object()->get_edges_desc();
+        tElementDescList edges_desc = face.get_element_object()->get_edges_desc();
         for (uint_t edge_local = 0; edge_local < face.num_edges(); ++edge_local) {
             uint_t& edge_index = face.begin(eEdgeTag)[edge_local];
             if (edge_index != npos) {
@@ -689,8 +727,7 @@ void cMesh::generate_faces() {
      * find the face in the lookup table or emplace the new face.
      * Also fill the face-to-cell adjacency table. */
     std::for_each(begin_cell(*this), end_cell(*this), [&](tCellMutableIter cell) {
-        tElementDescList faces_desc =
-            cell.get_element_object()->get_faces_desc();
+        tElementDescList faces_desc = cell.get_element_object()->get_faces_desc();
         for (uint_t face_local = 0; face_local < cell.num_faces(); ++face_local) {
             uint_t& face_index = cell.begin(eFaceTag)[face_local];
             if (face_index != npos) {
@@ -813,6 +850,7 @@ void cMesh::generate_boundary_cells() {
         // TODO:
         const uint_t boundary_cell_index =
             emplace_back_cell({cell.get_shape(), ghost_cell_nodes}, face.get_mark());
+        begin_adjacent_face(eCellTag, boundary_cell_index)[0] = face;
 #if 0
         Cell& boundary_cell = get_cell(boundary_cell_index);
         while (boundary_cell._num_faces() != 1) {

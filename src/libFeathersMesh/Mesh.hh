@@ -123,13 +123,21 @@ public:
 
     bool read_triangle(const char* path);
     bool read_tetgen(const char* path);
-    bool read_image(const char* path,
-                    const std::map<sPixel, uint_t>& mark_colors,
-                    sPixel fluid_color = eBlackPixel,
-                    vec2_t pixel_size = vec2_t(1.0, 1.0));
+    bool read_image2D(const char* path,
+                      const std::map<sPixel, uint_t>& mark_colors,
+                      sPixel fluid_color = eBlackPixel,
+                      vec2_t pixel_size = vec2_t(1.0, 1.0));
 
     void save_vtk(const char* path,
                   const std::vector<sFieldDesc>& fields) const;
+    void save_strm(const char* path) const;
+
+    void finalize() {
+        generate_faces();
+        generate_boundary_cells();
+        reorder_faces();
+        compute_all_shape_properties();
+    }
 
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //

@@ -49,3 +49,6 @@ _deps
 # CLion project files
 .idea
 cmake-build-*
+
+# VS Code files
+.vscode

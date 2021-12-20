@@ -85,7 +85,7 @@ public:
         m_mesh(std::move(mesh)),
         m_flux(new tHllFluxScheme<tGasPhysics>()),
         m_gradient_scheme(new cLeastSquaresGradientScheme(m_mesh)),
-        m_gradient_limiter_scheme(new cMinmodGradientLimiterScheme(m_mesh)) {
+        m_gradient_limiter_scheme(new cCubic2GradientLimiterScheme(m_mesh)) {
     }
 
     /** Compute the second-order upwind nonlinear convection. */

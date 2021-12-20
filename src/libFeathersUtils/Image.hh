@@ -67,14 +67,14 @@ static constexpr sPixel  eBluePixel(000, 000, 255, 255);
 /**
  * 2D RGBA 8-bit Image.
  */
-class cImage {
+class cImage2D {
 private:
     uint_t m_width = 0, m_height = 0;
     sPixel* m_pixels = nullptr;
 
 public:
     /** Unload an image. */
-    ~cImage();
+    ~cImage2D();
 
     /** Init an image. */
     void init(uint_t width, uint_t height, sPixel pixel = {});
@@ -101,7 +101,7 @@ public:
         y = m_height - 1 - y;
         return m_pixels[x + y*m_width];
     })
-}; // class cImage
+}; // class cImage2D
 
 } // feathers
 

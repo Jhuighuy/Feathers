@@ -116,6 +116,11 @@ public:
     // ---------------------------------------------------------------------- //
     // ---------------------------------------------------------------------- //
 
+    void clear() {
+        m_row_offsets.assign(1, 0);
+        m_column_indices.clear();
+    }
+
     void reserve_rows(uint_t row_capacity) {
         m_row_offsets.reserve(row_capacity + 1);
     }
