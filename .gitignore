@@ -34,6 +34,7 @@ out
 *.app
 
 # CMake generated files
+.cmake
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles

@@ -1,36 +1,32 @@
-/*
- *  ______  ______   ______   ______  __  __   ______   ______   ______
- * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
- * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
- *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
- *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
- *
- * Copyright (c) 2021 Oleg Butakov
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// Copyright (C) 2022 Oleg Butakov
+///
+/// Permission is hereby granted, free of charge, to any person
+/// obtaining a copy of this software and associated documentation
+/// files (the "Software"), to deal in the Software without
+/// restriction, including without limitation the rights  to use,
+/// copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the
+/// Software is furnished to do so, subject to the following
+/// conditions:
+///
+/// The above copyright notice and this permission notice shall be
+/// included in all copies or substantial portions of the Software.
+///
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+/// OTHER DEALINGS IN THE SOFTWARE.
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
 #pragma once
-#ifndef MESH_HH_
-#define MESH_HH_
 
 #include "SkunkBase.hh"
+#include "Index.hh"
 #include "libFeathersUtils/Table.hh"
 #include "libFeathersUtils/Image.hh"
 #include "Field.hh"
@@ -38,728 +34,659 @@
 
 #include <map>
 
-#ifndef FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY
-#define FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY 1
-#endif
-
 namespace feathers {
 
-/** Node element tag. */
-enum tNodeTag { eNodeTag = 1 };
-/** Edge element tag. */
-enum tEdgeTag { eEdgeTag = 2 };
-/** Face element tag. */
-enum tFaceTag { eFaceTag = 3 };
-/** Cell element tag. */
-enum tCellTag { eCellTag = 4 };
-
 enum : uint_t {
-    /** Local index of the face inner cell. */
-    eFaceInnerCell = 0,
-    /** Local index of the face outer cell. */
-    eFaceOuterCell = 1
-};  // enum
+  FaceInnerCell_ = 0,
+  FaceOuterCell_ = 1,
+}; // enum
 
-/**
- * Hybrid unstructured multidimensional mesh.
- */
-class cMesh : public tObject<cMesh> {
+/// @todo Remove "{}".
+class NodeTag_ {};
+class EdgeTag_ {};
+class FaceTag_ {};
+class CellTag_ {};
+template<class> class MarkTag_;
+
+/// @brief Node index.
+using NodeIndex = Index<uint_t, NodeTag_>;
+
+/// @brief Edge index.
+using EdgeIndex = Index<uint_t, EdgeTag_>;
+
+/// @brief Face index.
+using FaceIndex = Index<uint_t, FaceTag_>;
+
+/// @brief Cell index.
+using CellIndex = Index<uint_t, CellTag_>;
+
+/// @brief Node mark index.
+using NodeMark = Index<uint_t, MarkTag_<NodeTag_>>;
+
+/// @brief Edge mark index.
+using EdgeMark = Index<uint_t, MarkTag_<EdgeTag_>>;
+
+/// @brief Face mark index.
+using FaceMark = Index<uint_t, MarkTag_<FaceTag_>>;
+
+/// @brief Cell mark index.
+using CellMark = Index<uint_t, MarkTag_<CellTag_>>;
+
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// @brief Hybrid unstructured multidimensional mesh.
+/// @todo Use strict indices instead of pure tags.
+/// @todo Make Dim a template parameter.
+/// @todo Switch to size_t.
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+class Mesh : public tObject<Mesh> {
 public:
-    uint_t m_dim;
+  uint_t m_dim;
 
-    uint_t m_num_nodes = 0, m_num_edges = 0;
-    uint_t m_num_faces = 0, m_num_cells = 0;
+  size_t NumNodes_ = 0, NumEdges_ = 0;
+  size_t NumFaces_ = 0, NumCells_ = 0;
 
-    std::vector<uint_t> m_node_marks;
-    std::vector<uint_t> m_edge_marks;
-    std::vector<uint_t> m_face_marks;
-    std::vector<uint_t> m_cell_marks;
-    std::vector<uint_t> m_marked_node_ranges{0};
-    std::vector<uint_t> m_marked_edge_ranges{0};
-    std::vector<uint_t> m_marked_face_ranges{0};
-    std::vector<uint_t> m_marked_cell_ranges{0};
+  IndexedVector<NodeMark, NodeIndex> NodeMarks_;
+  IndexedVector<EdgeMark, EdgeIndex> EdgeMarks_;
+  IndexedVector<FaceMark, FaceIndex> FaceMarks_;
+  IndexedVector<CellMark, CellIndex> CellMarks_;
+  IndexedVector<NodeIndex, NodeMark> NodeRanges_{NodeIndex(0)};
+  IndexedVector<EdgeIndex, EdgeMark> EdgeRanges_{EdgeIndex(0)};
+  IndexedVector<FaceIndex, FaceMark> FaceRanges_{FaceIndex(0)};
+  IndexedVector<CellIndex, CellMark> CellRanges_{CellIndex(0)};
 
-    std::vector<eShape> m_edge_shapes;
-    std::vector<eShape> m_face_shapes;
-    std::vector<eShape> m_cell_shapes;
-    // TODO: edge length + direction -> 4D oriented direction.
-    // TODO: face area + normal -> 4D oriented area.
-    std::vector<vec3_t> m_node_coords;
-    std::vector<real_t> m_edge_lengths;
-    std::vector<vec3_t> m_edge_directions;
-    std::vector<real_t> m_face_areas;
-    std::vector<vec3_t> m_face_normals;
-    std::vector<vec3_t> m_face_center_coords;
-    std::vector<real_t> m_cell_volumes;
-    std::vector<vec3_t> m_cell_center_coords;
-    real_t m_min_edge_length = 0.0, m_max_edge_length = 0.0;
-    real_t m_min_face_area = 0.0, m_max_face_area = 0.0;
-    real_t m_min_cell_volume = 0.0, m_max_cell_volume = 0.0;
+  IndexedVector<eShape, EdgeIndex> EdgeShapes_;
+  IndexedVector<eShape, FaceIndex> FaceShapes_;
+  IndexedVector<eShape, CellIndex> CellShapes_;
+  // TODO: edge length + direction -> 4D oriented direction.
+  // TODO: face area + normal -> 4D oriented area.
+  IndexedVector<vec3_t, NodeIndex> NodePos_;
+  IndexedVector<real_t, EdgeIndex> EdgeLens_;
+  IndexedVector<vec3_t, EdgeIndex> EdgeDirs_;
+  IndexedVector<real_t, FaceIndex> FaceAreas_;
+  IndexedVector<vec3_t, FaceIndex> FaceNormals_;
+  IndexedVector<vec3_t, FaceIndex> FaceCenterPos_;
+  IndexedVector<real_t, CellIndex> CellVolumes_;
+  IndexedVector<vec3_t, CellIndex> CellCenterPos_;
+  real_t MaxEdgeLen_ = 0.0, MinEdgeLen_ = 0.0;
+  real_t MaxFaceArea_ = 0.0, MinFaceArea_ = 0.0;
+  real_t MaxCellVolume_ = 0.0, MinCellVolume_ = 0.0;
 
-#if FEATHERS_CONFIG_MESH_EXTRA_CONNECTIVITY
-    cTable m_node_nodes, m_edge_nodes, m_face_nodes, m_cell_nodes;
-    cTable m_node_edges, m_edge_edges, m_face_edges, m_cell_edges;
-    cTable m_node_faces, m_edge_faces, m_face_faces, m_cell_faces;
-    cTable m_node_cells, m_edge_cells, m_face_cells, m_cell_cells;
-#else
-    cDummyTable m_node_nodes; cTable m_edge_nodes, m_face_nodes, m_cell_nodes;
-    cDummyTable m_node_edges, m_edge_edges, m_face_edges; cTable m_cell_edges;
-    cDummyTable m_node_faces, m_edge_faces, m_face_faces; cTable m_cell_faces;
-    cDummyTable m_node_cells, m_edge_cells; cTable m_face_cells, m_cell_cells;
-#endif
+  CsrTable<NodeIndex, NodeIndex> NodeNodes_;
+  CsrTable<EdgeIndex, NodeIndex> EdgeNodes_;
+  CsrTable<FaceIndex, NodeIndex> FaceNodes_;
+  CsrTable<CellIndex, NodeIndex> CellNodes_;
+
+  CsrTable<NodeIndex, EdgeIndex> NodeEdges_;
+  CsrTable<EdgeIndex, EdgeIndex> EdgeEdges_;
+  CsrTable<FaceIndex, EdgeIndex> FaceEdges_;
+  CsrTable<CellIndex, EdgeIndex> CellEdges_;
+
+  CsrTable<NodeIndex, FaceIndex> NodeFaces_;
+  CsrTable<EdgeIndex, FaceIndex> EdgeFaces_;
+  CsrTable<FaceIndex, FaceIndex> FaceFaces_;
+  CsrTable<CellIndex, FaceIndex> CellFaces_;
+
+  CsrTable<NodeIndex, CellIndex> NodeCells_;
+  CsrTable<EdgeIndex, CellIndex> EdgeCells_;
+  CsrTable<FaceIndex, CellIndex> FaceCells_;
+  CsrTable<CellIndex, CellIndex> CellCells_;
 
 public:
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Initialize an empty mesh.
+  explicit Mesh(uint_t dim = 0) : m_dim(dim) {
+    StormAssert(0 <= m_dim && m_dim <= 3);
+  }
 
-    /** Initialize an empty mesh. */
-    explicit cMesh(uint_t dim = 0) : m_dim(dim) {
-        FEATHERS_ASSERT(0 <= m_dim && m_dim <= 3);
-    }
+  bool read_triangle(const char* path);
+  bool read_tetgen(const char* path);
+  bool read_image2D(const char* path,
+                    const std::map<sPixel, uint_t>& mark_colors,
+                    sPixel fluid_color = eBlackPixel,
+                    vec2_t pixel_size = vec2_t(1.0, 1.0));
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  void save_vtk(const char* path,
+                const std::vector<sFieldDesc>& fields) const;
 
-    bool read_triangle(const char* path);
-    bool read_tetgen(const char* path);
-    bool read_image2D(const char* path,
-                      const std::map<sPixel, uint_t>& mark_colors,
-                      sPixel fluid_color = eBlackPixel,
-                      vec2_t pixel_size = vec2_t(1.0, 1.0));
+  void finalize() {
+    generate_faces();
+    generate_boundary_cells();
+    reorder_faces();
+    ComputeShapeProperties();
+  }
 
-    void save_vtk(const char* path,
-                  const std::vector<sFieldDesc>& fields) const;
-    void save_strm(const char* path) const;
+  /// @brief Total number of nodes in the mesh.
+  size_t NumNodes() const noexcept {
+    return NumNodes_;
+  }
 
-    void finalize() {
-        generate_faces();
-        generate_boundary_cells();
-        reorder_faces();
-        compute_all_shape_properties();
-    }
+  /// @brief Total number of edges in the mesh. 
+  size_t NumEdges() const noexcept {
+    return NumEdges_;
+  }
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Total number of faces in the mesh. 
+  size_t NumFaces() const noexcept {
+    return NumFaces_;
+  }
 
-    /** Number of the mesh dimensions. */
-    uint_t num_dim() const {
-        return m_dim;
-    }
+  /// @brief Total number of cells in the mesh. 
+  size_t NumCells() const noexcept {
+    return NumCells_;
+  }
 
-    /** Total number of nodes in the mesh. */
-    uint_t num_nodes() const {
-        return m_num_nodes;
-    }
-    /** Total number of edges in the mesh. */
-    uint_t num_edges() const {
-        return m_num_edges;
-    }
-    /** Total number of faces in the mesh. */
-    uint_t num_faces() const {
-        return m_num_faces;
-    }
-    /** Total number of cells in the mesh. */
-    uint_t num_cells() const {
-        return m_num_cells;
-    }
+  /// @brief Number of node marks.
+  size_t NumNodeMarks() const noexcept {
+    StormAssert(!NodeRanges_.empty());
+    return NodeRanges_.size() - 1;
+  }
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Number of edge marks. 
+  size_t NumEdgeMarks() const noexcept {
+    StormAssert(!EdgeRanges_.empty());
+    return EdgeRanges_.size() - 1;
+  }
 
-    /** Number of node marks. */
-    uint_t num_node_marks() const {
-        return m_marked_node_ranges.size() - 1;
-    }
-    /** Number of edge marks. */
-    uint_t num_edge_marks() const {
-        return m_marked_edge_ranges.size() - 1;
-    }
-    /** Number of face marks. */
-    uint_t num_face_marks() const {
-        return m_marked_face_ranges.size() - 1;
-    }
-    /** Number of cell marks. */
-    uint_t num_cell_marks() const {
-        return m_marked_cell_ranges.size() - 1;
-    }
+  /// @brief Number of face marks. 
+  size_t NumFaceMarks() const noexcept {
+    StormAssert(!FaceRanges_.empty());
+    return FaceRanges_.size() - 1;
+  }
 
-    /** Get element mark. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    template<typename tTag>
-    uint_t get_mark(tTag, uint_t index) const;
-#else
-    uint_t get_mark(tNodeTag, uint_t node_index) const {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_marks[node_index];
-    }
-    uint_t get_mark(tEdgeTag, uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_marks[edge_index];
-    }
-    uint_t get_mark(tFaceTag, uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_marks[face_index];
-    }
-    uint_t get_mark(tCellTag, uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_marks[cell_index];
-    }
-#endif
-    /** @} */
-    /** Set element mark. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    template<typename tTag>
-    void set_mark(tTag, uint_t index, uint_t mark);
-#else
-    void set_mark(tNodeTag, uint_t node_index, uint_t mark) {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        m_node_marks[node_index] = mark;
-    }
-    void set_mark(tEdgeTag, uint_t edge_index, uint_t mark) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_marks[edge_index] = mark;
-    }
-    void set_mark(tFaceTag, uint_t face_index, uint_t mark) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_marks[face_index] = mark;
-    }
-    void set_mark(tCellTag, uint_t cell_index, uint_t mark) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_marks[cell_index] = mark;
-    }
-#endif
-    /** @} */
+  /// @brief Number of cell marks. 
+  size_t NumCellMarks() const noexcept {
+    StormAssert(!CellRanges_.empty());
+    return CellRanges_.size() - 1;
+  }
 
-    /** Index of the first node with a given mark. */
-    uint_t begin_marked_node(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_node_marks());
-        return m_marked_node_ranges[mark];
-    }
-    /** Index of the first edge with a given mark. */
-    uint_t begin_marked_edge(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_edge_marks());
-        return m_marked_edge_ranges[mark];
-    }
-    /** Index of the first face with a given mark. */
-    uint_t begin_marked_face(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_face_marks());
-        return m_marked_face_ranges[mark];
-    }
-    /** Index of the first cell with a given mark. */
-    uint_t begin_marked_cell(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_cell_marks());
-        return m_marked_cell_ranges[mark];
-    }
+  /// @brief Get element mark. 
+  /// @{ 
+  NodeMark Mark(NodeIndex nodeIndex) const noexcept {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeMarks_[nodeIndex];
+  }
+  EdgeMark Mark(EdgeIndex edgeIndex) const noexcept {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeMarks_[edgeIndex];
+  }
+  FaceMark Mark(FaceIndex faceIndex) const noexcept {
+    StormAssert(faceIndex < NumFaces());
+    return FaceMarks_[faceIndex];
+  }
+  CellMark Mark(CellIndex cellIndex) const noexcept {
+    StormAssert(cellIndex < NumCells());
+    return CellMarks_[cellIndex];
+  }
+  /// @} 
 
-    /** Index of a node after the last node with a given mark. */
-    uint_t end_marked_node(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_node_marks());
-        return m_marked_node_ranges[mark + 1];
-    }
-    /** Index of an edge after the last edge with a given mark. */
-    uint_t end_marked_edge(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_edge_marks());
-        return m_marked_edge_ranges[mark + 1];
-    }
-    /** Index of a face after the last face with a given mark. */
-    uint_t end_marked_face(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_face_marks());
-        return m_marked_face_ranges[mark + 1];
-    }
-    /** Index a cell after of the last cell with a given mark. */
-    uint_t end_marked_cell(uint_t mark) const {
-        FEATHERS_ASSERT(mark < num_cell_marks());
-        return m_marked_cell_ranges[mark + 1];
-    }
+  /// @brief Index of the first node with a given mark.
+  NodeIndex BeginNode(NodeMark nodeMark) const noexcept {
+    StormAssert(nodeMark < NumNodeMarks());
+    return NodeRanges_[nodeMark];
+  }
 
-    /** Number of marked cells in the mesh. */
-    uint_t num_marked_cells(uint_t mark) const {
-        return end_marked_cell(mark) - begin_marked_cell(mark);
-    }
+  /// @brief Index of the first edge with a given mark.
+  EdgeIndex BeginEdge(EdgeMark edgeMark) const noexcept {
+    StormAssert(edgeMark < NumEdgeMarks());
+    return EdgeRanges_[edgeMark];
+  }
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Index of the first face with a given mark.
+  FaceIndex BeginFace(FaceMark faceMark) const noexcept {
+    StormAssert(faceMark < NumFaceMarks());
+    return FaceRanges_[faceMark];
+  }
 
-    /** Get element shape. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    template<typename tTag>
-    uint_t get_shape(tTag, uint_t index) const;
-#else
-    eShape get_shape(tEdgeTag, uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_shapes[edge_index];
-    }
-    eShape get_shape(tFaceTag, uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_shapes[face_index];
-    }
-    eShape get_shape(tCellTag, uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_shapes[cell_index];
-    }
-#endif
-    /** @} */
-    /** Set element shape. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    template<typename tTag>
-    uint_t set_shape(tTag, uint_t index, eShape shape) const;
-#else
-    void set_shape(tEdgeTag, uint_t edge_index, eShape edge_shape) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_shapes[edge_index] = edge_shape;
-    }
-    void set_shape(tFaceTag, uint_t face_index, eShape face_shape) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_shapes[face_index] = face_shape;
-    }
-    void set_shape(tCellTag, uint_t cell_index, eShape cell_shape) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_shapes[cell_index] = cell_shape;
-    }
-#endif
-    /** @} */
+  /// @brief Index of the first cell with a given mark.
+  CellIndex BeginCell(CellMark cellMark) const noexcept {
+    StormAssert(cellMark < NumCellMarks());
+    return CellRanges_[cellMark];
+  }
 
-    /** Make a mesh element from description. */
-    FEATHERS_CONST_OVERLOAD_R(
+  /// @brief Index of a node after the last node with a given mark.
+  NodeIndex EndNode(NodeMark nodeMark) const noexcept {
+    StormAssert(nodeMark < NumNodeMarks());
+    return NodeRanges_[nodeMark + 1];
+  }
+
+  /// @brief Index of an edge after the last edge with a given mark.
+  EdgeIndex EndEdge(EdgeMark edgeMark) const noexcept {
+    StormAssert(edgeMark < NumEdgeMarks());
+    return EdgeRanges_[edgeMark + 1];
+  }
+
+  /// @brief Index of a face after the last face with a given mark.
+  FaceIndex EndFace(FaceMark faceMark) const noexcept {
+    StormAssert(faceMark < NumFaceMarks());
+    return FaceRanges_[faceMark + 1];
+  }
+
+  /// @brief Index a cell after of the last cell with a given cellMark.
+  CellIndex EndCell(CellMark cellMark) const noexcept {
+    StormAssert(cellMark < NumCellMarks());
+    return CellRanges_[cellMark + 1];
+  }
+
+  /// @brief Number of marked cells in the mesh. 
+  uint_t NumCells(CellMark mark) const noexcept {
+    return EndCell(mark) - BeginCell(mark);
+  }
+
+  /// @brief Get element shape.
+  /// @{
+  eShape Shape(EdgeIndex edgeIndex) const noexcept {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeShapes_[edgeIndex];
+  }
+  eShape Shape(FaceIndex faceIndex) const noexcept {
+    StormAssert(faceIndex < NumFaces());
+    return FaceShapes_[faceIndex];
+  }
+  eShape Shape(CellIndex cellIndex) const noexcept {
+    StormAssert(cellIndex < NumCells());
+    return CellShapes_[cellIndex];
+  }
+  /// @}
+
+  /// @brief Make a mesh element from description.
+  FEATHERS_CONST_OVERLOAD_R(
     std::unique_ptr<iElement>,
-    std::unique_ptr<const iElement>, make_element, (sElementDesc&& desc), {
-        return iElement::make(std::forward<sElementDesc>(desc),
-                              m_num_nodes, m_node_coords.data());
-    })
+    std::unique_ptr<iElement const>, make_element, (sElementDesc&& desc), {
+      return iElement::make(std::forward<sElementDesc>(desc), NumNodes_, NodePos_.data());
+  })
 
-    /** Get element object. */
-    FEATHERS_CONST_OVERLOAD_R_T(
-    template<typename tTag>,
+  /// @brief Get element object.
+  FEATHERS_CONST_OVERLOAD_R_T(
+    template<class Tag>,
     std::unique_ptr<iElement>,
-    std::unique_ptr<const iElement>, get_object, (tTag tag, uint_t index), {
-        return make_element({ get_shape(tag, index),
-                              std::vector<uint_t>(begin_adjacent_node(tag, index),
-                                                  end_adjacent_node(tag, index)) });
-    })
+    std::unique_ptr<const iElement>, get_object, (Index<uint_t, Tag> index), {
+      return make_element(
+        {Shape(index), std::vector<uint_t>(BeginAdjacentNode(index),
+                                             EndAdjacentNode(index))});
+  })
 
-    /** Compute edge shape properties. */
-    void compute_edge_shape_properties();
-    /** Compute face shape properties. */
-    void compute_face_shape_properties();
-    /** Compute cell shape properties. */
-    void compute_cell_shape_properties();
-    /** Compute all elements shape properties. */
-    void compute_all_shape_properties() {
-        // TODO:
-        //compute_edge_shape_properties();
-        compute_face_shape_properties();
-        compute_cell_shape_properties();
-    }
+  /// @brief Compute edge shape properties.
+  void ComputeEdgeShapeProperties();
 
-    /** Get node position. */
-    const vec3_t& get_node_coords(uint_t node_index) const {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_coords[node_index];
-    }
-    /** Set node position. */
-    void set_node_coords(uint_t node_index, const vec3_t& node_coords) {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        m_node_coords[node_index] = node_coords;
-    }
+  /// @brief Compute face shape properties.
+  void ComputeFaceShapeProperties();
 
-    /** Get minimal edge length. */
-    real_t get_min_edge_length() const {
-        return m_min_edge_length;
-    }
-    /** Get maximal edge length. */
-    real_t get_max_edge_length() const {
-        return m_max_edge_length;
-    }
-    /** Get edge length. */
-    real_t get_edge_length(uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_lengths[edge_index];
-    }
-    /** Set edge length. */
-    void set_edge_length(uint_t edge_index, real_t edge_length) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_lengths[edge_index] = edge_length;
-    }
-    /** Get edge direction. */
-    const vec3_t& get_edge_direction(uint_t edge_index) const {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_directions[edge_index];
-    }
-    /** Set edge direction. */
-    void set_edge_direction(uint_t edge_index, const vec3_t& edge_direction) {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        m_edge_directions[edge_index] = edge_direction;
-    }
+  /// @brief Compute cell shape properties.
+  void ComputeCellShapeProperties();
 
-    /** Get minimal face area. */
-    real_t get_min_face_area() const {
-        return m_min_face_area;
-    }
-    /** Get maximal face area. */
-    real_t get_max_face_area() const {
-        return m_max_face_area;
-    }
-    /** Get face area/length. */
-    real_t get_face_area(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_areas[face_index];
-    }
-    /** Set face area/length. */
-    void set_face_area(uint_t face_index, real_t face_area) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_areas[face_index] = face_area;
-    }
-    /** Get face normal. */
-    const vec3_t& get_face_normal(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_normals[face_index];
-    }
-    /** Set face normal. */
-    void set_face_normal(uint_t face_index, const vec3_t& face_normal) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_normals[face_index] = face_normal;
-    }
-    /** Get face barycenter. */
-    const vec3_t& get_face_center_coords(uint_t face_index) const {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_center_coords[face_index];
-    }
-    /** Set face barycenter. */
-    void set_face_center_coords(uint_t face_index, const vec3_t& face_center_coords) {
-        FEATHERS_ASSERT(face_index < num_faces());
-        m_face_center_coords[face_index] = face_center_coords;
-    }
+  /// @brief Compute all elements shape properties.
+  void ComputeShapeProperties() {
+    ComputeEdgeShapeProperties();
+    ComputeFaceShapeProperties();
+    ComputeCellShapeProperties();
+  }
 
-    /** Get minimal cell volume. */
-    real_t get_min_cell_volume() const {
-        return m_min_cell_volume;
-    }
-    /** Get maximal cell volume. */
-    real_t get_max_cell_volume() const {
-        return m_max_cell_volume;
-    }
-    /** Get cell volume/area/length. */
-    real_t get_cell_volume(uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_volumes[cell_index];
-    }
-    /** Set cell volume/area/length. */
-    void set_cell_volume(uint_t cell_index, real_t cell_volume) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_volumes[cell_index] = cell_volume;
-    }
-    /** Get cell barycenter. */
-    const vec3_t& get_cell_center_coords(uint_t cell_index) const {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_center_coords[cell_index];
-    }
-    /** Get cell barycenter. */
-    void set_cell_center_coords(uint_t cell_index, const vec3_t& cell_center_coords) {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        m_cell_center_coords[cell_index] = cell_center_coords;
-     }
+  /// @brief Get node position.
+  vec3_t const& NodePos(NodeIndex nodeIndex) const noexcept {
+    StormAssert(nodeIndex < NumNodes());
+    return NodePos_[nodeIndex];
+  }
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Set node position.
+  void SetNodePos(NodeIndex nodeIndex, vec3_t const& pos) noexcept {
+    StormAssert(nodeIndex < NumNodes());
+    NodePos_[nodeIndex] = pos;
+  }
 
-    /** Pointer to the beginning of the element adjacent nodes. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_node, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_nodes.begin_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_nodes.begin_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_nodes.begin_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_node, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_nodes.begin_row(cell_index);
-    })
-#endif
-    /** @} */
-    /** Pointer to the beginning of the element adjacent edges. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_edge, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_edges.begin_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_edges.begin_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_edges.begin_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_edge, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_edges.begin_row(cell_index);
-    })
-#endif
-    /** @} */
-    /** Pointer to the beginning of the element adjacent faces. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_face, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_faces.begin_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_faces.begin_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_faces.begin_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_face, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_faces.begin_row(cell_index);
-    })
-#endif
-    /** @} */
-    /** Pointer to the beginning of the element adjacent cells. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, begin_adjacent_cell, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_cells.begin_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_cells.begin_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_cells.begin_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, begin_adjacent_cell, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_cells.begin_row(cell_index);
-    })
-#endif
-    /** @} */
+  /// @brief Get edge length.
+  real_t EdgeLen(EdgeIndex edgeIndex) const noexcept {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeLens_[edgeIndex];
+  }
 
-    /** Pointer to the end of the element adjacent nodes. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_node, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_nodes.end_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_nodes.end_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_nodes.end_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_node, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_nodes.end_row(cell_index);
-    })
-#endif
-    /** @} */
-    /** Pointer to the end of the element adjacent edges. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_edge, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_edges.end_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_edges.end_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_edges.end_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_edge, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_edges.end_row(cell_index);
-    })
-#endif
-    /** @} */
-    /** Pointer to the end of the element adjacent faces. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_face, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_faces.end_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_faces.end_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_faces.end_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_face, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_faces.end_row(cell_index);
-    })
-#endif
-    /** @} */
-    /** Pointer to the end of the element adjacent cells. */
-    /** @{ */
-#if FEATHERS_DOXYGEN
-    FEATHERS_CONST_OVERLOAD_T(template<typename tTag>,
-        uint_t*, end_adjacent_cell, (tTag, uint_t index), ;)
-#else
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tNodeTag, uint_t node_index), {
-        FEATHERS_ASSERT(node_index < num_nodes());
-        return m_node_cells.end_row(node_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tEdgeTag, uint_t edge_index), {
-        FEATHERS_ASSERT(edge_index < num_edges());
-        return m_edge_cells.end_row(edge_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tFaceTag, uint_t face_index), {
-        FEATHERS_ASSERT(face_index < num_faces());
-        return m_face_cells.end_row(face_index);
-    })
-    FEATHERS_CONST_OVERLOAD(uint_t*, end_adjacent_cell, (tCellTag, uint_t cell_index), {
-        FEATHERS_ASSERT(cell_index < num_cells());
-        return m_cell_cells.end_row(cell_index);
-    })
-#endif
-    /** @} */
+  /// @brief Set edge length.
+  /// @todo Remove me!
+  void SetEdgeLen(EdgeIndex edgeIndex, real_t len) noexcept {
+    StormAssert(edgeIndex < NumEdges());
+    EdgeLens_[edgeIndex] = len;
+  }
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Get edge direction.
+  vec3_t EdgeDir(EdgeIndex edgeIndex) const noexcept {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeDirs_[edgeIndex];
+  }
 
-    /** Preallocate the node storage. */
-    void reserve_nodes(uint_t node_capacity);
-    /** Preallocate the edge storage. */
-    void reserve_edges(uint_t edge_capacity);
-    /** Preallocate the face storage. */
-    void reserve_faces(uint_t face_capacity);
-    /** Preallocate the cell storage. */
-    void reserve_cells(uint_t cell_capacity);
+  /// @brief Set edge direction.
+  /// @todo Remove me!
+  void SetEdgeDir(EdgeIndex edgeIndex, vec3_t const& dir) noexcept {
+    StormAssert(edgeIndex < NumEdges());
+    EdgeDirs_[edgeIndex] = dir;
+  }
 
-    /**
-     * Emplace a new node into the mesh.
-     * @returns Index of the inserted node.
-     */
-    uint_t emplace_back_node(const vec3_t& node_coords, uint_t mark = 0);
+  /// @brief Get face area/length.
+  real_t FaceArea(FaceIndex faceIndex) const noexcept {
+    StormAssert(faceIndex < NumFaces());
+    return FaceAreas_[faceIndex];
+  }
 
-    /**
-     * Emplace a new edge into the mesh.
-     * @returns Index of the inserted edge.
-     */
-    /** @{ */
-    uint_t emplace_back_edge(std::unique_ptr<iElement>&& edge, uint_t mark = 0);
-    uint_t emplace_back_edge(sElementDesc&& edge_desc, uint_t mark = 0) {
-        return emplace_back_edge(make_element(std::forward<sElementDesc>(edge_desc)), mark);
-    }
-    /** @} */
+  /// @brief Set face area/length.
+  void SetFaceArea(FaceIndex faceIndex, real_t area) noexcept {
+    StormAssert(faceIndex < NumFaces());
+    FaceAreas_[faceIndex] = area;
+  }
 
-    /**
-     * Emplace a new face into the mesh.
-     * @returns Index of the inserted face.
-     */
-    /** @{ */
-    uint_t emplace_back_face(std::unique_ptr<iElement>&& face, uint_t mark = 0);
-    uint_t emplace_back_face(sElementDesc&& face_desc, uint_t mark = 0) {
-        return emplace_back_face(make_element(std::forward<sElementDesc>(face_desc)), mark);
-    }
-    /** @} */
+  /// @brief Get face normal.
+  vec3_t FaceNormal(FaceIndex faceIndex) const noexcept {
+    StormAssert(faceIndex < NumFaces());
+    return FaceNormals_[faceIndex];
+  }
 
-    /**
-     * Emplace a new cell into the mesh.
-     * @returns Index of the inserted cell.
-     */
-    /** @{ */
-    uint_t emplace_back_cell(std::unique_ptr<iElement>&& cell, uint_t mark = 0);
-    uint_t emplace_back_cell(sElementDesc&& cell_desc, uint_t mark = 0) {
-        return emplace_back_cell(make_element(std::forward<sElementDesc>(cell_desc)), mark);
-    }
-    /** @} */
+  /// @brief Set face normal.
+  /// @todo Remove me!
+  void SetFaceNormal(FaceIndex faceIndex, vec3_t const& normal) noexcept {
+    StormAssert(faceIndex < NumFaces());
+    FaceNormals_[faceIndex] = normal;
+  }
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  /// @brief Get face barycenter.
+  vec3_t FaceCenterPos(FaceIndex faceIndex) const noexcept {
+    StormAssert(faceIndex < NumFaces());
+    return FaceCenterPos_[faceIndex];
+  }
+
+  /// @brief Set face barycenter.
+  /// @todo Remove me!
+  void SetFaceCenterPos(FaceIndex faceIndex, vec3_t const& centerPos) noexcept {
+    StormAssert(faceIndex < NumFaces());
+    FaceCenterPos_[faceIndex] = centerPos;
+  }
+
+  /// @brief Get cell volume/area/length.
+  real_t CellVolume(CellIndex cellIndex) const noexcept {
+    StormAssert(cellIndex < NumCells());
+    return CellVolumes_[cellIndex];
+  }
+
+  /// @brief Set cell volume/area/length.
+  /// @todo Remove me!
+  void SetCellVolume(CellIndex cellIndex, real_t volume) noexcept {
+    StormAssert(cellIndex < NumCells());
+    CellVolumes_[cellIndex] = volume;
+  }
+
+  /// @brief Get cell barycenter.
+  vec3_t CellCenterPos(CellIndex cellIndex) const noexcept {
+    StormAssert(cellIndex < NumCells());
+    return CellCenterPos_[cellIndex];
+  }
+
+  /// @brief Get cell barycenter.
+  /// @todo Remove me!
+  void SetCellCenterPos(CellIndex cellIndex, vec3_t const& centerPos) noexcept {
+    StormAssert(cellIndex < NumCells());
+    CellCenterPos_[cellIndex] = centerPos;
+  }
+
+  /// @brief Get maximal edge length.
+  real_t MaxEdgeLen() const noexcept {
+    return MaxEdgeLen_;
+  }
+
+  /// @brief Get minimal edge length.
+  real_t MinEdgeLen() const noexcept {
+    return MinEdgeLen_;
+  }
+
+  /// @brief Get maximal face area.
+  real_t MaxFaceArea() const noexcept {
+    return MaxFaceArea_;
+  }
+
+  /// @brief Get minimal face area.
+  real_t MinFaceArea() const noexcept {
+    return MinFaceArea_;
+  }
+
+  /// @brief Get maximal cell volume.
+  real_t MaxCellVolume() const noexcept {
+    return MaxCellVolume_;
+  }
+
+  /// @brief Get minimal cell volume.
+  real_t MinCellVolume() const noexcept {
+    return MinCellVolume_;
+  }
+
+  /// @brief Pointer to the beginning of the element adjacent nodes.
+  /// @{
+  ConstOverload(NodeIndex*, BeginAdjacentNode, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeNodes_.begin_row(nodeIndex);
+  })
+  ConstOverload(NodeIndex*, BeginAdjacentNode, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeNodes_.begin_row(edgeIndex);
+  })
+  ConstOverload(NodeIndex*, BeginAdjacentNode, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceNodes_.begin_row(faceIndex);
+  })
+  ConstOverload(NodeIndex*, BeginAdjacentNode, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellNodes_.begin_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Pointer to the beginning of the element adjacent edges.
+  /// @{
+  ConstOverload(EdgeIndex*, BeginAdjacentEdge, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeEdges_.begin_row(nodeIndex);
+  })
+  ConstOverload(EdgeIndex*, BeginAdjacentEdge, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeEdges_.begin_row(edgeIndex);
+  })
+  ConstOverload(EdgeIndex*, BeginAdjacentEdge, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceEdges_.begin_row(faceIndex);
+  })
+  ConstOverload(EdgeIndex*, BeginAdjacentEdge, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellEdges_.begin_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Pointer to the beginning of the element adjacent faces.
+  /// @{
+  ConstOverload(FaceIndex*, BeginAdjacentFace, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeFaces_.begin_row(nodeIndex);
+  })
+  ConstOverload(FaceIndex*, BeginAdjacentFace, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeFaces_.begin_row(edgeIndex);
+  })
+  ConstOverload(FaceIndex*, BeginAdjacentFace, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceFaces_.begin_row(faceIndex);
+  })
+  ConstOverload(FaceIndex*, BeginAdjacentFace, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellFaces_.begin_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Pointer to the beginning of the element adjacent cells.
+  /// @{
+  ConstOverload(CellIndex*, BeginAdjacentCell, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeCells_.begin_row(nodeIndex);
+  })
+  ConstOverload(CellIndex*, BeginAdjacentCell, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeCells_.begin_row(edgeIndex);
+  })
+  ConstOverload(CellIndex*, BeginAdjacentCell, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceCells_.begin_row(faceIndex);
+  })
+  ConstOverload(CellIndex*, BeginAdjacentCell, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellCells_.begin_row(cellIndex);
+  })
+
+  /// @brief Pointer to the End of the element adjacent nodes.
+  /// @{
+  ConstOverload(NodeIndex*, EndAdjacentNode, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeNodes_.end_row(nodeIndex);
+  })
+  ConstOverload(NodeIndex*, EndAdjacentNode, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeNodes_.end_row(edgeIndex);
+  })
+  ConstOverload(NodeIndex*, EndAdjacentNode, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceNodes_.end_row(faceIndex);
+  })
+  ConstOverload(NodeIndex*, EndAdjacentNode, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellNodes_.end_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Pointer to the End of the element adjacent edges.
+  /// @{
+  ConstOverload(EdgeIndex*, EndAdjacentEdge, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeEdges_.end_row(nodeIndex);
+  })
+  ConstOverload(EdgeIndex*, EndAdjacentEdge, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeEdges_.end_row(edgeIndex);
+  })
+  ConstOverload(EdgeIndex*, EndAdjacentEdge, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceEdges_.end_row(faceIndex);
+  })
+  ConstOverload(EdgeIndex*, EndAdjacentEdge, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellEdges_.end_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Pointer to the End of the element adjacent faces.
+  /// @{
+  ConstOverload(FaceIndex*, EndAdjacentFace, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeFaces_.end_row(nodeIndex);
+  })
+  ConstOverload(FaceIndex*, EndAdjacentFace, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeFaces_.end_row(edgeIndex);
+  })
+  ConstOverload(FaceIndex*, EndAdjacentFace, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceFaces_.end_row(faceIndex);
+  })
+  ConstOverload(FaceIndex*, EndAdjacentFace, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellFaces_.end_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Pointer to the End of the element adjacent cells.
+  /// @{
+  ConstOverload(CellIndex*, EndAdjacentCell, (NodeIndex nodeIndex), {
+    StormAssert(nodeIndex < NumNodes());
+    return NodeCells_.end_row(nodeIndex);
+  })
+  ConstOverload(CellIndex*, EndAdjacentCell, (EdgeIndex edgeIndex), {
+    StormAssert(edgeIndex < NumEdges());
+    return EdgeCells_.end_row(edgeIndex);
+  })
+  ConstOverload(CellIndex*, EndAdjacentCell, (FaceIndex faceIndex), {
+    StormAssert(faceIndex < NumFaces());
+    return FaceCells_.end_row(faceIndex);
+  })
+  ConstOverload(CellIndex*, EndAdjacentCell, (CellIndex cellIndex), {
+    StormAssert(cellIndex < NumCells());
+    return CellCells_.end_row(cellIndex);
+  })
+  /// @}
+
+  /// @brief Emplace a new node into the mesh.
+  /// @returns Index of the inserted node.
+  NodeIndex EmplaceNode(vec3_t const& nodePos, NodeMark nodeMark = {});
+
+  /// @brief Emplace a new edge into the mesh.
+  /// @returns Index of the inserted edge.
+  /// @{
+  EdgeIndex EmplaceEdge(std::unique_ptr<iElement>&& edge, EdgeMark edgeMark = {});
+  EdgeIndex EmplaceEdge(sElementDesc&& edgeDesc, EdgeMark edgeMark = {}) {
+    return EmplaceEdge(make_element(std::forward<sElementDesc>(edgeDesc)), edgeMark);
+  }
+  /// @}
+
+  /// @brief Emplace a new face into the mesh.
+  /// @returns Index of the inserted face.
+  /// @{
+  FaceIndex EmplaceFace(std::unique_ptr<iElement>&& face, FaceMark faceMark = {});
+  FaceIndex EmplaceFace(sElementDesc&& faceDesc, FaceMark faceMark = {}) {
+    return EmplaceFace(make_element(std::forward<sElementDesc>(faceDesc)), faceMark);
+  }
+  /// @}
+
+  /// @brief Emplace a new cell into the mesh.
+  /// @returns Index of the inserted cell.
+  /// @{
+  CellIndex EmplaceCell(std::unique_ptr<iElement>&& cell, CellMark cellMark = {});
+  CellIndex EmplaceCell(sElementDesc&& cellDesc, CellMark cellMark = {}) {
+    return EmplaceCell(make_element(std::forward<sElementDesc>(cellDesc)), cellMark);
+  }
+  /// @}
 
 private:
-    template<typename tTag>
-    void fix_permutation_and_adjacency_(tTag tag, std::vector<uint_t>& permutation);
+
+  template<class Tag>
+  void FixPermutationAndAdjacency_(std::vector<uint_t>& index1);
 
 public:
 
-    /** Change order of all nodes. */
-    void permute_nodes(std::vector<uint_t>&& node_permutation = {});
-    /** Change order of all edges. */
-    void permute_edges(std::vector<uint_t>&& edge_permutation = {});
-    /** Change order of all faces. */
-    void permute_faces(std::vector<uint_t>&& face_permutation = {});
-    /** Change order of all cells. */
-    void permute_cells(std::vector<uint_t>&& cell_permutation = {});
+  /// @brief Change order of all nodes.
+  void PermuteNodes(std::vector<uint_t>&& nodePermutation = {});
+
+  /// @brief Change order of all edges.
+  void PermuteEdges(std::vector<uint_t>&& edgePermutation = {});
+
+  /// @brief Change order of all faces.
+  void PermuteFaces(std::vector<uint_t>&& facePermutation = {});
+
+  /// @brief Change order of all cells.
+  void PermuteCells(std::vector<uint_t>&& cellPermutation = {});
 
 protected:
 
-    void reorder_faces();
+  void reorder_faces();
 
-    // ---------------------------------------------------------------------- //
-    // ---------------------------------------------------------------------- //
+  // ---------------------------------------------------------------------- //
+  // ---------------------------------------------------------------------- //
 
-    /**
-     * Generate edges using the face to node connectivity.
-     * @warning This function may be slow and memory-consuming.
-     */
-    void generate_edges();
+  /// @brief Generate edges using the face to node connectivity.
+  /// @warning This function may be slow and memory-consuming.
+  void generate_edges();
 
-    /**
-     * Generate faces using the cell to node connectivity.
-     * @warning This function may be slow and memory-consuming.
-     */
-    void generate_faces();
+  /// @brief Generate faces using the cell to node connectivity.
+  /// @warning This function may be slow and memory-consuming.
+  void generate_faces();
 
-    /** Generate boundary cells to complete face connectivity. */
-    void generate_boundary_cells();
-};  // class cMesh
+  /// @brief Generate boundary cells to complete face connectivity.
+  void generate_boundary_cells();
 
-}   // namespace feathers
+}; // class Mesh
 
-/* Include iterators. */
+} // namespace feathers
+
+// Include iterators.
 #include "MeshIterators.hh"
 
-/** @todo Remove me. */
-using cMesh = feathers::cMesh;
+/// @brief @todo Remove me. 
+using cMesh = feathers::Mesh;
 #include "Field.hh"
-
-#endif  // ifndef MESH_HH_

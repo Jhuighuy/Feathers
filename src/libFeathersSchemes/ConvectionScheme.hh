@@ -54,11 +54,11 @@ public:
  */
 class cUpwindConvectionScheme final : public iConvectionScheme {
 public:
-    std::shared_ptr<const cMesh> m_mesh;
+    std::shared_ptr<const Mesh> m_mesh;
     std::shared_ptr<iFluxScheme> m_flux;
 
 public:
-    explicit cUpwindConvectionScheme(std::shared_ptr<const cMesh> mesh):
+    explicit cUpwindConvectionScheme(std::shared_ptr<const Mesh> mesh):
         m_mesh(std::move(mesh)),
         m_flux(new tLaxFriedrichsFluxScheme<tGasPhysics>()) {
     }
@@ -75,13 +75,13 @@ public:
  */
 class cUpwind2ConvectionScheme final : public iConvectionScheme {
 public:
-    std::shared_ptr<const cMesh> m_mesh;
+    std::shared_ptr<const Mesh> m_mesh;
     std::shared_ptr<iFluxScheme> m_flux;
     std::shared_ptr<iGradientScheme> m_gradient_scheme;
     std::shared_ptr<iGradientLimiterScheme> m_gradient_limiter_scheme;
 
 public:
-    explicit cUpwind2ConvectionScheme(std::shared_ptr<const cMesh> mesh):
+    explicit cUpwind2ConvectionScheme(std::shared_ptr<const Mesh> mesh):
         m_mesh(std::move(mesh)),
         m_flux(new tHllFluxScheme<tGasPhysics>()),
         m_gradient_scheme(new cLeastSquaresGradientScheme(m_mesh)),

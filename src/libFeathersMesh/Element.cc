@@ -114,7 +114,7 @@ vec3_t iComplexElement::get_normal() const {
             part_length_or_area_or_volume * shape.get_normal();
     });
     return glm::normalize(weighted_sum_of_normals);
-}   // iComplexElement::get_normal
+}   // iComplexElement::Normal
 
 vec3_t iComplexElement::get_center_coords() const {
     vec3_t weighted_sum_of_center_coords(0.0);
@@ -127,7 +127,7 @@ vec3_t iComplexElement::get_center_coords() const {
         length_or_area_or_volume += part_length_or_area_or_volume;
     });
     return weighted_sum_of_center_coords/length_or_area_or_volume;
-}   // iComplexElement::get_center_coords
+}   // iComplexElement::CenterPos
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //

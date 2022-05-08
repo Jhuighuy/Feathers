@@ -36,39 +36,41 @@ namespace feathers {
 void cUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
                                                   tScalarField& div_f,
                                                   const tScalarField& u) const {
-    /* Compute the first order numerical fluxes. */
-    tScalarField flux_u(num_vars, m_mesh->num_faces());
-    for_each_face(*m_mesh, [&](tFaceIter face) {
-        const tCellIter cell_outer = face.get_outer_cell();
-        const tCellIter cell_inner = face.get_inner_cell();
 
-        tScalarSubField flux = (flux_u[face] = {});
-        m_flux->get_numerical_flux(num_vars, face.get_normal(),
-                                   u[cell_outer], u[cell_inner], flux);
-    });
+  /* Compute the first order numerical fluxes. */
+  tScalarField flux_u(num_vars, m_mesh->NumFaces());
+  ForEachFace(*m_mesh, [&](FaceIter face) {
+    const CellIter cell_outer = face.OuterCell();
+    const CellIter cell_inner = face.InnerCell();
 
-    /* Compute the first order convection. */
-    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        div_f[cell] = {};
-        cell.for_each_face([&](tFaceIter face) {
-            const tCellIter cell_outer = face.get_outer_cell();
-            const tCellIter cell_inner = face.get_inner_cell();
-            const real_t ds = face.get_area();
-            if (cell_outer == cell) {
-                for (uint_t i = 0; i < num_vars; ++i) {
-                    div_f[cell][i] -= flux_u[face][i] * ds;
-                }
-            } else if (cell_inner == cell) {
-                for (uint_t i = 0; i < num_vars; ++i) {
-                    div_f[cell][i] += flux_u[face][i] * ds;
-                }
-            }
-        });
-        const real_t inv_dv = 1.0/cell.get_volume();
+    tScalarSubField flux = (flux_u[face] = {});
+    m_flux->get_numerical_flux(num_vars, face.Normal(),
+                               u[cell_outer], u[cell_inner], flux);
+  });
+
+  /* Compute the first order convection. */
+  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+    div_f[cell] = {};
+    cell.ForEachFace([&](FaceIter face) {
+      const CellIter cell_outer = face.OuterCell();
+      const CellIter cell_inner = face.InnerCell();
+      const real_t ds = face.Area();
+      if (cell_outer == cell) {
         for (uint_t i = 0; i < num_vars; ++i) {
-            div_f[cell][i] *= inv_dv;
+          div_f[cell][i] -= flux_u[face][i] * ds;
         }
+      } else if (cell_inner == cell) {
+        for (uint_t i = 0; i < num_vars; ++i) {
+          div_f[cell][i] += flux_u[face][i] * ds;
+        }
+      }
     });
+    const real_t inv_dv = 1.0 / cell.Volume();
+    for (uint_t i = 0; i < num_vars; ++i) {
+      div_f[cell][i] *= inv_dv;
+    }
+  });
+
 } // cUpwindConvectionScheme::get_cell_convection
 
 /**
@@ -78,57 +80,57 @@ void cUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
                                                    tScalarField& div_f,
                                                    const tScalarField& u) const {
     /* Compute the second order limited gradients. */
-    tVectorField grad_u(num_vars, m_mesh->num_cells());
+    tVectorField grad_u(num_vars, m_mesh->NumCells());
     m_gradient_scheme->get_gradients(num_vars, grad_u, u);
 
-    tScalarField lim_u(num_vars, m_mesh->num_cells());
+    tScalarField lim_u(num_vars, m_mesh->NumCells());
     m_gradient_limiter_scheme->get_cell_limiter(num_vars, lim_u, u, grad_u);
 
     /* Compute the second order numerical fluxes:
      * integrate the numerical flux over the face nodes. */
-    tScalarField flux_f(num_vars, m_mesh->num_faces());
-    for_each_face(*m_mesh, [&](tFaceIter face) {
-        const tCellIter cell_outer = face.get_outer_cell();
-        const tCellIter cell_inner = face.get_inner_cell();
-        const vec3_t dr_outer =
-            face.get_center_coords() - cell_outer.get_center_coords();
-        const vec3_t dr_inner =
-            face.get_center_coords() - cell_inner.get_center_coords();
-        FEATHERS_TMP_SCALAR_FIELD(u_outer, num_vars);
-        FEATHERS_TMP_SCALAR_FIELD(u_inner, num_vars);
-        for (uint_t i = 0; i < num_vars; ++i) {
-            u_outer[i] = u[cell_outer][i] +
-                lim_u[cell_outer][i]*glm::dot(grad_u[cell_outer][i], dr_outer);
-            u_inner[i] = u[cell_inner][i] +
-                lim_u[cell_inner][i]*glm::dot(grad_u[cell_inner][i], dr_inner);
-        }
+    tScalarField flux_f(num_vars, m_mesh->NumFaces());
+  ForEachFace(*m_mesh, [&](FaceIter face) {
+    const CellIter cell_outer = face.OuterCell();
+    const CellIter cell_inner = face.InnerCell();
+    const vec3_t dr_outer =
+      face.CenterPos() - cell_outer.CenterPos();
+    const vec3_t dr_inner =
+      face.CenterPos() - cell_inner.CenterPos();
+    FEATHERS_TMP_SCALAR_FIELD(u_outer, num_vars);
+    FEATHERS_TMP_SCALAR_FIELD(u_inner, num_vars);
+    for (uint_t i = 0; i < num_vars; ++i) {
+      u_outer[i] = u[cell_outer][i] +
+                   lim_u[cell_outer][i] * glm::dot(grad_u[cell_outer][i], dr_outer);
+      u_inner[i] = u[cell_inner][i] +
+                   lim_u[cell_inner][i] * glm::dot(grad_u[cell_inner][i], dr_inner);
+    }
 
-        tScalarSubField flux = (flux_f[face] = {});
-        m_flux->get_numerical_flux(num_vars, face.get_normal(), u_outer, u_inner, flux);
-    });
+    tScalarSubField flux = (flux_f[face] = {});
+    m_flux->get_numerical_flux(num_vars, face.Normal(), u_outer, u_inner, flux);
+  });
 
     /* Compute the second order convection. */
-    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        div_f[cell] = {};
-        cell.for_each_face([&](tFaceIter face) {
-            const tCellIter cell_outer = face.get_outer_cell();
-            const tCellIter cell_inner = face.get_inner_cell();
-            const real_t ds = face.get_area();
-            if (cell_outer == cell) {
-                for (uint_t i = 0; i < num_vars; ++i) {
-                    div_f[cell][i] -= flux_f[face][i] * ds;
-                }
-            } else if (cell_inner == cell) {
-                for (uint_t i = 0; i < num_vars; ++i) {
-                    div_f[cell][i] += flux_f[face][i] * ds;
-                }
-            }
-        });
-        const real_t inv_dv = 1.0/cell.get_volume();
+  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+    div_f[cell] = {};
+    cell.ForEachFace([&](FaceIter face) {
+      const CellIter cell_outer = face.OuterCell();
+      const CellIter cell_inner = face.InnerCell();
+      const real_t ds = face.Area();
+      if (cell_outer == cell) {
         for (uint_t i = 0; i < num_vars; ++i) {
-            div_f[cell][i] *= inv_dv;
+          div_f[cell][i] -= flux_f[face][i] * ds;
         }
+      } else if (cell_inner == cell) {
+        for (uint_t i = 0; i < num_vars; ++i) {
+          div_f[cell][i] += flux_f[face][i] * ds;
+        }
+      }
     });
+    const real_t inv_dv = 1.0 / cell.Volume();
+    for (uint_t i = 0; i < num_vars; ++i) {
+      div_f[cell][i] *= inv_dv;
+    }
+  });
 } // cUpwind2ConvectionScheme::get_cell_convection
 
 } // namespace feathers

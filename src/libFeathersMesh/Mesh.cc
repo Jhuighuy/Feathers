@@ -1,661 +1,339 @@
-/*
- *  ______  ______   ______   ______  __  __   ______   ______   ______
- * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
- * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
- *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
- *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
- *
- * Copyright (c) 2021 Oleg Butakov
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// Copyright (C) 2022 Oleg Butakov
+///
+/// Permission is hereby granted, free of charge, to any person
+/// obtaining a copy of this software and associated documentation
+/// files (the "Software"), to deal in the Software without
+/// restriction, including without limitation the rights  to use,
+/// copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the
+/// Software is furnished to do so, subject to the following
+/// conditions:
+///
+/// The above copyright notice and this permission notice shall be
+/// included in all copies or substantial portions of the Software.
+///
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+/// OTHER DEALINGS IN THE SOFTWARE.
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
-#include "Mesh.hh"
+#include <libFeathersMesh/Mesh.hh>
 #include <libFeathersMesh/Element.hh>
 #include <libFeathersUtils/Parallel.hh>
 #include <libFeathersUtils/Permute.hh>
 
 #include <set>
 #include <map>
-#include <fstream>
-#include <iomanip>
 
 namespace feathers {
 
-bool cMesh::read_triangle(const char *path) {
-    std::string line;
+void Mesh::ComputeEdgeShapeProperties() {
 
-    std::ifstream node_file(path + std::string("node"));
-    FEATHERS_ENSURE(node_file.is_open());
-    uint_t num_nodes = 0;
-    node_file >> num_nodes >> m_dim;
-    std::getline(node_file, line);
-    reserve_nodes(num_nodes);
-    for (uint_t i = 0; i < num_nodes; ++i) {
-        uint_t node_index = 0;
-        vec3_t node_coords(0.0);
-        node_file >> node_index >> node_coords.x >> node_coords.y;
-        std::getline(node_file, line);
-        FEATHERS_ENSURE(node_index == emplace_back_node(node_coords));
-    }
+  std::tie(MinEdgeLen_, MaxEdgeLen_) =
+    for_range_minmax(feathers::BeginEdge(*this), feathers::EndEdge(*this),
+                     +huge, -huge, [&](EdgeMutableIter edge) {
 
-    std::ifstream face_file(path + std::string("edge"));
-    FEATHERS_ENSURE(face_file.is_open());
-    uint_t num_faces = 0;
-    face_file >> num_faces;
-    std::getline(face_file, line);
-    reserve_faces(num_faces);
-    for (uint_t i = 0; i < num_faces; ++i) {
-        uint_t face_index = 0;
-        std::vector<uint_t> face_nodes(2, npos);
-        uint_t mark = 0;
-        face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> mark;
-        FEATHERS_ENSURE(
-            face_index == emplace_back_face({eShape::segment_2, face_nodes}, mark));
-        std::getline(face_file, line);
-    }
+        std::unique_ptr<const iElement> edgeObj = edge.get_element_object();
 
-    std::ifstream cell_file(path + std::string("ele"));
-    FEATHERS_ENSURE(cell_file.is_open());
-    uint_t num_cells = 0;
-    cell_file >> num_cells;
-    std::getline(cell_file, line);
-    reserve_cells(num_cells);
-    for (uint_t i = 0; i < num_cells; ++i) {
-        uint_t cell_index = 0;
-        std::vector<uint_t> cell_nodes(3, npos);
-        cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2];
-        FEATHERS_ENSURE(
-            cell_index == emplace_back_cell({eShape::triangle_3, cell_nodes}));
-        std::getline(cell_file, line);
-    }
+        edge.SetLen(edgeObj->get_length_or_area_or_volume());
+        edge.SetDir(edgeObj->get_direction());
 
-    finalize();
-    return true;
-} // сMesh::read_triangle
+        return edge.Len();
 
-bool cMesh::read_tetgen(const char *path) {
-    std::string line;
+      });
 
-    std::ifstream node_file(path + std::string("node"));
-    FEATHERS_ENSURE(node_file.is_open());
-    uint_t num_nodes = 0;
-    node_file >> num_nodes >> m_dim;
-    std::getline(node_file, line);
-    reserve_nodes(num_nodes);
-    for (uint_t i = 0; i < num_nodes; ++i) {
-        uint_t node_index = 0;
-        vec3_t node_coords(0.0);
-        node_file >> node_index >> node_coords.x >> node_coords.y >> node_coords.z;
-        FEATHERS_ENSURE(
-            node_index == emplace_back_node(node_coords));
-        std::getline(node_file, line);
-    }
+} // Mesh<...>::ComputeEdgeShapeProperties
 
-    std::ifstream face_file(path + std::string("face"));
-    FEATHERS_ENSURE(face_file.is_open());
-    uint_t num_faces = 0;
-    face_file >> num_faces;
-    std::getline(face_file, line);
-    reserve_faces(num_faces);
-    for (uint_t i = 0; i < num_faces; ++i) {
-        uint_t face_index = 0;
-        std::vector<uint_t> face_nodes(3, npos);
-        uint_t mark = 0;
-        face_file >> face_index >> face_nodes[0] >> face_nodes[1] >> face_nodes[2] >> mark;
-        FEATHERS_ENSURE(
-            face_index == emplace_back_face({eShape::triangle_3, face_nodes}, mark));
-        std::getline(face_file, line);
-    }
+void Mesh::ComputeFaceShapeProperties() {
 
-    std::ifstream cell_file(path + std::string("ele"));
-    FEATHERS_ENSURE(cell_file.is_open());
-    uint_t num_cells = 0;
-    cell_file >> num_cells;
-    std::getline(cell_file, line);
-    reserve_cells(num_cells);
-    for (uint_t i = 0; i < num_cells; ++i) {
-        uint_t cell_index = 0;
-        std::vector<uint_t> cell_nodes(4, npos);
-        cell_file >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2] >> cell_nodes[3];
-        FEATHERS_ENSURE(
-            cell_index == emplace_back_cell({eShape::tetrahedron_4, cell_nodes}));
-        std::getline(cell_file, line);
-    }
+  std::tie(MinFaceArea_, MaxFaceArea_) =
+    for_range_minmax(feathers::BeginFace(*this), feathers::EndFace(*this),
+                     +huge, -huge, [&](FaceMutableIter face) {
 
-    finalize();
-    return true;
-} // сMesh::read_tetgen
+        std::unique_ptr<const iElement> face_element = face.get_element_object();
 
-bool cMesh::read_image2D(const char *path,
-                         const std::map<sPixel, uint_t>& mark_colors,
-                         sPixel fluid_color,
-                         vec2_t pixel_size) {
-    cImage2D image;
-    image.load(path);
+        face.SetArea(face_element->get_length_or_area_or_volume());
+        face.SetNormal(face_element->get_normal());
+        face.SetCenterPos(face_element->get_center_coords());
 
-    cImage2D nodes_image;
-    nodes_image.init(image.width() + 1, image.height() + 1, sPixel(0, 0, 0, 0));
+        return face.Area();
 
-    uint_t node_index = 0;
-    for (uint_t y = 1; y < image.height() - 1; ++y) {
-        for (uint_t x = 1; x < image.width() - 1; ++x) {
-            if (image(x, y).rgba != fluid_color.rgba) {
-                continue;
-            }
+      });
 
-            const vec2_t cell_center_coords = pixel_size*vec2_t(x - 0.5, y - 0.5);
+} // Mesh<...>::ComputeFaceShapeProperties
 
-            /* Insert or query the cell nodes. */
-            uint_t& lw_lt_node_index = nodes_image(x + 0, y + 0).rgba;
-            if (lw_lt_node_index == 0) {
-                lw_lt_node_index = node_index++;
-                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(-0.5, -0.5), 0.0);
-                FEATHERS_ENSURE(lw_lt_node_index == emplace_back_node(node_coords));
-            }
-            uint_t& lw_rt_node_index = nodes_image(x + 1, y + 0).rgba;
-            if (lw_rt_node_index == 0) {
-                lw_rt_node_index = node_index++;
-                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(+0.5, -0.5), 0.0);
-                FEATHERS_ENSURE(lw_rt_node_index == emplace_back_node(node_coords));
-            }
-            uint_t& up_rt_node_index = nodes_image(x + 1, y + 1).rgba;
-            if (up_rt_node_index == 0) {
-                up_rt_node_index = node_index++;
-                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(+0.5, +0.5), 0.0);
-                FEATHERS_ENSURE(up_rt_node_index == emplace_back_node(node_coords));
-            }
-            uint_t& up_lt_node_index = nodes_image(x + 0, y + 1).rgba;
-            if (up_lt_node_index == 0) {
-                up_lt_node_index = node_index++;
-                const vec3_t node_coords(cell_center_coords + pixel_size*vec2_t(-0.5, +0.5), 0.0);
-                FEATHERS_ENSURE(up_lt_node_index == emplace_back_node(node_coords));
-            }
+void Mesh::ComputeCellShapeProperties() {
 
-            /* Insert the cell. */
-            emplace_back_cell({ eShape::quadrangle_4,
-                { lw_lt_node_index, lw_rt_node_index, up_rt_node_index, up_lt_node_index } });
+  std::tie(MinFaceArea_, MaxFaceArea_) =
+    for_range_minmax(feathers::BeginCell(*this), feathers::EndCell(*this),
+                     +huge, -huge, [&](CellMutableIter cell) {
 
-            /* Insert the boundary faces. */
-            if (const sPixel lw_pixel = image(x, y - 1); lw_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(lw_pixel);
-                emplace_back_face({ eShape::segment_2, { lw_lt_node_index, lw_rt_node_index } }, mark);
-            }
-            if (const sPixel rt_pixel = image(x + 1, y); rt_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(rt_pixel);
-                emplace_back_face({ eShape::segment_2, { lw_rt_node_index, up_rt_node_index } }, mark);
-            }
-            if (const sPixel up_pixel = image(x, y + 1); up_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(up_pixel);
-                emplace_back_face({ eShape::segment_2, { up_rt_node_index, up_lt_node_index } }, mark);
-            }
-            if (const sPixel lt_pixel = image(x - 1, y); lt_pixel.rgba != fluid_color.rgba) {
-                const uint_t mark = mark_colors.at(lt_pixel);
-                emplace_back_face({ eShape::segment_2, { up_lt_node_index, lw_lt_node_index } }, mark);
-            }
-        }
-    }
+        std::unique_ptr<const iElement> cell_element = cell.get_element_object();
 
-    finalize();
-    return true;
-} // cMesh::read_image2D
+        cell.SetVolume(cell_element->get_length_or_area_or_volume());
+        cell.SetCenterPos(cell_element->get_center_coords());
+        return cell.Volume();
 
-void cMesh::save_vtk(const char* path,
-                     const std::vector<sFieldDesc>& fields) const {
-    std::ofstream file(path);
-    file << std::setprecision(std::numeric_limits<real_t>::digits10 + 1);
-    file << "# vtk DataFile Version 2.0" << std::endl;
-    file << "# Generated by Feathers/StormRuler/Mesh2VTK" << std::endl;
-    file << "ASCII" << std::endl;
-    file << "DATASET UNSTRUCTURED_GRID" << std::endl;
+      });
 
-    file << "POINTS " << num_nodes() << " double" << std::endl;
-    std::for_each(begin_node(*this), end_node(*this), [&](tNodeIter node) {
-        const vec3_t& node_coords = node.get_coords();
-        file << node_coords.x << " " << node_coords.y << " " << node_coords.z << std::endl;
-    });
-    file << std::endl;
+} // Mesh<...>::ComputeCellShapeProperties
 
-    const size_t total_num_cell_nodes = for_range_sum(
-        begin_interior_cell(*this), end_interior_cell(*this), size_t(0), [](tCellIter cell) {
-            return cell.num_nodes() + 1;
-        });
-    file << "CELLS " << num_marked_cells(0) << " " << total_num_cell_nodes << std::endl;
-    std::for_each(begin_interior_cell(*this), end_interior_cell(*this), [&](tCellIter cell) {
-        file << cell.num_nodes() << " ";
-        cell.for_each_node([&](uint_t node_index) {
-            file << node_index << " ";
-        });
-        file << std::endl;
-    });
-    file << std::endl;
+NodeIndex Mesh::EmplaceNode(vec3_t const& nodePos, NodeMark nodeMark) {
 
-    file << "CELL_TYPES " << num_marked_cells(0) << std::endl;
-    std::for_each(begin_interior_cell(*this), end_interior_cell(*this), [&](tCellIter cell) {
-        static const std::map<eShape, const char*> shapes = {
-            { eShape::node, "1" }, { eShape::segment_2, "2" },
-            { eShape::triangle_3, "5" }, { eShape::quadrangle_4, "9" },
-            { eShape::tetrahedron_4, "10" }, { eShape::pyramid_5, "14" },
-            { eShape::pentahedron_6, "13" }, { eShape::hexahedron_8, "12" }
-        };
-        file << shapes.at(cell.get_shape()) << std::endl;
-    });
-    file << std::endl;
+  NodeIndex const nodeIndex(NumNodes_++);
 
-    file << "CELL_DATA " << num_marked_cells(0) << std::endl;
-    for (const sFieldDesc& field : fields) {
-        file << "SCALARS " << field.name << " double 1" << std::endl;
-        file << "LOOKUP_TABLE default" << std::endl;
-        std::for_each(begin_interior_cell(*this), end_interior_cell(*this), [&](tCellIter cell) {
-            file << (*field.scalar)[cell][field.var_index] << std::endl;
-        });
-    }
-    file << std::endl;
-} // cMesh::save_vtk
+  // Emplace the node properties.
+  NodeMarks_.emplace_back(nodeMark);
+
+  NodePos_.emplace_back(nodePos);
+
+  // Emplace empty rows into the all node
+  // adjacency tables to keep the mesh consistent.
+  NodeNodes_.emplace_back_row(/* dynamic value */);
+  NodeEdges_.emplace_back_row(/* dynamic value */);
+  NodeFaces_.emplace_back_row(/* dynamic value */);
+  NodeCells_.emplace_back_row(/* dynamic value */);
+
+  return nodeIndex;
+
+} // Mesh<...>::EmplaceNode
+
+EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<iElement>&& edge, EdgeMark edgeMark) {
+
+  EdgeIndex const edgeIndex(NumEdges_++);
+
+  // Emplace the edge properties.
+  EdgeMarks_.emplace_back(edgeMark);
+
+  EdgeShapes_.emplace_back(edge->get_shape());
+  EdgeLens_.emplace_back(edge->get_length_or_area_or_volume());
+  EdgeDirs_.emplace_back(edge->get_direction());
+
+  // Fill the edge nodes.
+  ((CsrTable<uint_t, uint_t>&) EdgeNodes_).emplace_back_row(edge->get_nodes().begin(), edge->get_nodes().end());
+
+  // Emplace empty rows into the remaining edge
+  // adjacency tables to keep the mesh consistent. */
+  EdgeEdges_.emplace_back_row(/* dynamic value */);
+  EdgeFaces_.emplace_back_row(/* dynamic value */);
+  EdgeCells_.emplace_back_row(/* dynamic value */);
+
+  return edgeIndex;
+
+} // Mesh<...>::EmplaceEdge
+
+FaceIndex Mesh::EmplaceFace(std::unique_ptr<iElement>&& face, FaceMark faceMark) {
+
+  FaceIndex const faceIndex(NumFaces_++);
+
+  // Emplace the face properties.
+  FaceMarks_.emplace_back(faceMark);
+
+  FaceShapes_.emplace_back(face->get_shape());
+  FaceAreas_.emplace_back(face->get_length_or_area_or_volume());
+  FaceNormals_.emplace_back(face->get_normal());
+  FaceCenterPos_.emplace_back(face->get_center_coords());
+
+  // Fill the face nodes.
+  ((CsrTable<uint_t, uint_t>&) FaceNodes_).emplace_back_row(face->get_nodes().begin(), face->get_nodes().end());
+
+  // Preallocate/emplace empty rows into the remaining face
+  // adjacency tables to keep the mesh consistent.
+  FaceEdges_.emplace_back_row(face->num_edges());
+  FaceFaces_.emplace_back_row(/* dynamic value */);
+  FaceCells_.emplace_back_row(2);
+
+  return faceIndex;
+
+} // Mesh<...>::EmplaceFace
+
+CellIndex Mesh::EmplaceCell(std::unique_ptr<iElement>&& cell, CellMark cellMark) {
+
+  CellIndex const cellIndex(NumCells_++);
+
+  // Emplace the cell properties.
+  CellMarks_.emplace_back(cellMark);
+
+  CellShapes_.emplace_back(cell->get_shape());
+  CellVolumes_.emplace_back(cell->get_length_or_area_or_volume());
+  CellCenterPos_.emplace_back(cell->get_center_coords());
+
+  // Fill the cell nodes.
+  ((CsrTable<uint_t, uint_t>&) CellNodes_).emplace_back_row(cell->get_nodes().begin(), cell->get_nodes().end());
+
+  // Preallocate rows into the remaining cell
+  // adjacency tables to keep the mesh consistent.
+  CellEdges_.emplace_back_row(cell->num_edges());
+  CellFaces_.emplace_back_row(cell->num_faces());
+  CellCells_.emplace_back_row(cell->num_faces());
+
+  return cellIndex;
+
+} // Mesh<...>::EmplaceCell
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/**
- * Compute edge shape properties.
- */
-void cMesh::compute_edge_shape_properties() {
-    std::tie(m_min_edge_length, m_max_edge_length) =
-        for_range_minmax(begin_edge(*this), end_edge(*this),
-                         +huge, -huge, [&](tEdgeMutableIter edge) {
-            std::unique_ptr<const iElement> edge_element = edge.get_element_object();
-            edge.set_length(edge_element->get_length_or_area_or_volume());
-            edge.set_direction(edge_element->get_direction());
-            return edge.get_length();
-        });
-} // сMesh::compute_edge_shape_properties
+template<class Tag>
+void Mesh::FixPermutationAndAdjacency_(std::vector<uint_t>& permutation) {
 
-/**
- * Compute face shape properties.
- */
-void cMesh::compute_face_shape_properties() {
-    std::tie(m_min_face_area, m_max_face_area) =
-        for_range_minmax(begin_face(*this), end_face(*this),
-                         +huge, -huge, [&](tFaceMutableIter face) {
-            std::unique_ptr<const iElement> face_element = face.get_element_object();
-            face.set_area(face_element->get_length_or_area_or_volume());
-            face.set_normal(face_element->get_normal());
-            face.set_center_coords(face_element->get_center_coords());
-            return face.get_area();
-        });
-} // сMesh::compute_face_shape_properties
+  /* Fix permutations by resorting it by marks.
+   * Stable sort is used here to preserve the
+   * permutation in the best possible way. */
+  std::stable_sort(permutation.begin(), permutation.end(),
+    [&](auto index1, auto index2) {
+      return Mark(Index<uint_t, Tag>(index1)) < Mark(Index<uint_t, Tag>(index2));
+    });
 
-/**
- * Compute cell shape properties.
- */
-void cMesh::compute_cell_shape_properties() {
-    std::tie(m_min_face_area, m_max_face_area) =
-        for_range_minmax(begin_cell(*this), end_cell(*this),
-                         +huge, -huge, [&](tCellMutableIter cell) {
-            std::unique_ptr<const iElement> cell_element = cell.get_element_object();
-            cell.set_volume(cell_element->get_length_or_area_or_volume());
-            cell.set_center_coords(cell_element->get_center_coords());
-            return cell.get_volume();
-        });
-} // сMesh::compute_cell_shape_properties
+  /* Fix adjacency tables. */
+  std::vector<uint_t> inversePermutation(permutation.size(), npos);
+  InversePermutation(
+    permutation.begin(), permutation.end(), inversePermutation.begin());
+
+  auto const reorderFunc = [&inversePermutation](Index<uint_t, Tag> index) {
+    return Index<uint_t, Tag>(
+      index != npos ? inversePermutation[static_cast<uint_t>(index)] : npos);
+  };
+  ForEachNode(*this, [&](NodeMutableIter node) {
+    std::transform(node.Begin(Tag{}), node.End(Tag{}), node.Begin(Tag{}), reorderFunc);
+  });
+  ForEachEdge(*this, [&](EdgeMutableIter edge) {
+    std::transform(edge.Begin(Tag{}), edge.End(Tag{}), edge.Begin(Tag{}), reorderFunc);
+  });
+  ForEachFace(*this, [&](FaceMutableIter face) {
+    std::transform(face.Begin(Tag{}), face.End(Tag{}), face.Begin(Tag{}), reorderFunc);
+  });
+  ForEachCell(*this, [&](CellMutableIter cell) {
+    std::transform(cell.Begin(Tag{}), cell.End(Tag{}), cell.Begin(Tag{}), reorderFunc);
+  });
+
+} // Mesh::FixPermutationAndAdjacency_
+
+void Mesh::PermuteNodes(std::vector<uint_t>&& nodePermutation) {
+
+  /* Permute node properties and fix the adjacency tables. */
+  FixPermutationAndAdjacency_<NodeTag_>(nodePermutation);
+  permute_rows(nodePermutation.begin(), nodePermutation.end(),
+               NodeNodes_, NodeEdges_, NodeFaces_, NodeCells_);
+  permute_inplace(nodePermutation.begin(), nodePermutation.end(),
+                  NodeMarks_.begin(), NodePos_.begin());
+
+  /* Generate the node ranges. */
+  NodeRanges_.clear();
+  std::for_each(feathers::BeginNode(*this), feathers::EndNode(*this), [&](NodeIter node) {
+    NodeRanges_.resize((uint_t)node.Mark() + 2);
+    NodeRanges_[node.Mark() + 1] += 1;
+  });
+
+  auto& r = (std::vector<uint_t>&)NodeRanges_;
+  std::partial_sum(r.begin(), r.end(), r.begin());
+
+} // Mesh<...>::PermuteNodes
+
+void Mesh::PermuteEdges(std::vector<uint_t>&& edgePermutation) {
+
+  /* Permute edge properties and fix the adjacency tables. */
+  FixPermutationAndAdjacency_<EdgeTag_>(edgePermutation);
+  permute_rows(edgePermutation.begin(), edgePermutation.end(),
+               EdgeNodes_, EdgeEdges_, EdgeFaces_, EdgeCells_);
+  permute_inplace(edgePermutation.begin(), edgePermutation.end(),
+                  EdgeMarks_.begin(), EdgeShapes_.begin(),
+                  EdgeLens_.begin(), EdgeDirs_.begin());
+
+  /* Generate the edge ranges. */
+  EdgeRanges_.clear();
+  std::for_each(feathers::BeginEdge(*this), feathers::EndEdge(*this), [&](EdgeIter edge) {
+    EdgeRanges_.resize((uint_t)edge.Mark() + 2);
+    EdgeRanges_[edge.Mark() + 1] += 1;
+  });
+
+  auto& r = (std::vector<uint_t>&)EdgeRanges_;
+  std::partial_sum(r.begin(), r.end(), r.begin());
+
+} // Mesh<...>::PermuteEdges
+
+void Mesh::PermuteFaces(std::vector<uint_t>&& facePermutation) {
+
+  /* Permute data. */
+  FixPermutationAndAdjacency_<FaceTag_>(facePermutation);
+  permute_rows(
+    facePermutation.begin(), facePermutation.end(),
+    FaceNodes_, FaceEdges_, FaceFaces_, FaceCells_);
+  permute_inplace(
+    facePermutation.begin(), facePermutation.end(),
+    FaceMarks_.begin(), FaceShapes_.begin(),
+    FaceAreas_.begin(), FaceNormals_.begin(), FaceCenterPos_.begin());
+
+  /* Generate mark ranges. */
+  FaceRanges_.clear();
+  std::for_each(feathers::BeginFace(*this), feathers::EndFace(*this), [&](FaceIter face) {
+    FaceRanges_.resize((uint_t)face.Mark() + 2);
+    FaceRanges_[face.Mark() + 1] += 1;
+  });
+
+  auto& r = (std::vector<uint_t>&)FaceRanges_;
+  std::partial_sum(r.begin(), r.end(), r.begin());
+
+} // Mesh<...>::PermuteFaces
+
+void Mesh::PermuteCells(std::vector<uint_t>&& cellPermutation) {
+
+  /* Permute data. */
+  FixPermutationAndAdjacency_<CellTag_>(cellPermutation);
+  permute_rows(
+    cellPermutation.begin(), cellPermutation.end(),
+    CellNodes_, CellEdges_, CellFaces_, CellCells_);
+  permute_inplace(
+    cellPermutation.begin(), cellPermutation.end(),
+    CellMarks_.begin(), CellShapes_.begin(),
+    CellVolumes_.begin(), CellCenterPos_.begin());
+
+  /* Generate mark ranges. */
+  CellRanges_.clear();
+  std::for_each(feathers::BeginCell(*this), feathers::EndCell(*this), [&](CellIter cell) {
+    CellRanges_.resize((uint_t)cell.Mark() + 2);
+    CellRanges_[cell.Mark() + 1] += 1;
+  });
+
+  auto& r = (std::vector<uint_t>&)CellRanges_;
+  std::partial_sum(r.begin(), r.end(), r.begin());
+
+} // Mesh<...>::PermuteCells
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-/**
- * Preallocate the node storage.
- */
-void cMesh::reserve_nodes(uint_t node_capacity) {
-    m_node_marks.reserve(node_capacity);
+void Mesh::reorder_faces() {
 
-    m_node_coords.reserve(node_capacity);
+  /** @todo Refactor me! */
+  {
+    std::vector<uint_t> node_reordering(NumNodes());
+    std::iota(node_reordering.begin(), node_reordering.end(), 0);
+    PermuteNodes(std::move(node_reordering));
+  }
+  {
+    std::vector<uint_t> edge_reordering(NumEdges());
+    std::iota(edge_reordering.begin(), edge_reordering.end(), 0);
+    PermuteEdges(std::move(edge_reordering));
+  }
+  {
+    std::vector<uint_t> face_reordering(NumFaces());
+    std::iota(face_reordering.begin(), face_reordering.end(), 0);
+    PermuteFaces(std::move(face_reordering));
+  }
+  {
+    std::vector<uint_t> cell_reordering(NumCells());
+    std::iota(cell_reordering.begin(), cell_reordering.end(), 0);
+    PermuteCells(std::move(cell_reordering));
+  }
 
-    m_node_nodes.reserve_rows(node_capacity);
-    m_node_edges.reserve_rows(node_capacity);
-    m_node_faces.reserve_rows(node_capacity);
-    m_node_cells.reserve_rows(node_capacity);
-} // cMesh::reserve_nodes
-
-/**
- * Preallocate the edge storage.
- */
-void cMesh::reserve_edges(uint_t edge_capacity) {
-    m_edge_marks.reserve(edge_capacity);
-
-    m_edge_shapes.reserve(edge_capacity);
-    m_edge_lengths.reserve(edge_capacity);
-    m_edge_directions.reserve(edge_capacity);
-
-    m_edge_nodes.reserve_rows(edge_capacity);
-    m_edge_edges.reserve_rows(edge_capacity);
-    m_edge_faces.reserve_rows(edge_capacity);
-    m_edge_cells.reserve_rows(edge_capacity);
-} // cMesh::reserve_edges
-
-/**
- * Preallocate the face storage.
- */
-void cMesh::reserve_faces(uint_t face_capacity) {
-    m_face_marks.reserve(face_capacity);
-
-    m_face_shapes.reserve(face_capacity);
-    m_face_areas.reserve(face_capacity);
-    m_face_normals.reserve(face_capacity);
-    m_face_center_coords.reserve(face_capacity);
-
-    m_face_nodes.reserve_rows(face_capacity);
-    m_face_edges.reserve_rows(face_capacity);
-    m_face_faces.reserve_rows(face_capacity);
-    m_face_cells.reserve_rows(face_capacity);
-} // cMesh::reserve_faces
-
-/**
- * Preallocate the cell storage.
- */
-void cMesh::reserve_cells(uint_t cell_capacity) {
-    m_cell_marks.reserve(cell_capacity);
-
-    m_cell_shapes.reserve(cell_capacity);
-    m_cell_volumes.reserve(cell_capacity);
-    m_cell_center_coords.reserve(cell_capacity);
-
-    m_cell_nodes.reserve_rows(cell_capacity);
-    m_cell_edges.reserve_rows(cell_capacity);
-    m_cell_faces.reserve_rows(cell_capacity);
-    m_cell_cells.reserve_rows(cell_capacity);
-} // cMesh::reserve_cells
-
-/**
- * Emplace a new node into the mesh.
- * @returns Index of the inserted node.
- */
-uint_t cMesh::emplace_back_node(const vec3_t& node_coords, uint_t mark) {
-    const uint_t node_index = m_num_nodes++;
-
-    m_node_marks.emplace_back(mark);
-
-    m_node_coords.emplace_back(node_coords);
-
-    m_node_nodes.emplace_back_row();
-    m_node_edges.emplace_back_row();
-    m_node_faces.emplace_back_row();
-    m_node_cells.emplace_back_row();
-
-    return node_index;
-} // сMesh::emplace_back_node
-
-/**
- * Emplace a new edge into the mesh.
- * @returns Index of the inserted edge.
- */
-uint_t cMesh::emplace_back_edge(std::unique_ptr<iElement>&& edge, uint_t mark) {
-    const uint_t edge_index = m_num_edges++;
-
-    m_edge_marks.emplace_back(mark);
-
-    m_edge_shapes.emplace_back(edge->get_shape());
-    m_edge_lengths.emplace_back(edge->get_length_or_area_or_volume());
-    m_edge_directions.emplace_back(edge->get_direction());
-
-    m_edge_nodes.emplace_back_row(edge->get_nodes().begin(), edge->get_nodes().end());
-    m_edge_edges.emplace_back_row();
-    m_edge_faces.emplace_back_row();
-    m_edge_cells.emplace_back_row();
-
-    return edge_index;
-} // сMesh::emplace_back_edge
-
-/**
- * Emplace a new face into the mesh.
- * @returns Index of the inserted face.
- */
-uint_t cMesh::emplace_back_face(std::unique_ptr<iElement>&& face, uint_t mark) {
-    const uint_t face_index = m_num_faces++;
-
-    m_face_marks.emplace_back(mark);
-
-    m_face_shapes.emplace_back(face->get_shape());
-    m_face_areas.emplace_back(face->get_length_or_area_or_volume());
-    m_face_normals.emplace_back(face->get_normal());
-    m_face_center_coords.emplace_back(face->get_center_coords());
-
-    m_face_nodes.emplace_back_row(face->get_nodes().begin(), face->get_nodes().end());
-    m_face_edges.emplace_back_row(face->num_edges());
-    m_face_faces.emplace_back_row();
-    m_face_cells.emplace_back_row(2);
-
-    return face_index;
-} // сMesh::emplace_back_face
-
-/**
- * Insert a new cell into the mesh.
- * @returns Index of the inserted cell.
- */
-uint_t cMesh::emplace_back_cell(std::unique_ptr<iElement>&& cell, uint_t mark) {
-    const uint_t cell_index = m_num_cells++;
-
-    m_cell_marks.emplace_back(mark);
-
-    m_cell_shapes.emplace_back(cell->get_shape());
-    m_cell_volumes.emplace_back(cell->get_length_or_area_or_volume());
-    m_cell_center_coords.emplace_back(cell->get_center_coords());
-
-    m_cell_nodes.emplace_back_row(cell->get_nodes().begin(), cell->get_nodes().end());
-    m_cell_edges.emplace_back_row(cell->num_edges());
-    m_cell_faces.emplace_back_row(cell->num_faces());
-    m_cell_cells.emplace_back_row();
-
-    return cell_index;
-} // сMesh::emplace_back_cell
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-template<typename tTag>
-void cMesh::fix_permutation_and_adjacency_(tTag tag, std::vector<uint_t>& permutation) {
-    //if (permutation.empty()) {
-    //    /* Generate identity permutation. */
-    //    permutation.reserve();
-    //}
-    /* Fix permutations by resorting it by marks.
-     * Stable sort is used here to preserve the permutation in the best possible way. */
-    std::stable_sort(permutation.begin(), permutation.end(),
-                     [&](uint_t index_1, uint_t index_2) {
-        return get_mark(tag, index_1) < get_mark(tag, index_2);
-    });
-    /* Fix adjacency lists. */
-    std::vector<uint_t> ordering(permutation.size(), npos);
-    convert_permutation_to_ordering(
-        permutation.begin(), permutation.end(), ordering.begin());
-    auto reorder_func = [&ordering](uint_t index) {
-        return index != npos ? ordering[index] : npos;
-    };
-    for_each_node(*this, [&](tNodeMutableIter node) {
-        std::transform(node.begin(tag), node.end(tag), node.begin(tag), reorder_func);
-    });
-    for_each_edge(*this, [&](tEdgeMutableIter edge) {
-        std::transform(edge.begin(tag), edge.end(tag), edge.begin(tag), reorder_func);
-    });
-    for_each_face(*this, [&](tFaceMutableIter face) {
-        std::transform(face.begin(tag), face.end(tag), face.begin(tag), reorder_func);
-    });
-    for_each_cell(*this, [&](tCellMutableIter cell) {
-        std::transform(cell.begin(tag), cell.end(tag), cell.begin(tag), reorder_func);
-    });
-} // cMesh::fix_permutation_and_adjacency_
-
-/**
- * Change order of all nodes.
- */
-void cMesh::permute_nodes(std::vector<uint_t>&& node_permutation) {
-    /* Permute data. */
-    fix_permutation_and_adjacency_(eNodeTag, node_permutation);
-    permute_rows(
-        node_permutation.begin(), node_permutation.end(),
-        m_node_nodes, m_node_edges, m_node_faces, m_node_cells);
-    permute_inplace(
-        node_permutation.begin(), node_permutation.end(),
-        m_node_marks.begin(), m_node_coords.begin());
-    
-    /* Generate mark ranges. */
-    m_marked_node_ranges.clear();
-    std::for_each(begin_node(*this), end_node(*this), [&](tNodeIter node) {
-        m_marked_node_ranges.resize(node.get_mark() + 2);
-        m_marked_node_ranges[node.get_mark() + 1] += 1;
-    });
-    std::partial_sum(
-        m_marked_node_ranges.begin(), m_marked_node_ranges.end(), m_marked_node_ranges.begin());
-} // сMesh::permute_nodes
-
-/**
- * Change order of all edges.
- */
-void cMesh::permute_edges(std::vector<uint_t>&& edge_permutation) {
-    /* Permute data. */
-    fix_permutation_and_adjacency_(eEdgeTag, edge_permutation);
-    permute_rows(
-        edge_permutation.begin(), edge_permutation.end(),
-        m_edge_nodes, m_edge_edges, m_edge_faces, m_edge_cells);
-    permute_inplace(
-        edge_permutation.begin(), edge_permutation.end(),
-        m_edge_marks.begin(), m_edge_shapes.begin(),
-        m_edge_lengths.begin(), m_edge_directions.begin());
-    
-    /* Generate mark ranges. */
-    m_marked_edge_ranges.clear();
-    std::for_each(begin_edge(*this), end_edge(*this), [&](tEdgeIter edge) {
-        m_marked_edge_ranges.resize(edge.get_mark() + 2);
-        m_marked_edge_ranges[edge.get_mark() + 1] += 1;
-    });
-    std::partial_sum(
-        m_marked_edge_ranges.begin(), m_marked_edge_ranges.end(), m_marked_edge_ranges.begin());
-} // сMesh::permute_edges
-
-/**
- * Change order of all faces.
- */
-void cMesh::permute_faces(std::vector<uint_t>&& face_permutation) {
-    /* Permute data. */
-    fix_permutation_and_adjacency_(eFaceTag, face_permutation);
-    permute_rows(
-        face_permutation.begin(), face_permutation.end(),
-        m_face_nodes, m_face_edges, m_face_faces, m_face_cells);
-    permute_inplace(
-        face_permutation.begin(), face_permutation.end(),
-        m_face_marks.begin(), m_face_shapes.begin(),
-        m_face_areas.begin(), m_face_normals.begin(), m_face_center_coords.begin());
-    
-    /* Generate mark ranges. */
-    m_marked_face_ranges.clear();
-    std::for_each(begin_face(*this), end_face(*this), [&](tFaceIter face) {
-        m_marked_face_ranges.resize(face.get_mark() + 2);
-        m_marked_face_ranges[face.get_mark() + 1] += 1;
-    });
-    std::partial_sum(
-        m_marked_face_ranges.begin(), m_marked_face_ranges.end(), m_marked_face_ranges.begin());
-} // сMesh::permute_faces
-
-/**
- * Change order of all cells.
- */
-void cMesh::permute_cells(std::vector<uint_t>&& cell_permutation) {
-    /* Permute data. */
-    fix_permutation_and_adjacency_(eCellTag, cell_permutation);
-    permute_rows(
-        cell_permutation.begin(), cell_permutation.end(),
-        m_cell_nodes, m_cell_edges, m_cell_faces, m_cell_cells);
-    permute_inplace(
-        cell_permutation.begin(), cell_permutation.end(),
-        m_cell_marks.begin(), m_cell_shapes.begin(),
-        m_cell_volumes.begin(), m_cell_center_coords.begin());
-    
-    /* Generate mark ranges. */
-    m_marked_cell_ranges.clear();
-    std::for_each(begin_cell(*this), end_cell(*this), [&](tCellIter cell) {
-        m_marked_cell_ranges.resize(cell.get_mark() + 2);
-        m_marked_cell_ranges[cell.get_mark() + 1] += 1;
-    });
-    std::partial_sum(
-        m_marked_cell_ranges.begin(), m_marked_cell_ranges.end(), m_marked_cell_ranges.begin());
-} // сMesh::permute_cells
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-void cMesh::reorder_faces() {
-    {
-#if 1
-        m_cell_cells = m_cell_faces;
-        for_each_cell(*this, [&](tCellMutableIter cell) {
-            std::for_each(cell.begin(eCellTag), cell.end(eCellTag), [&](uint_t& cell_index) {
-                if (cell_index == npos) {
-                    return;
-                }
-                tFaceIter face(*this, cell_index);
-                if (face.get_inner_cell() == cell) {
-                    cell_index = face.get_outer_cell();
-                } else if (face.get_outer_cell() == cell) {
-                    cell_index = face.get_inner_cell();
-                }
-            });
-        });
-#else
-        m_cell_cells.clear();
-        std::vector<std::pair<uint_t, uint_t>> cell_cells;
-        std::for_each(begin_face(*this), end_face(*this), [&](tFaceIter face) {
-            cell_cells.emplace_back(face.get_outer_cell(), face.get_inner_cell());
-            cell_cells.emplace_back(face.get_inner_cell(), face.get_outer_cell());
-        });
-        std::sort(cell_cells.begin(), cell_cells.end());
-        for (auto first_index = cell_cells.begin(), last_index = first_index;
-                    last_index != cell_cells.end(); first_index = last_index) {
-            std::vector<uint_t> row;
-            do {
-                row.push_back(last_index->second);
-                ++last_index;
-            } while (last_index->first == first_index->first);
-            m_cell_cells.emplace_back_row(row.begin(), row.end());
-        }
-#endif
-    }
-    /** @todo Refactor me! */
-    {
-        std::vector<uint_t> node_reordering(num_nodes());
-        std::iota(node_reordering.begin(), node_reordering.end(), 0);
-        permute_nodes(std::move(node_reordering));
-    }
-    {
-        std::vector<uint_t> edge_reordering(num_edges());
-        std::iota(edge_reordering.begin(), edge_reordering.end(), 0);
-        permute_edges(std::move(edge_reordering));
-    }
-    {
-        std::vector<uint_t> face_reordering(num_faces());
-        std::iota(face_reordering.begin(), face_reordering.end(), 0);
-        permute_faces(std::move(face_reordering));
-    }
-    {
-        std::vector<uint_t> cell_reordering(num_cells());
-        std::iota(cell_reordering.begin(), cell_reordering.end(), 0);
-        permute_cells(std::move(cell_reordering));
-    }
-} // сMesh::permute_faces
+} // Mesh<...>::PermuteFaces
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -664,202 +342,209 @@ void cMesh::reorder_faces() {
  * Generate edges using the face to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
-void cMesh::generate_edges() {
-    /* An edge lookup table.
-     * We assume that the edge can be uniquely identified by the set of its nodes. */
-    std::map<std::set<uint_t>, uint_t> edge_lookup_table;
+void Mesh::generate_edges() {
 
-    std::for_each(begin_edge(*this), end_edge(*this), [&](tEdgeIter edge) {
-        std::set<uint_t> edge_lookup_key(edge.begin(eNodeTag), edge.end(eNodeTag));
-        edge_lookup_table.emplace(std::move(edge_lookup_key), edge);
-    });
+  // An edge lookup table.
+  // We assume that the edge can be uniquely identified by the set of its nodes.
+  std::map<std::set<NodeIndex>, EdgeIndex> edgeLookupTable;
 
-    /* For each cell-to-edge adjacency table entry:
-     * find the face in the lookup table or emplace the new face. */
-    std::for_each(begin_face(*this), end_face(*this), [&](tFaceMutableIter face) {
-        tElementDescList edges_desc = face.get_element_object()->get_edges_desc();
-        for (uint_t edge_local = 0; edge_local < face.num_edges(); ++edge_local) {
-            uint_t& edge_index = face.begin(eEdgeTag)[edge_local];
-            if (edge_index != npos) {
-                continue;
-            }
+  std::for_each(feathers::BeginEdge(*this), feathers::EndEdge(*this), [&](EdgeIter edge) {
+    std::set<NodeIndex> edgeLookupKey(edge.Begin(NodeTag_{}), edge.End(NodeTag_{}));
+    edgeLookupTable.emplace(std::move(edgeLookupKey), edge);
+  });
 
-            /* Create the face or add current cell to the adjacency list. */
-            sElementDesc& edge_desc = edges_desc[edge_local];
-            std::set<uint_t> edge_lookup_key(
-                edge_desc.node_indices.begin(), edge_desc.node_indices.end());
-            if (edge_lookup_table.count(edge_lookup_key) == 0) {
-                /* Create a brand-new edge. */
-                edge_index = emplace_back_edge(std::move(edge_desc));
-                edge_lookup_table.emplace(edge_lookup_key, edge_index);
-                set_mark(eEdgeTag, edge_index, face.get_mark());
-            } else {
-                /* Edge exists. */
-                edge_index = edge_lookup_table[edge_lookup_key];
-            }
-        }
-    });
+  // For each face-to-edge adjacency table entry:
+  // find the edge in the lookup table or emplace the new edge.
+  std::for_each(feathers::BeginFace(*this), feathers::EndFace(*this), [&](FaceMutableIter face) {
+    tElementDescList edgesDesc = face.get_element_object()->get_edges_desc();
+    for (uint_t edgeLocal = 0; edgeLocal < face.NumEdges(); ++edgeLocal) {
+      EdgeIndex& edgeIndex = face.Begin(EdgeTag_{})[edgeLocal];
+      if (edgeIndex != npos) {
+        continue;
+      }
 
-    /* Check faces:
-     * each face should be connected to all edges. */
-    for_each_face(*this, [](tFaceIter face) {
-        FEATHERS_ENSURE(std::all_of(
-            face.begin(eEdgeTag), face.end(eEdgeTag), is_not_npos));
-    });
-} // сMesh::generate_edges
+      // Create the face or add current cell to the adjacency list.
+      sElementDesc& edgeDesc = edgesDesc[edgeLocal];
+      std::set<NodeIndex> edgeLookupKey(
+        edgeDesc.node_indices.begin(), edgeDesc.node_indices.end());
+      if (edgeLookupTable.count(edgeLookupKey) == 0) {
+        // Create a brand-new edge.
+        edgeIndex = EmplaceEdge(std::move(edgeDesc), (EdgeMark)face.Mark());
+        edgeLookupTable.emplace(edgeLookupKey, edgeIndex);
+      } else {
+        // Edge exists.
+        edgeIndex = edgeLookupTable[edgeLookupKey];
+      }
+    }
+  });
+
+  /* Check faces:
+   * each face should be connected to all edges. */
+  ForEachFace(*this, [](FaceIter face) {
+    FEATHERS_ENSURE(std::all_of(
+      face.Begin(EdgeTag_{}), face.End(EdgeTag_{}), is_not_npos<EdgeIndex>));
+  });
+
+} // Mesh<...>::generate_edges
 
 /**
  * Generate faces using the cell to node connectivity.
  * @warning This function may be slow and memory-consuming.
  */
-void cMesh::generate_faces() {
-    /* A face lookup table.
-     * We assume that the face can be uniquely identified by the set of its nodes. */
-    std::map<std::set<uint_t>, uint_t> face_lookup_table;
+void Mesh::generate_faces() {
 
-    /* Add the existing faces to the lookup table. */
-    std::for_each(begin_face(*this), end_face(*this), [&](tFaceIter face) {
-        std::set<uint_t> face_lookup_key(face.begin(eNodeTag), face.end(eNodeTag));
-        face_lookup_table.emplace(std::move(face_lookup_key), face);
-    });
+  // A face lookup table.
+  // We assume that the face can be uniquely identified by the set of its nodes.
+  std::map<std::set<NodeIndex>, FaceIndex> faceLookupTable;
 
-    /* For each cell-to-face adjacency table entry:
-     * find the face in the lookup table or emplace the new face.
-     * Also fill the face-to-cell adjacency table. */
-    std::for_each(begin_cell(*this), end_cell(*this), [&](tCellMutableIter cell) {
-        tElementDescList faces_desc = cell.get_element_object()->get_faces_desc();
-        for (uint_t face_local = 0; face_local < cell.num_faces(); ++face_local) {
-            uint_t& face_index = cell.begin(eFaceTag)[face_local];
-            if (face_index != npos) {
-                continue;
-            }
+  /* Add the existing faces to the lookup table. */
+  std::for_each(feathers::BeginFace(*this), feathers::EndFace(*this), [&](FaceIter face) {
+    std::set<NodeIndex> faceLookupKey(face.Begin(NodeTag_{}), face.End(NodeTag_{}));
+    faceLookupTable.emplace(std::move(faceLookupKey), face);
+  });
 
-            /* Create the face or add current cell to the adjacency list. */
-            sElementDesc& face_desc = faces_desc[face_local];
-            std::set<uint_t> face_lookup_key(face_desc.node_indices.begin(), face_desc.node_indices.end());
-            if (face_lookup_table.count(face_lookup_key) == 0) {
-                /* Create a brand-new face.
-                 * Assign the current cell as the inner one. */
-                face_index = emplace_back_face(std::move(face_desc));
-                face_lookup_table.emplace(std::move(face_lookup_key), face_index);
-                begin_adjacent_cell(eFaceTag, face_index)[eFaceInnerCell] = cell;
-            } else {
-                /* Face exists.
-                 * Determine orientation and link it. */
-                face_index = face_lookup_table[face_lookup_key];
-                tFaceMutableIter face(*this, face_index);
-                if (std::equal(face.begin(eNodeTag), face.end(eNodeTag), face_desc.node_indices.begin())) {
-                    /* Face node order matches the order
-                     * in the face description: face is inner. */
-                    FEATHERS_ASSERT(face.begin(eCellTag)[eFaceInnerCell] == npos);
-                    face.begin(eCellTag)[eFaceInnerCell] = cell;
-                } else {
-                    /* Otherwise, the face is outer. */
-                    FEATHERS_ASSERT(face.begin(eCellTag)[eFaceOuterCell] == npos);
-                    face.begin(eCellTag)[eFaceOuterCell] = cell;
-                }
-            }
-        }
-    });
+  /* For each cell-to-face adjacency table entry:
+   * find the face in the lookup table or emplace the new face.
+   * Also fill the face-to-cell adjacency table. */
+  std::for_each(feathers::BeginCell(*this), feathers::EndCell(*this), [&](CellMutableIter cell) {
+    tElementDescList facesDesc = cell.get_element_object()->get_faces_desc();
+    for (uint_t faceLocal = 0; faceLocal < cell.NumFaces(); ++faceLocal) {
+      FaceIndex& faceIndex = cell.Begin(FaceTag_{})[faceLocal];
+      if (faceIndex != npos) {
+        continue;
+      }
 
-    /* Check cells:
-     * each cell should be connected to all faces. */
-    for_each_cell(*this, [](tCellIter cell) {
-        FEATHERS_ENSURE(std::all_of(
-            cell.begin(eFaceTag), cell.end(eFaceTag), is_not_npos));
-    });
-    /* Check faces:
-     * each internal face should be connected to two cells;
-     * each boundary face should be connected to at least one cell. */
-    for_each_face(*this, [](tFaceIter face) {
-        if (face.get_mark() == 0) {
-            std::vector c(face.begin(eCellTag), face.end(eCellTag));
-            FEATHERS_ENSURE(std::all_of(
-                face.begin(eCellTag), face.end(eCellTag), is_not_npos));
+      /* Create the face or add current cell to the adjacency list. */
+      sElementDesc& faceDesc = facesDesc[faceLocal];
+      std::set<NodeIndex> faceLookupKey(
+        faceDesc.node_indices.begin(), faceDesc.node_indices.end());
+      if (faceLookupTable.count(faceLookupKey) == 0) {
+        /* Create a brand-new face.
+         * Assign the current cell as the inner one. */
+        faceIndex = EmplaceFace(std::move(faceDesc));
+        faceLookupTable.emplace(std::move(faceLookupKey), faceIndex);
+        BeginAdjacentCell(faceIndex)[FaceInnerCell_] = cell;
+      } else {
+        /* Face exists.
+         * Determine orientation and link it. */
+        faceIndex = faceLookupTable[faceLookupKey];
+        FaceMutableIter face(*this, faceIndex);
+        if (std::equal(face.Begin(NodeTag_{}), face.End(NodeTag_{}), faceDesc.node_indices.begin())) {
+          /* Face node order matches the order
+           * in the face description: face is inner. */
+          FEATHERS_ASSERT(face.Begin(CellTag_{})[FaceInnerCell_] == npos);
+          face.Begin(CellTag_{})[FaceInnerCell_] = cell;
         } else {
-            FEATHERS_ENSURE(std::any_of(
-                face.begin(eCellTag), face.end(eCellTag), is_not_npos));
+          /* Otherwise, the face is outer. */
+          FEATHERS_ASSERT(face.Begin(CellTag_{})[FaceOuterCell_] == npos);
+          face.Begin(CellTag_{})[FaceOuterCell_] = cell;
         }
-    });
-} // сMesh::generate_faces
+      }
+    }
+  });
+
+  /* Check cells:
+   * each cell should be connected to all faces. */
+  ForEachCell(*this, [](CellIter cell) {
+    FEATHERS_ENSURE(std::all_of(
+      cell.Begin(FaceTag_{}), cell.End(FaceTag_{}), is_not_npos<FaceIndex>));
+  });
+
+  /* Check faces:
+   * each internal face should be connected to two cells;
+   * each boundary face should be connected to at least one cell. */
+  ForEachFace(*this, [](FaceIter face) {
+    if (face.Mark() == 0) {
+      FEATHERS_ENSURE(std::all_of(
+        face.Begin(CellTag_{}), face.End(CellTag_{}), is_not_npos<CellIndex>));
+    } else {
+      FEATHERS_ENSURE(std::any_of(
+        face.Begin(CellTag_{}), face.End(CellTag_{}), is_not_npos<CellIndex>));
+    }
+  });
+
+  std::cout << NumCells_ << " " << NumFaces_ << std::endl;
+
+} // Mesh<...>::generate_faces
 
 /* A node and edge flip table for various face types. */
 static const std::map<eShape, std::pair<std::vector<uint_t>, std::vector<uint_t>>>
-        g_face_shape_to_nodes_and_edges_flip {
-    /* 1D faces. */
-    { eShape::node, { {0}, {0} } },
-    /* 2D faces. */
-    { eShape::segment_2, { {1, 0}, {1, 0} } },
-    /* 3D faces. */
-    { eShape::triangle_3, { {0, 2, 1}, {0, 2, 1} } },
-    { eShape::quadrangle_4, { {0, 3, 2, 1}, {0, 3, 2, 1} } },
+  g_face_shape_to_nodes_and_edges_flip {
+  /* 1D faces. */
+  { eShape::node, { {0}, {0} } },
+  /* 2D faces. */
+  { eShape::segment_2, { {1, 0}, {1, 0} } },
+  /* 3D faces. */
+  { eShape::triangle_3, { {0, 2, 1}, {0, 2, 1} } },
+  { eShape::quadrangle_4, { {0, 3, 2, 1}, {0, 3, 2, 1} } },
 };
 
 /**
  * Generate boundary cells to complete face connectivity.
  */
-void cMesh::generate_boundary_cells() {
-    std::for_each(begin_face(*this), end_face(*this), [&](tFaceMutableIter face) {
-        if (face.get_mark() == 0) {
-            return;
-        }
+void Mesh::generate_boundary_cells() {
 
-        /* Boundary faces should be oriented outwards from the mesh. */
-        if (face.get_inner_cell() == npos) {
-            /* Flip normal and cell connectivity. */
-            face.set_normal(-face.get_normal());
-            std::swap(face.begin(eCellTag)[eFaceInnerCell],
-                      face.begin(eCellTag)[eFaceOuterCell]);
-            /* Flip node and edge connectivity. */
-            std::vector<uint_t> node_permutation, edge_permutation;
-            std::tie(node_permutation, edge_permutation) =
-                g_face_shape_to_nodes_and_edges_flip.at(face.get_shape());
-            permute_inplace(
-                node_permutation.begin(), node_permutation.end(), face.begin(eNodeTag));
-            permute_inplace(
-                edge_permutation.begin(), edge_permutation.end(), face.begin(eNodeTag));
-        }
-        tCellIter cell = face.get_inner_cell();
+  std::for_each(feathers::BeginFace(*this), feathers::EndFace(*this), [&](FaceMutableIter face) {
+    if (face.Mark() == 0) {
+      return;
+    }
 
-        /* Generate the boundary cell: reflect a connected interior cell. */
-        uint_t ghost_cell_dim;
-        std::vector<uint_t> ghost_cell_nodes;
+    /* Boundary faces should be oriented outwards from the mesh. */
+    if (face.InnerCell() == npos) {
+      /* Flip normal and cell connectivity. */
+      face.SetNormal(-face.Normal());
+      std::swap(face.Begin(CellTag_{})[FaceInnerCell_],
+                face.Begin(CellTag_{})[FaceOuterCell_]);
+      /* Flip node and edge connectivity. */
+      std::vector<uint_t> node_permutation, edge_permutation;
+      std::tie(node_permutation, edge_permutation) =
+        g_face_shape_to_nodes_and_edges_flip.at(face.Shape());
+      permute_inplace(
+        node_permutation.begin(), node_permutation.end(), face.Begin(NodeTag_{}));
+      permute_inplace(
+        edge_permutation.begin(), edge_permutation.end(), face.Begin(NodeTag_{}));
+    }
+    CellIter cell = face.InnerCell();
+
+    /* Generate the boundary cell: reflect a connected interior cell. */
+    std::vector<uint_t> ghost_cell_nodes;
 #if 0
-        ghost_cell_dim = m_dim - 1;
-        ghost_cell_nodes.assign(face.begin_node(), face.end_node());
+    ghost_cell_nodes.assign(face.begin_node(), face.end_node());
 #endif
 #if 1
-        ghost_cell_dim = m_dim;
-        cell.for_each_node([&](tNodeIter node) {
-            if (std::find(face.begin(eNodeTag), face.end(eNodeTag), node) == face.end(eNodeTag)) {
-                /* Reflect an interior cell node. */
-                // TODO: face normals are not computed here!
-                // TODO: https://glm.g-truc.net/0.9.5/api/a00157.html#gab63646fc36b81cf69d3ce123a72f76f2
-                vec3_t node_coords = node.get_coords();
-                const vec3_t delta = node_coords - face.get_center_coords();
-                node_coords -= 2.0*glm::dot(delta, face.get_normal())*face.get_normal();
-                ghost_cell_nodes.push_back(
-                    emplace_back_node(node_coords, face.get_mark()));
-            } else {
-                /* Insert a boundary face node. */
-                ghost_cell_nodes.push_back(node);
-            }
-        });
+    cell.ForEachNode([&](NodeIter node) {
+      if (std::find(face.Begin(NodeTag_{}), face.End(NodeTag_{}), (NodeIndex)node) == face.End(NodeTag_{})) {
+        /* Reflect an interior cell node. */
+        // TODO: face normals are not computed here!
+        // TODO: https://glm.g-truc.net/0.9.5/api/a00157.html#gab63646fc36b81cf69d3ce123a72f76f2
+        vec3_t node_coords = node.Pos();
+        const vec3_t delta = node_coords - face.CenterPos();
+        node_coords -= 2.0 * glm::dot(delta, face.Normal()) * face.Normal();
+        ghost_cell_nodes.push_back(
+          (uint_t)EmplaceNode(node_coords, (NodeMark)face.Mark()));
+      } else {
+        /* Insert a boundary face node. */
+        ghost_cell_nodes.push_back((uint_t)node);
+      }
+    });
 #endif
-        /* Insert the boundary cell. */
-        // TODO:
-        const uint_t boundary_cell_index =
-            emplace_back_cell({cell.get_shape(), ghost_cell_nodes}, face.get_mark());
-        begin_adjacent_face(eCellTag, boundary_cell_index)[0] = face;
+    /* Insert the boundary cell. */
+    // TODO:
+    const CellIndex boundaryCellIndex =
+      EmplaceCell({cell.Shape(), ghost_cell_nodes}, (CellMark)face.Mark());
+    BeginAdjacentFace(boundaryCellIndex)[0] = face;
 #if 0
-        Cell& boundary_cell = get_cell(boundary_cell_index);
+    Cell& boundary_cell = get_cell(boundaryCellIndex);
         while (boundary_cell._num_faces() != 1) {
             boundary_cell.erase_face(0);
         }
         boundary_cell.begin_face()[0] = face;
 #endif
-        face.begin(eCellTag)[eFaceOuterCell] = boundary_cell_index;
-    });
-} // сMesh::generate_boundary_cells
+
+    StormAssert(face.Begin(CellTag_{})[FaceOuterCell_] == npos);
+    face.Begin(CellTag_{})[FaceOuterCell_] = boundaryCellIndex;
+
+  });
+} // Mesh<...>::generate_boundary_cells
 
 } // namespace feathers

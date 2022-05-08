@@ -214,7 +214,7 @@
 #define FEATHERS_CONST_OVERLOAD_T(T, type, method_name, arguments, ...) \
     FEATHERS_CONST_OVERLOAD_R_T( \
         T, type, const type, method_name, arguments, __VA_ARGS__)
-#define FEATHERS_CONST_OVERLOAD(type, method_name, arguments, ...) \
+#define ConstOverload(type, method_name, arguments, ...) \
     FEATHERS_CONST_OVERLOAD_T( \
         /*empty*/, type, method_name, arguments, __VA_ARGS__)
 /** @} */
@@ -239,6 +239,7 @@
 #define FEATHERS_ASSERT(x) FEATHERS_ENSURE(x)
 #endif
 /** @} */
+#define StormAssert FEATHERS_ASSERT
 
 /** Fatal assertion macro. */
 #define FEATHERS_ERROR_STOP(message) do { \
@@ -277,54 +278,56 @@ using uint_t = std::uint32_t;
 static constexpr uint_t npos = std::numeric_limits<uint_t>::max();
 
 /** Check if index is npos. */
-static constexpr bool is_npos(uint_t ind) {
-    return ind == npos;
+template<class Value>
+static constexpr bool is_npos(Value ind) {
+  return ind == npos;
 } // is_npos
 /** Check if index is not npos. */
-static constexpr bool is_not_npos(uint_t ind) {
-    return ind != npos;
+template<class Value>
+static constexpr bool is_not_npos(Value ind) {
+  return ind != npos;
 } // is_not_npos
 
 /** Min value functor. */
 template<typename tValue>
 class tMinFunc {
 public:
-    constexpr tValue operator()(tValue value_1, tValue value_2) const {
-        return std::min(value_1, value_2);
-    }
+  constexpr tValue operator()(tValue value_1, tValue value_2) const {
+    return std::min(value_1, value_2);
+  }
 }; // class tMinFunc
 
 /** Max value functor. */
 template<typename tValue>
 class tMaxFunc {
 public:
-    constexpr tValue operator()(tValue value_1, tValue value_2) const {
-        return std::max(value_1, value_2);
-    }
+  constexpr tValue operator()(tValue value_1, tValue value_2) const {
+    return std::max(value_1, value_2);
+  }
 }; // class tMaxFunc
 
 /** Min-max value functor. */
 template<typename tValue>
 class tMinMaxFunc {
 public:
-    constexpr auto operator()(tValue value_1, tValue value_2) const {
-        return std::minmax(value_1, value_2);
-    }
-    constexpr auto operator()(tValue value_1,
-                              const std::pair<tValue, tValue>& value_2) const {
-        return std::make_pair(std::min(value_1, value_2.first),
-                              std::max(value_1, value_2.second));
-    }
-    constexpr auto operator()(const std::pair<tValue, tValue>& value_1,
-                              tValue value_2) const {
-        return std::make_pair(std::min(value_1.first, value_2),
-                              std::max(value_1.second, value_2));
-    }
-    constexpr auto operator()(const std::pair<tValue, tValue>& value_1,
-                              const std::pair<tValue, tValue>& value_2) const {
-        return std::make_pair(std::min(value_1.first, value_2.first),
-                              std::max(value_1.second, value_2.second));
-    }
+  constexpr auto operator()(tValue value_1, tValue value_2) const {
+    return std::minmax(value_1, value_2);
+  }
+  constexpr auto operator()(tValue value_1,
+                            const std::pair<tValue, tValue>& value_2) const {
+    return std::make_pair(std::min(value_1, value_2.first),
+                          std::max(value_1, value_2.second));
+  }
+  constexpr auto operator()(const std::pair<tValue, tValue>& value_1,
+                            tValue value_2) const {
+    return std::make_pair(std::min(value_1.first, value_2),
+                          std::max(value_1.second, value_2));
+  }
+  constexpr auto operator()(const std::pair<tValue, tValue>& value_1,
+                            const std::pair<tValue, tValue>& value_2) const {
+    return std::make_pair(std::min(value_1.first, value_2.first),
+                          std::max(value_1.second, value_2.second));
+  }
 }; // class tMinMaxFunc
 
 // ------------------------------------------------------------------------------------ //
@@ -462,7 +465,7 @@ static const real_t c_sqrt1_2(std::sqrt(0.5));
 /** Compute pseudo-inverse value. */
 template<typename tValue>
 constexpr tValue safe_inverse(tValue x) {
-    return x == tValue(0.0) ? tValue(0.0) : (tValue(1.0)/x);
+  return x == tValue(0.0) ? tValue(0.0) : (tValue(1.0)/x);
 } // safe_inverse
 
 /** Simple shortcut for @c std::enable_shared_from_this. */
@@ -471,7 +474,7 @@ using tObject = std::enable_shared_from_this<type_t>;
 
 template<typename obj_t, typename obj_ptr_t>
 auto shared_from_this(const obj_ptr_t& obj) {
-    return std::static_pointer_cast<obj_t>(obj->shared_from_this());
+  return std::static_pointer_cast<obj_t>(obj->shared_from_this());
 } // shared_from_this
 
 } // namespace feathers

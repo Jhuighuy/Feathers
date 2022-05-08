@@ -38,20 +38,20 @@ int main(int argc, char** argv) {
 
     mesh->read_triangle("mesh/step_.1.");
 
-    tScalarField uc(5, mesh->num_cells());
-    tScalarField up(5, mesh->num_cells());
+    tScalarField uc(5, mesh->NumCells());
+    tScalarField up(5, mesh->NumCells());
     MhdFvSolverT<tGasPhysics> solver(mesh);
-    for (uint_t cell_ind = 0; cell_ind < mesh->num_cells(); ++cell_ind) {
+    for (uint_t cell_ind = 0; cell_ind < mesh->NumCells(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
-        double x = mesh->get_cell(cell_ind).get_center_coords().x;
-        double y = mesh->get_cell(cell_ind).get_center_coords().y;
+        double x = mesh->get_cell(cell_ind).CenterPos().x;
+        double y = mesh->Cell(cell_ind).CenterPos().y;
         d += 0.2*std::sin(M_PI*(x+y));
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
         tGasPhysics::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*double d, p;
-        if (mesh->get_cell(cell_ind).get_center_coords().x < 1.0) {
+        if (mesh->Cell(cell_ind).CenterPos().x < 1.0) {
             d = 1.0, p = 1.0;
         } else {
             d = 0.125, p = 0.1;
@@ -61,10 +61,10 @@ int main(int argc, char** argv) {
         uc[cell_ind] = v.cons;*/
 
         /*double d, p, w;
-        if (mesh->get_cell(cell_ind).get_center_coords().x < 1.0) {
+        if (mesh->get_cell(cell_ind).CenterPos().x < 1.0) {
             d = 3.857134, p = 10.33333, w = 2.629369;
         } else {
-            auto x = mesh->get_cell(cell_ind).get_center_coords().x;
+            auto x = mesh->Cell(cell_ind).CenterPos().x;
             d = 1.0 + 0.2*std::sin(5.0*x);
             p = 1, w = 0;
         }
@@ -73,8 +73,8 @@ int main(int argc, char** argv) {
         uc[cell_ind] = v.cons;*/
 
         /*double d, p, u, v;
-        double X = mesh->get_cell(cell_ind).get_center_coords().x;
-        double Y = mesh->get_cell(cell_ind).get_center_coords().y;
+        double X = mesh->get_cell(cell_ind).CenterPos().x;
+        double Y = mesh->Cell(cell_ind).CenterPos().y;
         if (X < 0.5) {
             if (Y < 0.5) {
                 //LB
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
 #endif
 
     system("rm out/*");
-    const uint_t freq = 500;
+    const uint_t freq = 200;
     mesh->save_vtk(("out/fields-" + my_to_string(0) + ".vtk").c_str(),
                    { { "rho", 1, &uc } });
     //print_vtk<5>(0, *mesh, (std::array<real_t, 5>*)uc[0].data());

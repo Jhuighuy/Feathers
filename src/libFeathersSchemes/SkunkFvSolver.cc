@@ -30,35 +30,35 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
     /*
      * Clear fields and apply boundary conditions.
      */
-    for_each_cell(*m_mesh, [&](tCellIter cell) {
-        u_out[cell].fill(0.0);
+  ForEachCell(*m_mesh, [&](CellIter cell) {
+    u_out[cell].fill(0.0);
+  });
+  for (uint_t mark = 1; mark < m_mesh->NumFaceMarks(); ++mark) {
+      const auto& bc = m_bcs.at(mark);
+    ForEachFace(*m_mesh, FaceMark(mark), [&](FaceIter face) {
+      bc->get_ghost_state(face.Normal(),
+                          face.InnerCell().CenterPos(),
+                          face.OuterCell().CenterPos(),
+                          u[face.InnerCell()].data(),
+                          u[face.OuterCell()].data());
     });
-    for (uint_t mark = 1; mark < m_mesh->num_face_marks(); ++mark) {
-        const auto& bc = m_bcs.at(mark);
-        for_each_face(*m_mesh, mark, [&](tFaceIter face) {
-            bc->get_ghost_state(face.get_normal(),
-                                face.get_inner_cell().get_center_coords(),
-                                face.get_outer_cell().get_center_coords(),
-                                u[face.get_inner_cell()].data(),
-                                u[face.get_outer_cell()].data());
-        });
-    }
-    m_conv->get_cell_convection(5, u_out, u);
+  }
+  m_conv->get_cell_convection(5, u_out, u);
 }   // MhdFvSolverT::calc_func
 
 template<typename MhdPhysicsT>
 void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
                                           feathers::tScalarField& u,
                                           feathers::tScalarField& u_hat) const {
-    /*
-     * Compute.
-     */
-    calc_func(u, u_hat);
-    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        for (uint_t i = 0; i < num_vars; ++i) {
-            u_hat[cell][i] = u[cell][i] - dt * u_hat[cell][i];
-        }
-    });
+  /*
+   * Compute.
+   */
+  calc_func(u, u_hat);
+  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+    for (uint_t i = 0; i < num_vars; ++i) {
+      u_hat[cell][i] = u[cell][i] - dt * u_hat[cell][i];
+    }
+  });
 }   // MhdFvSolverT::calc_step
 
 // ************************************************************************************ //

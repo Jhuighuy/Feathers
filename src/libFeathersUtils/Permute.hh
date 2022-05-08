@@ -35,35 +35,35 @@
 namespace feathers {
 
 /**
- * Convert permutation to ordering. Complexity is linear.
+ * Inverse the permutation. Complexity is linear.
  *
- * Beware that @c permutation is not the same as the @c ordering:
+ * Beware that @c permutation is not the same as the @c InversePermutation:
  * @verbatim
  *  new_values[i] = old_values[permutation[i]],
- *  new_values[ordering[i]] = old_values[i].
+ *  new_values[InversePermutation[i]] = old_values[i].
  * @endverbatim
  *
  * Consider the permutation is:
  * @verbatim
  *  {1, 3, 2, 0, 4, 5},
  * @endverbatim
- * For the considered permutation, ordering is:
+ * For the considered permutation, inverse is:
  * @verbatim
  *  {3, 0, 2, 1, 4, 5}.
  * @endverbatim
  */
-template<typename tPermutationMutableIter, typename tIndexMutableIter>
-void convert_permutation_to_ordering(tPermutationMutableIter first_permutation_iter,
-                                     tPermutationMutableIter last_permutation_iter,
-                                     tIndexMutableIter first_index_iter) {
+template<typename tPermMutableIter, typename tIndexMutableIter>
+void InversePermutation(tPermMutableIter first_permutation_iter,
+                        tPermMutableIter last_permutation_iter,
+                        tIndexMutableIter first_inverse_permutation_iter) {
     using index_t = std::decay_t<decltype(*first_permutation_iter)>;
     index_t index = 0;
-    for (tPermutationMutableIter permutation_iter = first_permutation_iter;
+    for (tPermMutableIter permutation_iter = first_permutation_iter;
             permutation_iter != last_permutation_iter; ++permutation_iter, ++index) {
         FEATHERS_ASSERT(*permutation_iter != npos);
-        *(first_index_iter + *permutation_iter) = index;
+        *(first_inverse_permutation_iter + *permutation_iter) = index;
     }
-}   // convert_permutation_to_ordering
+}   // InversePermutation
 
 /**
  * Permute iterators.
@@ -74,22 +74,22 @@ void convert_permutation_to_ordering(tPermutationMutableIter first_permutation_i
  * std::vector<T> values;
  * std::vector<size_t> permutation;
  * permute_inplace_swap(
- *     permutation.begin(), permutation.end(),
+ *     permutation.Begin(), permutation.End(),
  *     [&](size_t index_1, size_t index_2) { std::swap(values[index_1], values[index_2]); });
  * @endcode
  */
-template<typename tPermutationMutableIter, typename tSwapFunc>
-void permute_inplace_swap(tPermutationMutableIter first_permutation_iter,
-                          tPermutationMutableIter last_permutation_iter, tSwapFunc&& swap_func) {
+template<typename tPermMutableIter, typename tSwapFunc>
+void permute_inplace_swap(tPermMutableIter first_permutation_iter,
+                          tPermMutableIter last_permutation_iter, tSwapFunc&& swap_func) {
     /* For implementation details see
      * https://devblogs.microsoft.com/oldnewthing/20170102-00/?p=95095 */
     using index_t = std::decay_t<decltype(*first_permutation_iter)>;
     index_t index = 0;
-    for (tPermutationMutableIter permutation_iter = first_permutation_iter;
+    for (tPermMutableIter permutation_iter = first_permutation_iter;
             permutation_iter != last_permutation_iter; ++permutation_iter, ++index) {
         FEATHERS_ASSERT(*permutation_iter != npos);
         index_t current_index = index;
-        tPermutationMutableIter current_permutation_iter = permutation_iter;
+        tPermMutableIter current_permutation_iter = permutation_iter;
         while (*current_permutation_iter != index) {
             FEATHERS_ASSERT(*current_permutation_iter != npos);
             const index_t new_index = *current_permutation_iter;
@@ -114,13 +114,13 @@ void permute_inplace_swap(tPermutationMutableIter first_permutation_iter,
  * std::vector<T> values_1, values_2, values_3;
  * std::vector<size_t> permutation;
  * permute_inplace(
- *     permutation.begin(), permutation.end(),
- *     values_1.begin(), values_2.begin(), values_3.begin());
+ *     permutation.Begin(), permutation.End(),
+ *     values_1.Begin(), values_2.Begin(), values_3.Begin());
  * @endcode
  */
-template<typename tPermutationMutableIter, typename... tValueMutableIter>
-void permute_inplace(tPermutationMutableIter first_permutation_iter,
-                     tPermutationMutableIter last_permutation_iter,
+template<typename tPermMutableIter, typename... tValueMutableIter>
+void permute_inplace(tPermMutableIter first_permutation_iter,
+                     tPermMutableIter last_permutation_iter,
                      tValueMutableIter... first_value_iter) {
     permute_inplace_swap(first_permutation_iter,
                          last_permutation_iter, [&](auto index_1, auto index_2) {

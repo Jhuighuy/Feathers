@@ -94,7 +94,7 @@ USAGE:
    by supplying the stride between the beginning of adjacent rows. The other
    formats do not. (Thus you cannot write a native-format BMP through the BMP
    writer, both because it is in BGR order and because it may have padding
-   at the end of the line.)
+   at the End of the line.)
 
    PNG allows you to set the deflate compression level by setting the global
    variable 'stbi_write_png_compression_level' (it defaults to 8).
@@ -144,7 +144,7 @@ CREDITS:
 
 LICENSE
 
-  See end of file for license information.
+  See End of file for license information.
 
 */
 
@@ -972,7 +972,7 @@ STBIWDEF unsigned char * stbi_zlib_compress(unsigned char *data, int data_len, i
    // write out final bytes
    for (;i < data_len; ++i)
       stbiw__zlib_huffb(data[i]);
-   stbiw__zlib_huff(256); // end of block
+   stbiw__zlib_huff(256); // End of block
    // pad with 0 bits to byte boundary
    while (bitcount)
       stbiw__zlib_add(0,1);

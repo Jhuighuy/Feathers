@@ -53,14 +53,14 @@ public:
  */
 class cLeastSquaresGradientScheme final : public iGradientScheme {
 private:
-    std::shared_ptr<const cMesh> m_mesh;
+    std::shared_ptr<const Mesh> m_mesh;
     tMatrixField m_inverse_matrices;
 
 public:
     /** Initialize the gradient scheme. */
-    explicit cLeastSquaresGradientScheme(std::shared_ptr<const cMesh> mesh):
+    explicit cLeastSquaresGradientScheme(std::shared_ptr<const Mesh> mesh):
         m_mesh(std::move(mesh)),
-        m_inverse_matrices(1, m_mesh->num_cells()) {
+        m_inverse_matrices(1, m_mesh->NumCells()) {
         init_gradients_();
     }
 

@@ -183,48 +183,50 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
         uint_t num_vars, tScalarField& lim_u, const tScalarField& u, const tVectorField& grad_u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
-    for_each_interior_cell(*m_mesh, [&](tCellIter cell) {
-        static const real_t k = 0.1;
-        const real_t eps_sqr = std::pow(k*cell.get_volume(), 3);
-        /* Find the largest negative and positive differences
-         * between values of and neighbor cells and the current cell. */
-        FEATHERS_TMP_SCALAR_FIELD(du_min, num_vars); du_min = u[cell];
-        FEATHERS_TMP_SCALAR_FIELD(du_max, num_vars); du_max = u[cell];
-        cell.for_each_face_cells([&](tCellIter cell_inner, tCellIter cell_outer) {
-            for (uint_t i = 0; i < num_vars; ++i) {
-                du_min[i] = std::min(du_min[i],
-                                     std::min(u[cell_outer][i], u[cell_inner][i]));
-                du_max[i] = std::max(du_max[i],
-                                     std::max(u[cell_outer][i], u[cell_inner][i]));
-            }
-        });
-        for (uint_t i = 0; i < num_vars; ++i) {
-            du_min[i] = std::min(0.0, du_min[i] - u[cell][i]);
-            du_max[i] = std::max(0.0, du_max[i] - u[cell][i]);
-        }
+  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+    static const real_t k = 0.1;
+    const real_t eps_sqr = std::pow(k * cell.Volume(), 3);
+    /* Find the largest negative and positive differences
+     * between values of and neighbor cells and the current cell. */
+    FEATHERS_TMP_SCALAR_FIELD(du_min, num_vars);
+    du_min = u[cell];
+    FEATHERS_TMP_SCALAR_FIELD(du_max, num_vars);
+    du_max = u[cell];
+    cell.ForEachFaceCells([&](CellIter cell_inner, CellIter cell_outer) {
+      for (uint_t i = 0; i < num_vars; ++i) {
+        du_min[i] = std::min(du_min[i],
+                             std::min(u[cell_outer][i], u[cell_inner][i]));
+        du_max[i] = std::max(du_max[i],
+                             std::max(u[cell_outer][i], u[cell_inner][i]));
+      }
+    });
+    for (uint_t i = 0; i < num_vars; ++i) {
+      du_min[i] = std::min(0.0, du_min[i] - u[cell][i]);
+      du_max[i] = std::max(0.0, du_max[i] - u[cell][i]);
+    }
 
-        /* Compute slope limiting coefficients:
-         * clamp the node delta with computed local delta extrema. */
-        lim_u[cell].fill(1.0);
-        cell.for_each_face([&](tFaceIter face) {
-            const vec3_t dr =
-                face.get_center_coords() - cell.get_center_coords();
-            for (uint_t i = 0; i < num_vars; ++i) {
-                const real_t du_face = glm::dot(grad_u[cell][i], dr);
-                const real_t limiter =
-                    m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
-                lim_u[cell][i] = std::min(lim_u[cell][i], limiter);
-            }
-        });
+    /* Compute slope limiting coefficients:
+     * clamp the node delta with computed local delta extrema. */
+    lim_u[cell].fill(1.0);
+    cell.ForEachFace([&](FaceIter face) {
+      const vec3_t dr =
+        face.CenterPos() - cell.CenterPos();
+      for (uint_t i = 0; i < num_vars; ++i) {
+        const real_t du_face = glm::dot(grad_u[cell][i], dr);
+        const real_t limiter =
+          m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
+        lim_u[cell][i] = std::min(lim_u[cell][i], limiter);
+      }
+    });
 
-        /* Compute secondary limiting coefficients:
-         * disable limiting near smooth regions. */
-        for (uint_t i = 0; i < num_vars; ++i) {
-            const real_t limiter =
-                m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
-            lim_u[cell][i] = limiter;
-        }
-   });
+    /* Compute secondary limiting coefficients:
+     * disable limiting near smooth regions. */
+    for (uint_t i = 0; i < num_vars; ++i) {
+      const real_t limiter =
+        m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
+      lim_u[cell][i] = limiter;
+    }
+  });
 } // tGradientLimiterScheme::get_cell_limiter
 
 template class tGradientLimiterScheme<tMinmodSlopeLimiter>;
