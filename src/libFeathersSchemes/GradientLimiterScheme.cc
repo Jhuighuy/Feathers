@@ -180,10 +180,10 @@ real_t tCubicSecondLimiter::operator()(real_t limiter,
  */
 template<class tSlopeLimiter, class tSecondLimiter>
 void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
-        uint_t num_vars, tScalarField& lim_u, const tScalarField& u, const tVectorField& grad_u) const {
+  size_t num_vars, tScalarField& lim_u, const tScalarField& u, const tVectorField& grad_u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
-  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
     static const real_t k = 0.1;
     const real_t eps_sqr = std::pow(k * cell.Volume(), 3);
     /* Find the largest negative and positive differences
@@ -192,15 +192,15 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
     du_min = u[cell];
     FEATHERS_TMP_SCALAR_FIELD(du_max, num_vars);
     du_max = u[cell];
-    cell.ForEachFaceCells([&](CellIter cell_inner, CellIter cell_outer) {
-      for (uint_t i = 0; i < num_vars; ++i) {
+    cell.ForEachFaceCells([&](CellRef cell_inner, CellRef cell_outer) {
+      for (size_t i = 0; i < num_vars; ++i) {
         du_min[i] = std::min(du_min[i],
                              std::min(u[cell_outer][i], u[cell_inner][i]));
         du_max[i] = std::max(du_max[i],
                              std::max(u[cell_outer][i], u[cell_inner][i]));
       }
     });
-    for (uint_t i = 0; i < num_vars; ++i) {
+    for (size_t i = 0; i < num_vars; ++i) {
       du_min[i] = std::min(0.0, du_min[i] - u[cell][i]);
       du_max[i] = std::max(0.0, du_max[i] - u[cell][i]);
     }
@@ -208,10 +208,10 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
     /* Compute slope limiting coefficients:
      * clamp the node delta with computed local delta extrema. */
     lim_u[cell].fill(1.0);
-    cell.ForEachFace([&](FaceIter face) {
+    cell.ForEachFace([&](FaceRef face) {
       const vec3_t dr =
         face.CenterPos() - cell.CenterPos();
-      for (uint_t i = 0; i < num_vars; ++i) {
+      for (size_t i = 0; i < num_vars; ++i) {
         const real_t du_face = glm::dot(grad_u[cell][i], dr);
         const real_t limiter =
           m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
@@ -221,7 +221,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
 
     /* Compute secondary limiting coefficients:
      * disable limiting near smooth regions. */
-    for (uint_t i = 0; i < num_vars; ++i) {
+    for (size_t i = 0; i < num_vars; ++i) {
       const real_t limiter =
         m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
       lim_u[cell][i] = limiter;

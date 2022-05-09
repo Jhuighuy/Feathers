@@ -11,7 +11,7 @@
 #include <fstream>
 #include <iomanip>
 
-inline std::string my_to_string(feathers::uint_t i) {
+inline std::string my_to_string(feathers::size_t i) {
     std::string s = std::to_string(i);
     std::string z(5-s.size(), '0');
     return z + s;

@@ -30,12 +30,12 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
     /*
      * Clear fields and apply boundary conditions.
      */
-  ForEachCell(*m_mesh, [&](CellIter cell) {
+  ForEachCell(*m_mesh, [&](CellRef cell) {
     u_out[cell].fill(0.0);
   });
-  for (uint_t mark = 1; mark < m_mesh->NumFaceMarks(); ++mark) {
+  for (size_t mark = 1; mark < m_mesh->NumFaceMarks(); ++mark) {
       const auto& bc = m_bcs.at(mark);
-    ForEachFace(*m_mesh, FaceMark(mark), [&](FaceIter face) {
+    ForEachFace(*m_mesh, FaceMark(mark), [&](FaceRef face) {
       bc->get_ghost_state(face.Normal(),
                           face.InnerCell().CenterPos(),
                           face.OuterCell().CenterPos(),
@@ -54,7 +54,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
    * Compute.
    */
   calc_func(u, u_hat);
-  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
     for (uint_t i = 0; i < num_vars; ++i) {
       u_hat[cell][i] = u[cell][i] - dt * u_hat[cell][i];
     }

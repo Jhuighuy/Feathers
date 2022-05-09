@@ -40,11 +40,11 @@ template<typename data_t>
 class tGenericSubField {
 private:
     friend class tGenericSubField<const data_t>;
-    uint_t m_num_vars;
+    size_t m_num_vars;
     data_t* m_elements;
 
 public:
-    tGenericSubField(uint_t num_vars, data_t* elements):
+    tGenericSubField(size_t num_vars, data_t* elements):
         m_num_vars(num_vars), m_elements(elements) {
     }
 
@@ -86,7 +86,7 @@ public:
         return m_elements;
     }
 
-    auto& operator[](uint_t i) const {
+    auto& operator[](size_t i) const {
         return m_elements[i];
     }
 };
@@ -103,22 +103,22 @@ using tMatrixConstSubField = tGenericSubField<const mat3_t>;
     tScalarSubField name((num_vars), FEATHERS_ALLOCA(real_t, (num_vars)))
 
 template<typename type_t, typename component_type_t = type_t,
-    uint_t num_components = sizeof(type_t)/sizeof(component_type_t)>
+    size_t num_components = sizeof(type_t) / sizeof(component_type_t)>
 class tGenericField {
 private:
-    uint_t m_num_vars;
+    size_t m_num_vars;
     std::vector<component_type_t> m_elements;
 
 public:
-    tGenericField(uint_t num_vars, uint_t num_elements):
+    tGenericField(size_t num_vars, size_t num_elements):
         m_num_vars(num_vars), m_elements(num_components*num_vars*num_elements) {
     }
 
-    auto operator[](uint_t element_index) {
+    auto operator[](size_t element_index) {
         return tGenericSubField<type_t>(m_num_vars,
             reinterpret_cast<type_t*>(&m_elements[num_components*m_num_vars*element_index]));
     }
-    auto operator[](uint_t element_index) const {
+    auto operator[](size_t element_index) const {
         return tGenericSubField<const type_t>(m_num_vars,
             reinterpret_cast<const type_t*>(&m_elements[num_components*m_num_vars*element_index]));
     }
@@ -135,7 +135,7 @@ using tMatrixField = tGenericField<mat3_t, real_t>;
 
 struct sFieldDesc {
     const char* name;
-    uint_t var_index;
+    size_t var_index;
     tScalarField* scalar;
 }; // struct sFieldDesc
 

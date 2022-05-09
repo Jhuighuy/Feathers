@@ -60,7 +60,7 @@ static std::unique_ptr<iElement> construct_element_(eShape shape) {
  * Construct a new element object.
  */
 std::unique_ptr<iElement> iElement::make(sElementDesc&& desc,
-                                         uint_t num_global_nodes,
+                                         size_t num_global_nodes,
                                          const vec3_t* global_node_coords) {
     std::unique_ptr<iElement> element = construct_element_(desc.shape);
     /* Assign a global node array. */
@@ -71,7 +71,7 @@ std::unique_ptr<iElement> iElement::make(sElementDesc&& desc,
         desc.node_indices.size() <= num_global_nodes &&
         desc.node_indices.size() == element->num_nodes() &&
         std::all_of(desc.node_indices.begin(), desc.node_indices.end(),
-                    [&](uint_t node_index) { return node_index < num_global_nodes; }));
+                    [&](size_t node_index) { return node_index < num_global_nodes; }));
     element->m_node_indices = std::move(desc.node_indices);
     return element;
 }   // iElement::make
@@ -148,7 +148,7 @@ vec3_t cNode::get_center_coords() const {
 eShape cNode::get_shape() const {
     return eShape::node;
 }
-uint_t cNode::num_nodes() const {
+size_t cNode::num_nodes() const {
     return 1;
 }
 tElementDescList cNode::get_edges_desc() const {
@@ -186,7 +186,7 @@ vec3_t cSegment::get_center_coords() const {
 eShape cSegment::get_shape() const {
     return eShape::segment_2;
 }
-uint_t cSegment::num_nodes() const {
+size_t cSegment::num_nodes() const {
     return 2;
 }
 tElementDescList cSegment::get_edges_desc() const {
@@ -230,7 +230,7 @@ vec3_t cTriangle::get_center_coords() const {
 eShape cTriangle::get_shape() const {
     return eShape::triangle_3;
 }
-uint_t cTriangle::num_nodes() const {
+size_t cTriangle::num_nodes() const {
     return 3;
 }
 tElementDescList cTriangle::get_edges_desc() const {
@@ -242,7 +242,7 @@ tElementDescList cTriangle::get_faces_desc() const {
     return get_edges_desc();
 }
 
-uint_t cQuadrangle::num_nodes() const {
+size_t cQuadrangle::num_nodes() const {
     return 4;
 }
 eShape cQuadrangle::get_shape() const {
@@ -257,7 +257,7 @@ tElementDescList cQuadrangle::get_edges_desc() const {
 tElementDescList cQuadrangle::get_faces_desc() const {
     return get_edges_desc();
 }
-tElementDescList cQuadrangle::get_simplicial_parts(uint_t partition_index) const {
+tElementDescList cQuadrangle::get_simplicial_parts(size_t partition_index) const {
     switch (partition_index) {
         case 0:
             return { get_part(eShape::triangle_3, 0, 1, 2),
@@ -307,7 +307,7 @@ vec3_t cTetrahedron::get_center_coords() const {
 eShape cTetrahedron::get_shape() const {
     return eShape::tetrahedron_4;
 }
-uint_t cTetrahedron::num_nodes() const {
+size_t cTetrahedron::num_nodes() const {
     return 4;
 }
 tElementDescList cTetrahedron::get_edges_desc() const {
@@ -325,7 +325,7 @@ tElementDescList cTetrahedron::get_faces_desc() const {
              get_part(eShape::triangle_3, 2, 0, 3) };
 }
 
-uint_t cPyramid::num_nodes() const {
+size_t cPyramid::num_nodes() const {
     return 5;
 }
 eShape cPyramid::get_shape() const {
@@ -348,7 +348,7 @@ tElementDescList cPyramid::get_faces_desc() const {
              get_part(eShape::triangle_3, 2, 3, 4),
              get_part(eShape::triangle_3, 3, 0, 4) };
 }
-tElementDescList cPyramid::get_simplicial_parts(uint_t partition_index) const {
+tElementDescList cPyramid::get_simplicial_parts(size_t partition_index) const {
     switch (partition_index) {
     case 0:
         return { get_part(eShape::tetrahedron_4, 0, 1, 2, 4),
@@ -361,7 +361,7 @@ tElementDescList cPyramid::get_simplicial_parts(uint_t partition_index) const {
     }
 }
 
-uint_t cPentahedron::num_nodes() const {
+size_t cPentahedron::num_nodes() const {
     return 6;
 }
 eShape cPentahedron::get_shape() const {
@@ -385,11 +385,11 @@ tElementDescList cPentahedron::get_faces_desc() const {
              get_part(eShape::triangle_3, 0, 2, 1),
              get_part(eShape::triangle_3, 3, 4, 5) };
 }
-tElementDescList cPentahedron::get_simplicial_parts(uint_t partition_index) const {
+tElementDescList cPentahedron::get_simplicial_parts(size_t partition_index) const {
     FEATHERS_NOT_IMPLEMENTED();
 }
 
-uint_t cHexahedron::num_nodes() const {
+size_t cHexahedron::num_nodes() const {
     return 8;
 }
 eShape cHexahedron::get_shape() const {
@@ -417,7 +417,7 @@ tElementDescList cHexahedron::get_faces_desc() const {
              get_part(eShape::quadrangle_4, 0, 4, 7, 3),
              get_part(eShape::quadrangle_4, 4, 5, 6, 7) };
 }
-tElementDescList cHexahedron::get_simplicial_parts(uint_t partition_index) const {
+tElementDescList cHexahedron::get_simplicial_parts(size_t partition_index) const {
     // TODO: alternative partitions!
     switch (partition_index) {
         case 0:

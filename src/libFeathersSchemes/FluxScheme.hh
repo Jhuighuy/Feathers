@@ -47,7 +47,7 @@ namespace feathers {
 class iFluxScheme : public tObject<iFluxScheme> {
 public:
     /** Compute the numerical flux. */
-    virtual void get_numerical_flux(uint_t num_vars,
+    virtual void get_numerical_flux(size_t num_vars,
                                     const vec3_t& n,
                                     tScalarConstSubField cons_r,
                                     tScalarConstSubField cons_l,
@@ -70,7 +70,7 @@ template<>
 class tLaxFriedrichsFluxScheme<tGasPhysics> final : public iFluxScheme {
 public:
     /** Compute the numerical flux. */
-    void get_numerical_flux(uint_t num_vars,
+    void get_numerical_flux(size_t num_vars,
                             const vec3_t& n,
                             tScalarConstSubField cons_r,
                             tScalarConstSubField cons_l,
@@ -94,7 +94,7 @@ template<>
 class tHllFluxScheme<tGasPhysics> : public iFluxScheme {
 public:
     /** Compute the numerical flux. */
-    void get_numerical_flux(uint_t num_vars,
+    void get_numerical_flux(size_t num_vars,
                             const vec3_t& n,
                             tScalarConstSubField cons_r,
                             tScalarConstSubField cons_l,
@@ -115,7 +115,7 @@ template<>
 class tHllcFluxScheme<tGasPhysics> : public iFluxScheme {
 public:
     /** Compute the numerical flux. */
-    void get_numerical_flux(uint_t num_vars,
+    void get_numerical_flux(size_t num_vars,
                             const vec3_t& n,
                             tScalarConstSubField cons_r,
                             tScalarConstSubField cons_l,

@@ -116,7 +116,7 @@ public:
 class iGradientLimiterScheme : public tObject<iGradientLimiterScheme> {
 public:
     /** Compute cell-centered gradient limiter coefficients. */
-    virtual void get_cell_limiter(uint_t num_vars,
+    virtual void get_cell_limiter(size_t num_vars,
                                   tScalarField& lim_u,
                                   const tScalarField& u,
                                   const tVectorField& grad_u) const = 0;
@@ -143,7 +143,7 @@ public:
     }
 
     /** Compute cell-centered gradient limiter coefficients. */
-    void get_cell_limiter(uint_t num_vars,
+    void get_cell_limiter(size_t num_vars,
                           tScalarField& lim_u,
                           const tScalarField& u,
                           const tVectorField& grad_u) const final;

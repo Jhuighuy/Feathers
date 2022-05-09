@@ -32,56 +32,53 @@
 
 namespace feathers {
 
-template<class Mesh>
-class BaseNodeIterator;
-template<class Mesh>
-class BaseEdgeIterator;
-template<class Mesh>
-class BaseFaceIterator;
-template<class Mesh>
-class BaseCellIterator;
+template<class> class BaseNodeReference;
+template<class> class BaseEdgeReference;
+template<class> class BaseFaceReference;
+template<class> class BaseCellReference;
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Base element iterator.
+/// @brief Base element reference.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Iterator, class Mesh, class Tag>
-class BaseElementIterator {
-private:
-  Mesh* Mesh_;
-  Index<uint_t, Tag> Index_;
-
+class BaseElementReference {
 protected:
+  Mesh* Mesh_;
+  Index<Tag> Index_;
 
-  BaseElementIterator(Mesh& mesh, Index<uint_t, Tag> index) noexcept :
+  template<class, class, class>
+  friend class BaseElementReference;
+
+  BaseElementReference(Mesh& mesh, Index<Tag> index) noexcept :
       Mesh_(&mesh), Index_(index) {
     StormAssert(Index_ != npos);
   }
 
   template<class OtherIterator, class OtherMesh>
-  BaseElementIterator(
-      BaseElementIterator<OtherIterator, OtherMesh, Tag> const& other) noexcept :
-      Mesh_(&other.GetMesh()), Index_(other.GetIndex()) {
+  BaseElementReference(
+    BaseElementReference<OtherIterator, OtherMesh, Tag> const& other) noexcept :
+      Mesh_(other.Mesh_), Index_(other.Index_) {
     StormAssert(Index_ != npos);
   }
 
 public:
 
-  /// @brief Get associated mesh. 
-  Mesh& GetMesh() const noexcept {
-    return *Mesh_;
+  /// @brief Identity dereference operator (used for standard algorithms).
+  /// @{
+  Iterator& operator*() noexcept {
+    return static_cast<Iterator&>(*this);
   }
-
-  /// @brief Get associated element index. 
-  Index<uint_t, Tag> GetIndex() const noexcept {
-    return Index_;
+  Iterator const& operator*() const noexcept {
+    return static_cast<Iterator const&>(*this);
   }
+  /// @}
 
   /// @brief Cast to index operator. 
-  /*explicit*/ operator Index<uint_t, Tag>() const noexcept {
+  /*explicit*/ operator Index<Tag>() const noexcept {
     return Index_;
   }
-  /*explicit*/ operator uint_t() const noexcept {
-    return static_cast<uint_t>(Index_);
+  /*explicit*/ operator size_t() const noexcept {
+    return static_cast<size_t>(Index_);
   }
 
   /// @brief Difference operator. 
@@ -172,18 +169,8 @@ public:
   }
   /// @}
 
-  /// @brief Identity dereference operator (used for standard algorithms). 
-  /// @{
-  Iterator& operator*() noexcept {
-    return static_cast<Iterator&>(*this);
-  }
-  Iterator const& operator*() const noexcept {
-    return static_cast<Iterator const&>(*this);
-  }
-  /// @}
-
   /// @brief Get mark. 
-  Index<uint_t, MarkTag_<Tag>> Mark() const noexcept {
+  Index<MarkTag_<Tag>> Mark() const noexcept {
     return Mesh_->Mark(Index_);
   }
 
@@ -199,133 +186,82 @@ public:
 
   /// @brief Number of nodes in the element. 
   size_t NumNodes() const noexcept {
-    //return std::size(Mesh_->AdjacentNodes(Index_));
-    return std::size(Nodes());
+    return std::size(Mesh_->AdjacentNodes(Index_));
   }
 
   /// @brief Number of edges in the element. 
   size_t NumEdges() const noexcept {
-    return std::size(Edges());
+    return std::size(Mesh_->AdjacentEdges(Index_));
   }
 
   /// @brief Number of faces in the element. 
   size_t NumFaces() const noexcept {
-    return std::size(Faces());
+    return std::size(Mesh_->AdjacentFaces(Index_));
   }
 
   /// @brief Number of cells in the element. 
   size_t NumCells() const noexcept {
-    return std::size(Cells());
+    return std::size(Mesh_->AdjacentCells(Index_));
   }
 
   /// @brief Ranges of the adjacent nodes.
   auto Nodes() const noexcept {
-    return //Mesh_->AdjacentNodes(Index_) |
-      std::ranges::subrange(Mesh_->BeginAdjacentNode(Index_), Mesh_->EndAdjacentNode(Index_)) |
-      std::views::transform([this](NodeIndex nodeIndex) {
-        return BaseNodeIterator<Mesh>(*Mesh_, nodeIndex);
+    return Mesh_->AdjacentNodes(Index_) |
+      std::views::transform([&mesh = *Mesh_](NodeIndex nodeIndex) {
+        return BaseNodeReference<Mesh>(mesh, nodeIndex);
       });
   }
 
   /// @brief Ranges of the adjacent edges.
   auto Edges() const noexcept {
-    return //Mesh_->AdjacentEdges(Index_) |
-      std::ranges::subrange(Mesh_->BeginAdjacentEdge(Index_), Mesh_->EndAdjacentEdge(Index_)) |
-      std::views::transform([this](EdgeIndex edgeIndex) {
-        return BaseEdgeIterator<Mesh>(*Mesh_, edgeIndex);
+    return Mesh_->AdjacentEdges(Index_) |
+      std::views::transform([&mesh = *Mesh_](EdgeIndex edgeIndex) {
+        return BaseEdgeReference<Mesh>(mesh, edgeIndex);
       });
   }
 
   /// @brief Ranges of the adjacent faces.
   auto Faces() const noexcept {
-    return //Mesh_->AdjacentFaces(Index_) |
-      std::ranges::subrange(Mesh_->BeginAdjacentFace(Index_), Mesh_->EndAdjacentFace(Index_)) |
-      std::views::transform([this](FaceIndex faceIndex) {
-        return BaseFaceIterator<Mesh>(*Mesh_, faceIndex);
+    return Mesh_->AdjacentFaces(Index_) |
+      std::views::transform([&mesh = *Mesh_](FaceIndex faceIndex) {
+        return BaseFaceReference<Mesh>(mesh, faceIndex);
       });
   }
 
   /// @brief Ranges of the adjacent cells.
   auto Cells() const noexcept {
-    return //Mesh_->AdjacentCells(Index_) |
-      std::ranges::subrange(Mesh_->BeginAdjacentCell(Index_), Mesh_->EndAdjacentCell(Index_)) |
-      std::views::transform([this](CellIndex cellIndex) {
-        return BaseCellIterator<Mesh>(*Mesh_, cellIndex);
+    return Mesh_->AdjacentCells(Index_) |
+      std::views::transform([&mesh = *Mesh_](CellIndex cellIndex) {
+        return BaseCellReference<Mesh>(mesh, cellIndex);
       });
   }
 
-  /// @brief Ranges of the adjacent elements.
-  template<class OtherTag>
-  auto Adjacent() const noexcept {
-    if constexpr (std::is_same_v<OtherTag, NodeTag_>) {
-      return Nodes();
-    } else if constexpr (std::is_same_v<OtherTag, EdgeTag_>) {
-      return Edges();
-    } else if constexpr (std::is_same_v<OtherTag, FaceTag_>) {
-      return Faces();
-    } else if constexpr (std::is_same_v<OtherTag, CellTag_>) {
-      return Cells();
-    }
-  }
-
-  /// @brief Pointer to the beginning of the adjacent elements. 
-  /// @{
-  [[deprecated("")]] auto Begin(NodeTag_ const&) const noexcept {
-    return Mesh_->BeginAdjacentNode(Index_);
-  }
-  [[deprecated("")]] auto Begin(EdgeTag_ const&) const noexcept {
-    return Mesh_->BeginAdjacentEdge(Index_);
-  }
-  [[deprecated("")]] auto Begin(FaceTag_ const&) const noexcept {
-    return Mesh_->BeginAdjacentFace(Index_);
-  }
-  [[deprecated("")]] auto Begin(CellTag_ const&) const noexcept {
-    return Mesh_->BeginAdjacentCell(Index_);
-  }
-  /// @}
-
-  /// @brief Pointer to the end of the adjacent elements. 
-  /// @{
-  [[deprecated("")]] auto End(NodeTag_ const&) const {
-    return Mesh_->EndAdjacentNode(Index_);
-  }
-  [[deprecated("")]] auto End(EdgeTag_ const&) const {
-    return Mesh_->EndAdjacentEdge(Index_);
-  }
-  [[deprecated("")]] auto End(FaceTag_ const&) const {
-    return Mesh_->EndAdjacentFace(Index_);
-  }
-  [[deprecated("")]] auto End(CellTag_ const&) const {
-    return Mesh_->EndAdjacentCell(Index_);
-  }
-  /// @}
-
   /// @brief Get adjacent node. 
-  auto Node(uint_t nodeLocal) const noexcept {
+  auto Node(size_t nodeLocal) const noexcept {
     StormAssert(nodeLocal < NumNodes());
-    return BaseNodeIterator<Mesh>(
-      *Mesh_, Mesh_->BeginAdjacentNode(Index_)[nodeLocal]);
+    return BaseNodeReference<Mesh>(
+      *Mesh_, Mesh_->AdjacentNodes(Index_)[nodeLocal]);
   }
 
   /// @brief Get adjacent edge. 
-  auto Edge(uint_t edgeLocal) const noexcept {
+  auto Edge(size_t edgeLocal) const noexcept {
     StormAssert(edgeLocal < NumEdges());
-    return BaseEdgeIterator<Mesh>(
-      *Mesh_, Mesh_->BeginAdjacentEdge(Index_)[edgeLocal]);
+    return BaseEdgeReference<Mesh>(
+      *Mesh_, Mesh_->AdjacentEdges(Index_)[edgeLocal]);
   }
 
   /// @brief Get adjacent face. 
-  auto Face(uint_t faceLocal) const noexcept {
+  auto Face(size_t faceLocal) const noexcept {
     StormAssert(faceLocal < NumFaces());
-    return BaseFaceIterator<Mesh>(
-      *Mesh_, Mesh_->BeginAdjacentFace(Index_)[faceLocal]);
+    return BaseFaceReference<Mesh>(
+      *Mesh_, Mesh_->AdjacentFaces(Index_)[faceLocal]);
   }
 
   /// @brief Get adjacent cell. 
-  auto Cell(uint_t cellLocal) const noexcept {
+  auto Cell(size_t cellLocal) const noexcept {
     StormAssert(cellLocal < NumCells());
-    return BaseCellIterator<Mesh>(
-      *Mesh_, Mesh_->BeginAdjacentCell(Index_)[cellLocal]);
+    return BaseCellReference<Mesh>(
+      *Mesh_, Mesh_->AdjacentCells(Index_)[cellLocal]);
   }
 
   /// @brief Iterate through all connected nodes. 
@@ -348,7 +284,7 @@ public:
   }
   template<class Func>
   void ForEachFaceCells(Func func) const noexcept {
-    std::ranges::for_each(Faces(), [&](BaseFaceIterator<Mesh> face) {
+    std::ranges::for_each(Faces(), [&](BaseFaceReference<Mesh> face) {
       func(face.InnerCell(), face.OuterCell());
     });
   }
@@ -360,109 +296,109 @@ public:
     std::ranges::for_each(Cells(), func);
   }
 
-}; // class BaseElementIterator
+}; // class BaseElementReference
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Base node iterator.
+/// @brief Base node reference.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseNodeIterator final :
-  public BaseElementIterator<BaseNodeIterator<Mesh>, Mesh, NodeTag_> {
+class BaseNodeReference final :
+  public BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_> {
 public:
 
-  /// @brief Construct base node iterator. 
-  explicit BaseNodeIterator(Mesh& mesh, NodeIndex index = {}) noexcept :
-    BaseElementIterator<BaseNodeIterator<Mesh>, Mesh, NodeTag_>(mesh, index) {
+  /// @brief Construct base node reference.
+  explicit BaseNodeReference(Mesh& mesh, NodeIndex index = {}) noexcept :
+    BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_>(mesh, index) {
   }
 
   /// @brief Copy (make const) constructor. 
-  BaseNodeIterator( // NOLINT(google-explicit-constructor)
-      BaseNodeIterator<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementIterator<BaseNodeIterator<Mesh>, Mesh, NodeTag_>(other) {
+  BaseNodeReference( // NOLINT(google-explicit-constructor)
+      BaseNodeReference<std::remove_const_t<Mesh>> const& other) noexcept :
+    BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_>(other) {
   }
 
   /// @brief Get node position. 
   vec3_t Pos() const noexcept {
-    return this->GetMesh().NodePos(this->GetIndex());
+    return this->Mesh_->NodePos(this->Index_);
   }
 
   /// @brief Set node position. 
   void SetPos(vec3_t const& pos) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetNodePos(this->GetIndex(), pos);
+    this->Mesh_->SetNodePos(this->Index_, pos);
   }
 
-}; // class BaseNodeIterator<...>
+}; // class BaseNodeReference<...>
 
-/// @brief Mesh nodes random-access iterator. 
+/// @brief Mesh nodes random-access reference.
 /// @{
-using NodeIter = BaseNodeIterator<Mesh const>;
-using NodeMutableIter = BaseNodeIterator<Mesh>;
+using NodeRef = BaseNodeReference<Mesh const>;
+using NodeMutableRef = BaseNodeReference<Mesh>;
 /// @}
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Base edge iterator.
+/// @brief Base edge reference.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseEdgeIterator final :
-  public BaseElementIterator<BaseEdgeIterator<Mesh>, Mesh, EdgeTag_> {
+class BaseEdgeReference final :
+  public BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_> {
 public:
 
-  /// @brief Construct base edge iterator. 
-  explicit BaseEdgeIterator(Mesh& mesh, EdgeIndex index = {}) noexcept :
-    BaseElementIterator<BaseEdgeIterator<Mesh>, Mesh, EdgeTag_>(mesh, index) {
+  /// @brief Construct base edge reference.
+  explicit BaseEdgeReference(Mesh& mesh, EdgeIndex index = {}) noexcept :
+    BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_>(mesh, index) {
   }
 
   /// @brief Copy (make const) constructor. 
-  BaseEdgeIterator( // NOLINT(google-explicit-constructor)
-      BaseEdgeIterator<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementIterator<BaseEdgeIterator<Mesh>, Mesh, EdgeTag_>(other) {
+  BaseEdgeReference( // NOLINT(google-explicit-constructor)
+      BaseEdgeReference<std::remove_const_t<Mesh>> const& other) noexcept :
+    BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_>(other) {
   }
 
   /// @brief Get edge length. 
   real_t Len() const noexcept {
-    return this->GetMesh().EdgeLen(this->GetIndex());
+    return this->Mesh_->EdgeLen(this->Index_);
   }
 
   /// @brief Get edge direction. 
   vec3_t Dir() const noexcept {
-    return this->GetMesh().EdgeDir(this->GetIndex());
+    return this->Mesh_->EdgeDir(this->Index_);
   }
 
   /// @brief Set edge length. 
   void SetLen(real_t len) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetEdgeLen(this->GetIndex(), len);
+    this->Mesh_->SetEdgeLen(this->Index_, len);
   }
 
   /// @brief Set edge direction. 
   void SetDir(vec3_t const& dir) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetEdgeDir(this->GetIndex(), dir);
+    this->Mesh_->SetEdgeDir(this->Index_, dir);
   }
 
-}; // class BaseEdgeIterator<...>
+}; // class BaseEdgeReference<...>
 
-/// @brief Mesh edges random-access iterator. 
+/// @brief Mesh edges random-access reference.
 /// @{
-using EdgeIter = BaseEdgeIterator<Mesh const>;
-using EdgeMutableIter = BaseEdgeIterator<Mesh>;
+using EdgeRef = BaseEdgeReference<Mesh const>;
+using EdgeMutableRef = BaseEdgeReference<Mesh>;
 /// @}
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Base face iterator.
+/// @brief Base face reference.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseFaceIterator final :
-  public BaseElementIterator<BaseFaceIterator<Mesh>, Mesh, FaceTag_> {
+class BaseFaceReference final :
+  public BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_> {
 public:
 
-  /// @brief Construct base face iterator. 
-  explicit BaseFaceIterator(Mesh& mesh, FaceIndex index = {}) noexcept :
-    BaseElementIterator<BaseFaceIterator<Mesh>, Mesh, FaceTag_>(mesh, index) {
+  /// @brief Construct base face reference.
+  explicit BaseFaceReference(Mesh& mesh, FaceIndex index = {}) noexcept :
+    BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_>(mesh, index) {
   }
 
   /// @brief Copy (make const) constructor. 
-  BaseFaceIterator( // NOLINT(google-explicit-constructor)
-      BaseFaceIterator<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementIterator<BaseFaceIterator<Mesh>, Mesh, FaceTag_>(other) {
+  BaseFaceReference( // NOLINT(google-explicit-constructor)
+      BaseFaceReference<std::remove_const_t<Mesh>> const& other) noexcept :
+    BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_>(other) {
   }
 
   /// @brief Get connected inner cell. 
@@ -477,91 +413,107 @@ public:
 
   /// @brief Get face area/length. 
   real_t Area() const noexcept {
-    return this->GetMesh().FaceArea(this->GetIndex());
+    return this->Mesh_->FaceArea(this->Index_);
   }
 
   /// @brief Get face normal. 
   vec3_t Normal() const noexcept {
-    return this->GetMesh().FaceNormal(this->GetIndex());
+    return this->Mesh_->FaceNormal(this->Index_);
   }
 
   /// @brief Get face barycenter. 
   vec3_t CenterPos() const noexcept {
-    return this->GetMesh().FaceCenterPos(this->GetIndex());
+    return this->Mesh_->FaceCenterPos(this->Index_);
   }
 
   /// @brief Set face area/length. 
   void SetArea(real_t area) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetFaceArea(this->GetIndex(), area);
+    this->Mesh_->SetFaceArea(this->Index_, area);
   }
 
   /// @brief Set face normal. 
   void SetNormal(vec3_t const& normal) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetFaceNormal(this->GetIndex(), normal);
+    this->Mesh_->SetFaceNormal(this->Index_, normal);
   }
 
   /// @brief Set face barycenter. 
   void SetCenterPos(vec3_t const& centerPos) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetFaceCenterPos(this->GetIndex(), centerPos);
+    this->Mesh_->SetFaceCenterPos(this->Index_, centerPos);
   }
 
-}; // class BaseFaceIterator<...>
+}; // class BaseFaceReference<...>
 
-/// @brief Mesh faces random-access iterator. 
+/// @brief Mesh faces random-access reference.
 /// @{
-using FaceIter = BaseFaceIterator<Mesh const>;
-using FaceMutableIter = BaseFaceIterator<Mesh>;
+using FaceRef = BaseFaceReference<Mesh const>;
+using FaceMutableRef = BaseFaceReference<Mesh>;
 /// @}
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Base cell iterator.
+/// @brief Base cell reference.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseCellIterator final :
-  public BaseElementIterator<BaseCellIterator<Mesh>, Mesh, CellTag_> {
+class BaseCellReference final :
+  public BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_> {
 public:
 
-  /// @brief Construct base cell iterator. 
-  explicit BaseCellIterator(Mesh& mesh, CellIndex index = {}) noexcept :
-    BaseElementIterator<BaseCellIterator<Mesh>, Mesh, CellTag_>(mesh, index) {
+  /// @brief Construct base cell reference.
+  explicit BaseCellReference(Mesh& mesh, CellIndex index = {}) noexcept :
+    BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_>(mesh, index) {
   }
 
   /// @brief Copy (make const) constructor. 
-  BaseCellIterator( // NOLINT(google-explicit-constructor)
-      BaseCellIterator<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementIterator<BaseCellIterator<Mesh>, Mesh, CellTag_>(other) {
+  BaseCellReference( // NOLINT(google-explicit-constructor)
+      BaseCellReference<std::remove_const_t<Mesh>> const& other) noexcept :
+    BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_>(other) {
   }
 
   /// @brief Get cell volume/area/length.
   real_t Volume() const noexcept {
-    return this->GetMesh().CellVolume(this->GetIndex());
+    return this->Mesh_->CellVolume(this->Index_);
   }
 
   /// @brief Get cell barycenter. 
   vec3_t CenterPos() const noexcept {
-    return this->GetMesh().CellCenterPos(this->GetIndex());
+    return this->Mesh_->CellCenterPos(this->Index_);
   }
 
   /// @brief Set cell volume/area/length. 
   void SetVolume(real_t volume) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetCellVolume(this->GetIndex(), volume);
+    this->Mesh_->SetCellVolume(this->Index_, volume);
   }
 
   /// @brief Set cell barycenter. 
   void SetCenterPos(vec3_t const& centerPos) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->GetMesh().SetCellCenterPos(this->GetIndex(), centerPos);
+    this->Mesh_->SetCellCenterPos(this->Index_, centerPos);
   }
 
-}; // class BaseCellIterator<...>
+}; // class BaseCellReference<...>
 
-/// @brief Mesh cells random-access iterator. 
+/// @brief Mesh cells random-access reference.
 /// @{
-using CellIter = BaseCellIterator<Mesh const>;
-using CellMutableIter = BaseCellIterator<Mesh>;
+using CellRef = BaseCellReference<Mesh const>;
+using CellMutableRef = BaseCellReference<Mesh>;
 /// @}
 
+template<class Mesh>
+auto NodeIters(Mesh& mesh) noexcept {
+  return mesh.Nodes()  |
+    std::views::transform([&mesh](NodeIndex nodeIndex) {
+      return BaseNodeReference<Mesh>(mesh, nodeIndex);
+    });
+}
+
+template<class Mesh>
+auto NodeIters(Mesh& mesh, NodeMark nodeMark) noexcept {
+  return mesh.Nodes(nodeMark)  |
+    std::views::transform([&mesh](NodeIndex nodeIndex) {
+      return BaseNodeReference<Mesh>(mesh, nodeIndex);
+    });
+}
+
 #define FaceCellFunc_ \
-  ([&](BaseFaceIterator<Mesh> face) { \
+  ([&](BaseFaceReference<Mesh> face) { \
      func(face.InnerCell(), face.OuterCell()); \
    })
 
@@ -569,11 +521,11 @@ using CellMutableIter = BaseCellIterator<Mesh>;
 /// @{
 template<class Mesh>
 auto BeginNode(Mesh& mesh) noexcept {
-  return BaseNodeIterator<Mesh>(mesh);
+  return BaseNodeReference<Mesh>(mesh);
 }
 template<class Mesh>
 auto BeginNode(Mesh& mesh, NodeMark nodeMark) noexcept {
-  return BaseNodeIterator<Mesh>(mesh, mesh.BeginNode(nodeMark));
+  return BaseNodeReference<Mesh>(mesh, mesh.BeginNode(nodeMark));
 }
 /// @}
 
@@ -581,11 +533,11 @@ auto BeginNode(Mesh& mesh, NodeMark nodeMark) noexcept {
 /// @{
 template<class Mesh>
 auto BeginEdge(Mesh& mesh) noexcept {
-  return BaseEdgeIterator<Mesh>(mesh);
+  return BaseEdgeReference<Mesh>(mesh);
 }
 template<class Mesh>
 auto BeginEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
-  return BaseEdgeIterator<Mesh>(mesh, mesh.BeginEdge(edgeMark));
+  return BaseEdgeReference<Mesh>(mesh, mesh.BeginEdge(edgeMark));
 }
 /// @}
 
@@ -593,11 +545,11 @@ auto BeginEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
 /// @{
 template<class Mesh>
 auto BeginFace(Mesh& mesh) noexcept {
-  return BaseFaceIterator<Mesh>(mesh);
+  return BaseFaceReference<Mesh>(mesh);
 }
 template<class Mesh>
 auto BeginFace(Mesh& mesh, FaceMark faceMark) noexcept {
-  return BaseFaceIterator<Mesh>(mesh, mesh.BeginFace(faceMark));
+  return BaseFaceReference<Mesh>(mesh, mesh.BeginFace(faceMark));
 }
 /// @}
 
@@ -605,11 +557,11 @@ auto BeginFace(Mesh& mesh, FaceMark faceMark) noexcept {
 /// @{
 template<class Mesh>
 auto BeginCell(Mesh& mesh) noexcept {
-  return BaseCellIterator<Mesh>(mesh);
+  return BaseCellReference<Mesh>(mesh);
 }
 template<class Mesh>
 auto BeginCell(Mesh& mesh, CellMark cellMark) noexcept {
-  return BaseCellIterator<Mesh>(mesh, mesh.BeginCell(cellMark));
+  return BaseCellReference<Mesh>(mesh, mesh.BeginCell(cellMark));
 }
 /// @}
 
@@ -617,11 +569,11 @@ auto BeginCell(Mesh& mesh, CellMark cellMark) noexcept {
 /// @{
 template<class Mesh>
 auto EndNode(Mesh& mesh) noexcept {
-  return BaseNodeIterator<Mesh>(mesh, NodeIndex(mesh.NumNodes()));
+  return BaseNodeReference<Mesh>(mesh, NodeIndex(mesh.NumNodes()));
 }
 template<class Mesh>
 auto EndNode(Mesh& mesh, NodeMark nodeMark) noexcept {
-  return BaseNodeIterator<Mesh>(mesh, mesh.EndNode(nodeMark));
+  return BaseNodeReference<Mesh>(mesh, mesh.EndNode(nodeMark));
 }
 /// @}
 
@@ -629,11 +581,11 @@ auto EndNode(Mesh& mesh, NodeMark nodeMark) noexcept {
 /// @{
 template<class Mesh>
 auto EndEdge(Mesh& mesh) noexcept {
-  return BaseEdgeIterator<Mesh>(mesh, EdgeIndex(mesh.NumEdges()));
+  return BaseEdgeReference<Mesh>(mesh, EdgeIndex(mesh.NumEdges()));
 }
 template<class Mesh>
 auto EndEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
-  return BaseEdgeIterator<Mesh>(mesh, mesh.EndEdge(edgeMark));
+  return BaseEdgeReference<Mesh>(mesh, mesh.EndEdge(edgeMark));
 }
 /// @}
 
@@ -641,11 +593,11 @@ auto EndEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
 /// @{
 template<class Mesh>
 auto EndFace(Mesh& mesh) noexcept {
-  return BaseFaceIterator<Mesh>(mesh, FaceIndex(mesh.NumFaces()));
+  return BaseFaceReference<Mesh>(mesh, FaceIndex(mesh.NumFaces()));
 }
 template<class Mesh>
 auto EndFace(Mesh& mesh, FaceMark faceMark) noexcept {
-  return BaseFaceIterator<Mesh>(mesh, mesh.EndFace(faceMark));
+  return BaseFaceReference<Mesh>(mesh, mesh.EndFace(faceMark));
 }
 /// @}
 
@@ -653,11 +605,11 @@ auto EndFace(Mesh& mesh, FaceMark faceMark) noexcept {
 /// @{
 template<class Mesh>
 auto EndCell(Mesh& mesh) noexcept {
-  return BaseCellIterator<Mesh>(mesh, CellIndex(mesh.NumCells()));
+  return BaseCellReference<Mesh>(mesh, CellIndex(mesh.NumCells()));
 }
 template<class Mesh>
 auto EndCell(Mesh& mesh, CellMark cellMark) noexcept {
-  return BaseCellIterator<Mesh>(mesh, mesh.EndCell(cellMark));
+  return BaseCellReference<Mesh>(mesh, mesh.EndCell(cellMark));
 }
 /// @}
 

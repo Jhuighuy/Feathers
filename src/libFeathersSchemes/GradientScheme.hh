@@ -39,7 +39,7 @@ namespace feathers {
 class iGradientScheme : public tObject<iGradientScheme> {
 public:
     /** Compute cell-centered gradients. */
-    virtual void get_gradients(uint_t num_vars,
+    virtual void get_gradients(size_t num_vars,
                                tVectorField& grad_u,
                                const tScalarField& u) const = 0;
 }; // class iGradientScheme
@@ -70,7 +70,7 @@ private:
 public:
 
     /** Compute cell-centered gradients. */
-    void get_gradients(uint_t num_vars,
+    void get_gradients(size_t num_vars,
                        tVectorField& grad_u,
                        const tScalarField& u) const final;
 }; // class cLeastSquaresGradientScheme

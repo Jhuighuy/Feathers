@@ -54,7 +54,7 @@ enum class eShape : byte_t {
  */
 struct sElementDesc {
     eShape shape;
-    std::vector<uint_t> node_indices;
+    std::vector<size_t> node_indices;
 };  // sElementDesc
 
 /**
@@ -70,9 +70,9 @@ using tElementDescList = std::vector<sElementDesc>;
  */
 class iElement {
 protected:
-    uint_t m_num_global_nodes = 0;
+    size_t m_num_global_nodes = 0;
     const vec3_t* m_global_node_coords = nullptr;
-    std::vector<uint_t> m_node_indices;
+    std::vector<size_t> m_node_indices;
 
 public:
 
@@ -80,7 +80,7 @@ public:
      * Construct a new element object.
      */
     static std::unique_ptr<iElement> make(sElementDesc&& desc,
-                                          uint_t num_global_nodes,
+                                          size_t num_global_nodes,
                                           const vec3_t* global_node_coords);
 
     virtual ~iElement() = default;
@@ -89,19 +89,19 @@ public:
     // ---------------------------------------------------------------------- //
 
     /** Get element node indices. */
-    const std::vector<uint_t>& get_nodes() const {
+    const std::vector<size_t>& get_nodes() const {
         return m_node_indices;
     }
 
     /** Get node position. */
-    const vec3_t& get_node_coords(uint_t node_local) const {
+    const vec3_t& get_node_coords(size_t node_local) const {
         FEATHERS_ASSERT(node_local < m_node_indices.size());
         return m_global_node_coords[m_node_indices[node_local]];
     }
 
     template<typename... tIndex>
     sElementDesc get_part(eShape part_shape, tIndex... node_locals) const {
-        return { part_shape, std::vector<uint>{ m_node_indices[node_locals]... } };
+        return { part_shape, std::vector<size_t>{ m_node_indices[node_locals]... } };
     }
 
     // ---------------------------------------------------------------------- //
@@ -135,17 +135,17 @@ public:
     virtual eShape get_shape() const = 0;
 
     /** Number of nodes in the element. */
-    virtual uint_t num_nodes() const = 0;
+    virtual size_t num_nodes() const = 0;
 
     /** Number of edges in the element. */
-    uint_t num_edges() const {
+    size_t num_edges() const {
         return get_edges_desc().size();
     }
     /** Get element edges description. */
     virtual tElementDescList get_edges_desc() const = 0;
 
     /** Number of faces in the element. */
-    uint_t num_faces() const {
+    size_t num_faces() const {
         return get_faces_desc().size();
     }
     /** Get element faces description. */
@@ -171,7 +171,7 @@ public:
     /**
      * Get splitting into the simplex parts.
      */
-    virtual tElementDescList get_simplicial_parts(uint_t partition_index) const = 0;
+    virtual tElementDescList get_simplicial_parts(size_t partition_index) const = 0;
 
 private:
     template<typename tFunc>
@@ -192,7 +192,7 @@ public:
     vec3_t get_center_coords() const final;
 
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
 };  // class cNode
@@ -223,7 +223,7 @@ public:
     vec3_t get_center_coords() const final;
 
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
 };  // class tSegmentShape
@@ -253,7 +253,7 @@ public:
     vec3_t get_center_coords() const final;
 
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
 };  // class cTriangle
@@ -273,10 +273,10 @@ public:
 class cQuadrangle final : public iComplexElement {
 public:
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-    tElementDescList get_simplicial_parts(uint_t partition_index) const final;
+    tElementDescList get_simplicial_parts(size_t partition_index) const final;
 };  // class cQuadrangle
 
 // ------------------------------------------------------------------------------------ //
@@ -314,7 +314,7 @@ public:
     vec3_t get_center_coords() const final;
 
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
 };  // class cTetrahedron
@@ -347,10 +347,10 @@ public:
 class cPyramid final : public iComplexElement {
 public:
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-    tElementDescList get_simplicial_parts(uint_t partition_index) const final;
+    tElementDescList get_simplicial_parts(size_t partition_index) const final;
 };  // class cPyramid
 
 /**
@@ -385,10 +385,10 @@ public:
 class cPentahedron final : public iComplexElement {
 public:
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-    tElementDescList get_simplicial_parts(uint_t partition_index) const final;
+    tElementDescList get_simplicial_parts(size_t partition_index) const final;
 };  // class cPyramid
 
 /**
@@ -422,10 +422,10 @@ public:
 class cHexahedron final : public iComplexElement {
 public:
     eShape get_shape() const final;
-    uint_t num_nodes() const final;
+    size_t num_nodes() const final;
     tElementDescList get_edges_desc() const final;
     tElementDescList get_faces_desc() const final;
-    tElementDescList get_simplicial_parts(uint_t partition_index) const final;
+    tElementDescList get_simplicial_parts(size_t partition_index) const final;
 };  // class cHexahedron
 
 } // namespace feathers

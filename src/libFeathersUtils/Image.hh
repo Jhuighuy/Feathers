@@ -39,13 +39,13 @@ namespace feathers {
  */
 struct sPixel {
     union {
-        uint_t rgba;
+        size_t rgba;
         struct {
             byte_t r, g, b, a;
         };
     };
 
-    constexpr sPixel(uint_t rgba = 0):
+    constexpr sPixel(size_t rgba = 0):
         rgba(rgba) {
     }
     constexpr sPixel(byte_t r, byte_t g, byte_t b, byte_t a = 255):
@@ -69,7 +69,7 @@ static constexpr sPixel  eBluePixel(000, 000, 255, 255);
  */
 class cImage2D {
 private:
-    uint_t m_width = 0, m_height = 0;
+    size_t m_width = 0, m_height = 0;
     sPixel* m_pixels = nullptr;
 
 public:
@@ -77,7 +77,7 @@ public:
     ~cImage2D();
 
     /** Init an image. */
-    void init(uint_t width, uint_t height, sPixel pixel = {});
+    void init(size_t width, size_t height, sPixel pixel = {});
 
     /** Load an image. */
     bool load(const char* path);
@@ -86,11 +86,11 @@ public:
     bool store(const char* path);
 
     /** Image width. */
-    uint_t width() const {
+    size_t width() const {
         return m_width;
     }
     /** Image height. */
-    uint_t height() const {
+    size_t height() const {
         return m_height;
     }
 

@@ -41,15 +41,15 @@ namespace feathers {
 /**
  * Get index of the current thread.
  */
-static uint_t get_thread_index();
+static size_t get_thread_index();
 /**
  * Get maximum number of threads.
  */
-static uint_t get_max_num_threads();
+static size_t get_max_num_threads();
 /**
  * Set maximum number of threads.
  */
-static void set_max_num_threads(uint_t num_threads);
+static void set_max_num_threads(size_t num_threads);
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -176,13 +176,13 @@ std::pair<tValue, tValue> for_range_minmax(tIndex first_1, tIndex last_1,
 namespace feathers {
 
 #ifndef THREAD_IDS_DEFINED_
-uint_t get_thread_index() {
+size_t get_thread_index() {
     return 0;
 }
-uint_t get_max_num_threads() {
+size_t get_max_num_threads() {
     return 1;
 }
-void set_max_num_threads(uint_t FEATHERS_NOT_USED(num_threads)) {
+void set_max_num_threads(size_t FEATHERS_NOT_USED(num_threads)) {
 }
 #endif
 #undef THREAD_IDS_DEFINED_

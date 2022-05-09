@@ -44,7 +44,7 @@ namespace feathers {
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-void tHllFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
+void tHllFluxScheme<tGasPhysics>::get_numerical_flux(size_t num_vars,
                                                      const vec3_t& n,
                                                      tScalarConstSubField cons_r,
                                                      tScalarConstSubField cons_l,
@@ -85,7 +85,7 @@ void tHllFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
     ul.make_flux(num_vars, n, flux_l.data());
     if (sl <= 0.0 && 0.0 <= sr) {
         const real_t is = 1.0/(sr - sl);
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
             flux[i] = is*((sr*flux_l[i] - sl*flux_r[i]) + sr*sl*(cons_r[i] - cons_l[i]));
         }
         return;
@@ -106,7 +106,7 @@ void tHllFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
+void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(size_t num_vars,
                                                       const vec3_t& n,
                                                       tScalarConstSubField cons_r,
                                                       tScalarConstSubField cons_l,
@@ -166,7 +166,7 @@ void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
         FEATHERS_TMP_SCALAR_FIELD(cons_s, num_vars);
         us.make_cons(num_vars, cons_s.data());
         ur.make_flux(num_vars, n, flux.data());
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
             flux[i] += sr*(cons_s[i] - cons_r[i]);
         }
         return;
@@ -180,7 +180,7 @@ void tHllcFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
         FEATHERS_TMP_SCALAR_FIELD(cons_s, num_vars);
         us.make_cons(num_vars, cons_s.data());
         ul.make_flux(num_vars, n, flux.data());
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
             flux[i] += sl*(cons_s[i] - cons_l[i]);
         }
         return;

@@ -37,7 +37,7 @@ namespace feathers {
 
 static std::unique_ptr<tbb::global_control> g_control;
 
-void set_max_num_threads_impl_(uint_t num_threads) {
+void set_max_num_threads_impl_(size_t num_threads) {
     if (num_threads == get_max_num_threads()) {
         return;
     }

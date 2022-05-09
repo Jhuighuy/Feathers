@@ -39,7 +39,7 @@ namespace feathers {
  *      for Fluid Dynamics" (Third Edition, 2009).
  * @endverbatim
  */
-void tLaxFriedrichsFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
+void tLaxFriedrichsFluxScheme<tGasPhysics>::get_numerical_flux(size_t num_vars,
                                                                const vec3_t& n,
                                                                tScalarConstSubField cons_r,
                                                                tScalarConstSubField cons_l,
@@ -55,7 +55,7 @@ void tLaxFriedrichsFluxScheme<tGasPhysics>::get_numerical_flux(uint_t num_vars,
     FEATHERS_TMP_SCALAR_FIELD(flux_l, num_vars);
     ur.make_flux(num_vars, n, flux_r.data());
     ul.make_flux(num_vars, n, flux_l.data());
-    for (uint_t i = 0; i < num_vars; ++i) {
+    for (size_t i = 0; i < num_vars; ++i) {
         flux[i] = 0.5*((flux_r[i] + flux_l[i]) - ss*(cons_r[i] - cons_l[i]));
     }
 } // tLaxFriedrichsFluxScheme::get_numerical_flux

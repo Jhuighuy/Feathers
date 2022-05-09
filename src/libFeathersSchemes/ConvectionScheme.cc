@@ -33,15 +33,15 @@ namespace feathers {
 /**
  * Compute the first-order upwind convection.
  */
-void cUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
+void cUpwindConvectionScheme::get_cell_convection(size_t num_vars,
                                                   tScalarField& div_f,
                                                   const tScalarField& u) const {
 
   /* Compute the first order numerical fluxes. */
   tScalarField flux_u(num_vars, m_mesh->NumFaces());
-  ForEachFace(*m_mesh, [&](FaceIter face) {
-    const CellIter cell_outer = face.OuterCell();
-    const CellIter cell_inner = face.InnerCell();
+  ForEachFace(*m_mesh, [&](FaceRef face) {
+    const CellRef cell_outer = face.OuterCell();
+    const CellRef cell_inner = face.InnerCell();
 
     tScalarSubField flux = (flux_u[face] = {});
     m_flux->get_numerical_flux(num_vars, face.Normal(),
@@ -49,24 +49,24 @@ void cUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
   });
 
   /* Compute the first order convection. */
-  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
     div_f[cell] = {};
-    cell.ForEachFace([&](FaceIter face) {
-      const CellIter cell_outer = face.OuterCell();
-      const CellIter cell_inner = face.InnerCell();
+    cell.ForEachFace([&](FaceRef face) {
+      const CellRef cell_outer = face.OuterCell();
+      const CellRef cell_inner = face.InnerCell();
       const real_t ds = face.Area();
       if (cell_outer == cell) {
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
           div_f[cell][i] -= flux_u[face][i] * ds;
         }
       } else if (cell_inner == cell) {
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
           div_f[cell][i] += flux_u[face][i] * ds;
         }
       }
     });
     const real_t inv_dv = 1.0 / cell.Volume();
-    for (uint_t i = 0; i < num_vars; ++i) {
+    for (size_t i = 0; i < num_vars; ++i) {
       div_f[cell][i] *= inv_dv;
     }
   });
@@ -76,7 +76,7 @@ void cUpwindConvectionScheme::get_cell_convection(uint_t num_vars,
 /**
  * Compute the second-order upwind convection.
  */
-void cUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
+void cUpwind2ConvectionScheme::get_cell_convection(size_t num_vars,
                                                    tScalarField& div_f,
                                                    const tScalarField& u) const {
     /* Compute the second order limited gradients. */
@@ -89,16 +89,16 @@ void cUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
     /* Compute the second order numerical fluxes:
      * integrate the numerical flux over the face nodes. */
     tScalarField flux_f(num_vars, m_mesh->NumFaces());
-  ForEachFace(*m_mesh, [&](FaceIter face) {
-    const CellIter cell_outer = face.OuterCell();
-    const CellIter cell_inner = face.InnerCell();
+  ForEachFace(*m_mesh, [&](FaceRef face) {
+    const CellRef cell_outer = face.OuterCell();
+    const CellRef cell_inner = face.InnerCell();
     const vec3_t dr_outer =
       face.CenterPos() - cell_outer.CenterPos();
     const vec3_t dr_inner =
       face.CenterPos() - cell_inner.CenterPos();
     FEATHERS_TMP_SCALAR_FIELD(u_outer, num_vars);
     FEATHERS_TMP_SCALAR_FIELD(u_inner, num_vars);
-    for (uint_t i = 0; i < num_vars; ++i) {
+    for (size_t i = 0; i < num_vars; ++i) {
       u_outer[i] = u[cell_outer][i] +
                    lim_u[cell_outer][i] * glm::dot(grad_u[cell_outer][i], dr_outer);
       u_inner[i] = u[cell_inner][i] +
@@ -110,24 +110,24 @@ void cUpwind2ConvectionScheme::get_cell_convection(uint_t num_vars,
   });
 
     /* Compute the second order convection. */
-  ForEachInteriorCell(*m_mesh, [&](CellIter cell) {
+  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
     div_f[cell] = {};
-    cell.ForEachFace([&](FaceIter face) {
-      const CellIter cell_outer = face.OuterCell();
-      const CellIter cell_inner = face.InnerCell();
+    cell.ForEachFace([&](FaceRef face) {
+      const CellRef cell_outer = face.OuterCell();
+      const CellRef cell_inner = face.InnerCell();
       const real_t ds = face.Area();
       if (cell_outer == cell) {
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
           div_f[cell][i] -= flux_f[face][i] * ds;
         }
       } else if (cell_inner == cell) {
-        for (uint_t i = 0; i < num_vars; ++i) {
+        for (size_t i = 0; i < num_vars; ++i) {
           div_f[cell][i] += flux_f[face][i] * ds;
         }
       }
     });
     const real_t inv_dv = 1.0 / cell.Volume();
-    for (uint_t i = 0; i < num_vars; ++i) {
+    for (size_t i = 0; i < num_vars; ++i) {
       div_f[cell][i] *= inv_dv;
     }
   });

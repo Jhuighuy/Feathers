@@ -33,6 +33,8 @@
 #include "SkunkBase.hh"
 #include "libFeathersMesh/Index.hh"
 
+#include <ranges>
+
 namespace feathers {
 
 /**
@@ -41,8 +43,8 @@ namespace feathers {
 template<class RowIndex, class ColumnIndex>
 class CsrTable {
 private:
-  IndexedVector<uint_t, RowIndex> m_row_offsets{0};
-  IndexedVector<ColumnIndex, uint_t> m_column_indices;
+  IndexedVector<size_t, RowIndex> m_row_offsets{0};
+  IndexedVector<ColumnIndex, size_t> m_column_indices;
 
 public:
 
@@ -50,8 +52,13 @@ public:
   // ---------------------------------------------------------------------- //
 
   /** Number of rows in the mesh. */
-  uint_t num_rows() const {
+  size_t num_rows() const {
     return m_row_offsets.size() - 1;
+  }
+
+  void Clear() {
+    m_row_offsets = {0};
+    m_column_indices.clear();
   }
 
   /** Pointer to the beginning of the row. */
@@ -59,7 +66,7 @@ public:
     FEATHERS_ASSERT(row_index < num_rows());
     return &m_column_indices[m_row_offsets[row_index]];
   })
-  ConstOverload(ColumnIndex*, begin_row, (size_t row_index), {
+  ConstOverload(ColumnIndex*, begin_row, (size_t row_index), requires(!std::is_same_v<RowIndex, size_t>) {
     FEATHERS_ASSERT(row_index < num_rows());
     return &m_column_indices[m_row_offsets[RowIndex(row_index)]];
   })
@@ -69,10 +76,23 @@ public:
     FEATHERS_ASSERT(row_index < num_rows());
     return &m_column_indices[m_row_offsets[row_index + 1]];
   })
-  ConstOverload(ColumnIndex*, end_row, (size_t row_index), {
+  ConstOverload(ColumnIndex*, end_row, (size_t row_index), requires(!std::is_same_v<RowIndex, size_t>) {
     FEATHERS_ASSERT(row_index < num_rows());
     return &m_column_indices[m_row_offsets[RowIndex(row_index) + 1]];
   })
+
+  auto operator[](RowIndex row_index) noexcept {
+    FEATHERS_ASSERT(row_index < num_rows());
+    return std::ranges::subrange(
+      &m_column_indices[m_row_offsets[row_index]],
+      &m_column_indices[m_row_offsets[row_index + 1]]);
+  }
+  auto operator[](RowIndex row_index) const noexcept requires(!std::is_same_v<RowIndex, size_t>) {
+    FEATHERS_ASSERT(row_index < num_rows());
+    return std::ranges::subrange(
+      &m_column_indices[m_row_offsets[row_index]],
+      &m_column_indices[m_row_offsets[row_index + 1]]);
+  }
 
   // ---------------------------------------------------------------------- //
   // ---------------------------------------------------------------------- //
@@ -84,7 +104,7 @@ public:
 
   /** Insert a row into the table. */
   /** @{ */
-  void emplace_back_row(uint_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
+  void emplace_back_row(size_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
     m_column_indices.insert(
       m_column_indices.end(), num_column_indices, column_index);
     m_row_offsets.push_back(m_column_indices.size());

@@ -47,7 +47,7 @@ cImage2D::~cImage2D() {
 /**
  * Init an image.
  */
-void cImage2D::init(uint_t width, uint_t height, sPixel pixel) {
+void cImage2D::init(size_t width, size_t height, sPixel pixel) {
     FEATHERS_ASSERT(m_pixels == nullptr);
     m_width = width, m_height = height;
     m_pixels = static_cast<sPixel*>(

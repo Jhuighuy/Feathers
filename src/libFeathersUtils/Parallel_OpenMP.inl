@@ -115,13 +115,13 @@
 namespace feathers {
 
 #if FEATHERS_HAS_OPENMP_2_0
-uint_t get_thread_index() {
-    return static_cast<uint_t>(omp_get_thread_num());
+size_t get_thread_index() {
+    return static_cast<size_t>(omp_get_thread_num());
 }
-uint_t get_max_num_threads() {
-    return static_cast<uint_t>(omp_get_max_threads());
+size_t get_max_num_threads() {
+    return static_cast<size_t>(omp_get_max_threads());
 }
-void set_max_num_threads(uint_t num_threads) {
+void set_max_num_threads(size_t num_threads) {
     omp_set_num_threads(static_cast<int>(num_threads));
 }
 #define THREAD_IDS_DEFINED_

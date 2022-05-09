@@ -199,8 +199,12 @@
 #endif
 /** @} */
 
+#define FEATHERS_DEPRECATED [[deprecated("")]]
+
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
+
+#define FEATHERS_PASS(...) __VA_ARGS__
 
 /** @{ */
 #define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name, arguments, ...) \
@@ -239,7 +243,9 @@
 #define FEATHERS_ASSERT(x) FEATHERS_ENSURE(x)
 #endif
 /** @} */
+
 #define StormAssert FEATHERS_ASSERT
+#define StormEnsure FEATHERS_ENSURE
 
 /** Fatal assertion macro. */
 #define FEATHERS_ERROR_STOP(message) do { \
@@ -269,13 +275,8 @@ using size_t = std::size_t;
 /** A regular pointer difference type. */
 using ptrdiff_t = std::ptrdiff_t;
 
-/** Signed integer type, 32-bit wide. */
-using int_t = std::int32_t;
-/** Unsigned integer type, 32-bit wide. */
-using uint_t = std::uint32_t;
-
 /** Invalid index. */
-static constexpr uint_t npos = std::numeric_limits<uint_t>::max();
+static constexpr size_t npos = std::numeric_limits<size_t>::max();
 
 /** Check if index is npos. */
 template<class Value>
@@ -482,6 +483,6 @@ auto shared_from_this(const obj_ptr_t& obj) {
 #endif
 
 /* TODO: Remove me. */
-using int_t = feathers::int_t;
-using uint_t = feathers::uint_t;
+using int_t = feathers::ptrdiff_t;
+using uint_t = feathers::size_t;
 using real_t = feathers::real_t;

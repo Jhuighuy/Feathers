@@ -43,7 +43,7 @@ namespace feathers {
 class iConvectionScheme : public tObject<iConvectionScheme> {
 public:
     /** Compute the nonlinear convection. */
-    virtual void get_cell_convection(uint_t num_vars,
+    virtual void get_cell_convection(size_t num_vars,
                                      tScalarField& conv_u,
                                      const tScalarField& u) const = 0;
 }; // class iConvectionScheme
@@ -64,7 +64,7 @@ public:
     }
 
     /** Compute the first-order upwind nonlinear convection. */
-    void get_cell_convection(uint_t num_vars,
+    void get_cell_convection(size_t num_vars,
                              tScalarField& div_f,
                              const tScalarField& u) const final;
 }; // class cUpwindConvectionScheme
@@ -89,7 +89,7 @@ public:
     }
 
     /** Compute the second-order upwind nonlinear convection. */
-    void get_cell_convection(uint_t num_vars,
+    void get_cell_convection(size_t num_vars,
                              tScalarField& div_f,
                              const tScalarField& u) const final;
 }; // class cUpwindConvectionScheme
