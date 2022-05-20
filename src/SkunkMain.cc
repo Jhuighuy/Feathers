@@ -17,26 +17,25 @@ inline std::string my_to_string(feathers::size_t i) {
     return z + s;
 }
 
-#if 1
 int main(int argc, char** argv) {
     set_max_num_threads(10);
     print_cockatiel();
 
-    std::shared_ptr<cMesh> mesh(new cMesh(2));
+    std::shared_ptr<cMesh> mesh(new cMesh{});
 
-    //cImage2D image;
+    //Image2D image;
     //image.init(2048, 2048);
     //image.load("mesh/img/Domain-318.ppm");
     //image.store("mesh/img/Domain-318.jpg");
 
 #if 1
-    //mesh->read_image2D("mesh/img/Domain-100-Tube.ppm",
+    //mesh->ReadFromImage("mesh/img/Domain-100-Tube.ppm",
     //                   {{eWhitePixel, 1}, {eRedPixel, 2}, {eGreenPixel, 3}, {eBluePixel, 4}});
     //mesh->save_vtk("mesh/img/Domain-318.vtk", {});
     //mesh->save_strm("mesh/img/Domain-318.strm");
     //return 1;
 
-    mesh->read_triangle("mesh/step_.1.");
+  mesh->ReadFromTriangle("mesh/step_.1.");
 
     tScalarField uc(5, mesh->NumCells());
     tScalarField up(5, mesh->NumCells());
@@ -134,4 +133,3 @@ int main(int argc, char** argv) {
     }
     return 0;
 }
-#endif

@@ -34,9 +34,10 @@ namespace feathers {
  * Init the gradient scheme.
  */
 void cLeastSquaresGradientScheme::init_gradients_() {
-    /* Compute the least-squares
-     * problem matrices for the interior cells. */
-  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
+
+  /* Compute the least-squares
+   * problem matrices for the interior cells. */
+  ForEach(InteriorCellRefs(*m_mesh), [&](CellRef cell) {
     mat3_t& mat = (m_inverse_matrices[cell][0] = mat3_t(0.0));
     cell.ForEachFaceCells([&](CellRef cell_inner, CellRef cell_outer) {
       const vec3_t dr =
@@ -45,9 +46,9 @@ void cLeastSquaresGradientScheme::init_gradients_() {
     });
   });
 
-    /* Compute the least squares problem
-     * right-hand statements for the boundary cells.
-     * Use the same stencil as for the interior cell, but centered to a boundary cell. */
+  /* Compute the least squares problem
+   * right-hand statements for the boundary cells.
+   * Use the same stencil as for the interior cell, but centered to a boundary cell. */
   ForEachBoundaryFaceCells(*m_mesh, [&](CellRef cell_inner, CellRef cell_outer) {
     mat3_t& mat = (m_inverse_matrices[cell_outer][0] = mat3_t(0.0));
     const vec3_t dr =
@@ -64,13 +65,14 @@ void cLeastSquaresGradientScheme::init_gradients_() {
     });
   });
 
-    /* Compute the inverse of the least squares problem matrices.
-     * ( Matrix is stabilized by a small number, added to the diagonal. ) */
-  ForEachCell(*m_mesh, [&](CellRef cell) {
+  /* Compute the inverse of the least squares problem matrices.
+   * ( Matrix is stabilized by a small number, added to the diagonal. ) */
+  ForEach(CellRefs(*m_mesh), [&](CellRef cell) {
     static const mat3_t eps(1e-14);
     mat3_t& mat = m_inverse_matrices[cell][0];
     mat = glm::inverse(mat + eps);
   });
+
 } // cLeastSquaresGradientScheme::init_gradients_
 
 /**
@@ -79,9 +81,9 @@ void cLeastSquaresGradientScheme::init_gradients_() {
 void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
                                                 tVectorField& grad_u,
                                                 const tScalarField& u) const {
-    /* Compute the least-squares
-     * problem right-hand statements for the interior cells. */
-  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
+  /* Compute the least-squares
+   * problem right-hand statements for the interior cells. */
+  ForEach(InteriorCellRefs(*m_mesh), [&](CellRef cell) {
     grad_u[cell].fill(vec3_t(0.0));
     cell.ForEachFaceCells([&](CellRef cell_inner, CellRef cell_outer) {
       const vec3_t dr =
@@ -116,7 +118,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
   });
 
     /* Solve the least-squares problem. */
-  ForEachCell(*m_mesh, [&](CellRef cell) {
+  ForEach(CellRefs(*m_mesh), [&](CellRef cell) {
     for (size_t i = 0; i < num_vars; ++i) {
       const mat3_t& mat = m_inverse_matrices[cell][0];
       grad_u[cell][i] = mat * grad_u[cell][i];

@@ -54,6 +54,15 @@
 
 #include <glm/glm.hpp>
 
+#if 0
+#include <ranges>
+namespace ranges = std::ranges;
+namespace views = std::views;
+#else
+#include <range/v3/all.hpp>
+namespace views = ranges::views;
+#endif
+
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
@@ -199,7 +208,7 @@
 #endif
 /** @} */
 
-#define FEATHERS_DEPRECATED [[deprecated("")]]
+#define FEATHERS_DEPRECATED //[[deprecated("")]]
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -222,6 +231,12 @@
     FEATHERS_CONST_OVERLOAD_T( \
         /*empty*/, type, method_name, arguments, __VA_ARGS__)
 /** @} */
+
+#define StormAutoConstOverload(name, arguments, ...) \
+  /** @{ */ \
+  auto name arguments __VA_ARGS__ \
+  auto name arguments const __VA_ARGS__ \
+  /** @} */
 
 /* https://stackoverflow.com/a/67374211 */
 #if (!defined(__PRETTY_FUNCTION__) && !defined(__GNUC__))

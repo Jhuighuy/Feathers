@@ -26,16 +26,19 @@ MhdFvSolverT<MhdPhysicsT>::MhdFvSolverT(std::shared_ptr<const cMesh> mesh)
 template<typename MhdPhysicsT>
 void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
                                           feathers::tScalarField& u_out) const {
-    using namespace feathers;
-    /*
-     * Clear fields and apply boundary conditions.
-     */
-  ForEachCell(*m_mesh, [&](CellRef cell) {
+
+  using namespace feathers;
+
+  /*
+   * Clear fields and apply boundary conditions.
+   */
+
+  ForEach(CellRefs(*m_mesh), [&](CellRef cell) {
     u_out[cell].fill(0.0);
   });
   for (size_t mark = 1; mark < m_mesh->NumFaceMarks(); ++mark) {
       const auto& bc = m_bcs.at(mark);
-    ForEachFace(*m_mesh, FaceMark(mark), [&](FaceRef face) {
+    ForEach(FaceRefs(*m_mesh, FaceMark(mark)), [&](FaceRef face) {
       bc->get_ghost_state(face.Normal(),
                           face.InnerCell().CenterPos(),
                           face.OuterCell().CenterPos(),
@@ -43,7 +46,9 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
                           u[face.OuterCell()].data());
     });
   }
+
   m_conv->get_cell_convection(5, u_out, u);
+
 }   // MhdFvSolverT::calc_func
 
 template<typename MhdPhysicsT>
@@ -54,7 +59,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
    * Compute.
    */
   calc_func(u, u_hat);
-  ForEachInteriorCell(*m_mesh, [&](CellRef cell) {
+  ForEach(InteriorCellRefs(*m_mesh), [&](CellRef cell) {
     for (uint_t i = 0; i < num_vars; ++i) {
       u_hat[cell][i] = u[cell][i] - dt * u_hat[cell][i];
     }

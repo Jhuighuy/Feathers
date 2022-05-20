@@ -28,7 +28,7 @@
 #include <SkunkBase.hh>
 #include <libFeathersUtils/Parallel.hh>
 
-#include <ranges>
+#include <range/v3/all.hpp>
 
 namespace feathers {
 
@@ -49,133 +49,42 @@ protected:
   template<class, class, class>
   friend class BaseElementReference;
 
-  BaseElementReference(Mesh& mesh, Index<Tag> index) noexcept :
-      Mesh_(&mesh), Index_(index) {
+  BaseElementReference( // NOLINT(cppcoreguidelines-pro-type-member-init)
+    Mesh& mesh, Index<Tag> index) noexcept :
+      Mesh_{&mesh}, Index_{index} {
     StormAssert(Index_ != npos);
   }
 
   template<class OtherIterator, class OtherMesh>
-  BaseElementReference(
+  BaseElementReference( // NOLINT(google-explicit-constructor,cppcoreguidelines-pro-type-member-init)
     BaseElementReference<OtherIterator, OtherMesh, Tag> const& other) noexcept :
-      Mesh_(other.Mesh_), Index_(other.Index_) {
+      Mesh_{other.Mesh_}, Index_{other.Index_} {
     StormAssert(Index_ != npos);
   }
 
 public:
 
-  /// @brief Identity dereference operator (used for standard algorithms).
-  /// @{
-  Iterator& operator*() noexcept {
-    return static_cast<Iterator&>(*this);
-  }
-  Iterator const& operator*() const noexcept {
-    return static_cast<Iterator const&>(*this);
-  }
-  /// @}
-
   /// @brief Cast to index operator. 
-  /*explicit*/ operator Index<Tag>() const noexcept {
+  operator Index<Tag>() const noexcept {
     return Index_;
   }
-  /*explicit*/ operator size_t() const noexcept {
+  FEATHERS_DEPRECATED operator size_t() const noexcept {
     return static_cast<size_t>(Index_);
   }
 
-  /// @brief Difference operator. 
-  ptrdiff_t operator-(Iterator const& other) const noexcept {
+  /// @brief Comparison operator.
+  auto operator<=>(Iterator const& other) const noexcept {
     StormAssert(Mesh_ == other.Mesh_);
-    return Index_ - other.Index_;
+    return Index_ <=> other.Index_;
   }
-
-  /// @brief Equality operator. 
-  bool operator==(Iterator const& other) const noexcept {
-    StormAssert(Mesh_ == other.Mesh_);
-    return Index_ == other.Index_;
-  }
-
-  /// @brief Inequality operator. 
-  bool operator!=(Iterator const& other) const noexcept {
-    StormAssert(Mesh_ == other.Mesh_);
-    return Index_ != other.Index_;
-  }
-
-  /// @brief Less than operator. 
-  bool operator<(Iterator const& other) const noexcept {
-    StormAssert(Mesh_ == other.Mesh_);
-    return Index_ < other.Index_;
-  }
-
-  /// @brief Less than or equal operator. 
-  bool operator<=(Iterator const& other) const noexcept {
-    StormAssert(Mesh_ == other.Mesh_);
-    return Index_ <= other.Index_;
-  }
-
-  /// @brief Greater than operator. 
-  bool operator>(Iterator const& other) const noexcept {
-    StormAssert(Mesh_ == other.Mesh_);
-    return Index_ > other.Index_;
-  }
-
-  /// @brief Greater than or equal operator. 
-  bool operator>=(Iterator const& other) const noexcept {
-    StormAssert(Mesh_ == other.Mesh_);
-    return Index_ >= other.Index_;
-  }
-
-  /// @brief Increment operator. 
-  /// @{
-  Iterator& operator++() noexcept {
-    ++Index_;
-    return static_cast<Iterator&>(*this);
-  }
-  Iterator const operator++(int) noexcept {
-    Iterator iter(*this);
-    return ++*this, iter;
-  }
-  /// @}
-
-  /// @brief Decrement operator. 
-  /// @{
-  Iterator& operator--() noexcept {
-    --Index_;
-    return static_cast<Iterator&>(*this);
-  }
-  Iterator const operator--(int) noexcept {
-    Iterator iter(static_cast<Iterator&>(*this));
-    return --*this, iter;
-  }
-  /// @}
-
-  /// @brief Addition operator. 
-  /// @{
-  Iterator& operator+=(ptrdiff_t offset) noexcept {
-    Index_ += offset;
-    return static_cast<Iterator&>(*this);
-  }
-  Iterator operator+(ptrdiff_t offset) const noexcept {
-    return Iterator(static_cast<Iterator const&>(*this)) += offset;
-  }
-  /// @}
-
-  /// @brief Subtraction operator. 
-  /// @{
-  Iterator& operator-=(ptrdiff_t offset) noexcept {
-    Index_ -= offset;
-    return static_cast<Iterator&>(*this);
-  }
-  Iterator operator-(ptrdiff_t offset) const noexcept {
-    return Iterator(static_cast<Iterator const&>(*this)) -= offset;
-  }
-  /// @}
 
   /// @brief Get mark. 
   Index<MarkTag_<Tag>> Mark() const noexcept {
     return Mesh_->Mark(Index_);
   }
 
-  /// @brief Get shape. 
-  eShape Shape() const noexcept {
+  /// @brief Get Shape.
+  ShapeType Shape() const noexcept {
     return Mesh_->Shape(Index_);
   }
 
@@ -207,7 +116,7 @@ public:
   /// @brief Ranges of the adjacent nodes.
   auto Nodes() const noexcept {
     return Mesh_->AdjacentNodes(Index_) |
-      std::views::transform([&mesh = *Mesh_](NodeIndex nodeIndex) {
+      views::transform([&mesh = *Mesh_](NodeIndex nodeIndex) {
         return BaseNodeReference<Mesh>(mesh, nodeIndex);
       });
   }
@@ -215,7 +124,7 @@ public:
   /// @brief Ranges of the adjacent edges.
   auto Edges() const noexcept {
     return Mesh_->AdjacentEdges(Index_) |
-      std::views::transform([&mesh = *Mesh_](EdgeIndex edgeIndex) {
+      views::transform([&mesh = *Mesh_](EdgeIndex edgeIndex) {
         return BaseEdgeReference<Mesh>(mesh, edgeIndex);
       });
   }
@@ -223,7 +132,7 @@ public:
   /// @brief Ranges of the adjacent faces.
   auto Faces() const noexcept {
     return Mesh_->AdjacentFaces(Index_) |
-      std::views::transform([&mesh = *Mesh_](FaceIndex faceIndex) {
+      views::transform([&mesh = *Mesh_](FaceIndex faceIndex) {
         return BaseFaceReference<Mesh>(mesh, faceIndex);
       });
   }
@@ -231,33 +140,33 @@ public:
   /// @brief Ranges of the adjacent cells.
   auto Cells() const noexcept {
     return Mesh_->AdjacentCells(Index_) |
-      std::views::transform([&mesh = *Mesh_](CellIndex cellIndex) {
+      views::transform([&mesh = *Mesh_](CellIndex cellIndex) {
         return BaseCellReference<Mesh>(mesh, cellIndex);
       });
   }
 
-  /// @brief Get adjacent node. 
+  /// @brief Get the adjacent node at @p nodeLocal.
   auto Node(size_t nodeLocal) const noexcept {
     StormAssert(nodeLocal < NumNodes());
     return BaseNodeReference<Mesh>(
       *Mesh_, Mesh_->AdjacentNodes(Index_)[nodeLocal]);
   }
 
-  /// @brief Get adjacent edge. 
+  /// @brief Get the adjacent edge at @p edgeLocal.
   auto Edge(size_t edgeLocal) const noexcept {
     StormAssert(edgeLocal < NumEdges());
     return BaseEdgeReference<Mesh>(
       *Mesh_, Mesh_->AdjacentEdges(Index_)[edgeLocal]);
   }
 
-  /// @brief Get adjacent face. 
+  /// @brief Get the adjacent face at @p faceLocal.
   auto Face(size_t faceLocal) const noexcept {
     StormAssert(faceLocal < NumFaces());
     return BaseFaceReference<Mesh>(
       *Mesh_, Mesh_->AdjacentFaces(Index_)[faceLocal]);
   }
 
-  /// @brief Get adjacent cell. 
+  /// @brief Get the adjacent cell at @p cellLocal.
   auto Cell(size_t cellLocal) const noexcept {
     StormAssert(cellLocal < NumCells());
     return BaseCellReference<Mesh>(
@@ -266,25 +175,25 @@ public:
 
   /// @brief Iterate through all connected nodes. 
   template<class Func>
-  void ForEachNode(Func func) const noexcept {
-    std::ranges::for_each(Nodes(), func);
+  void ForEachNode(Func&& func) const noexcept {
+    ranges::for_each(Nodes(), func);
   }
 
   /// @brief Iterate through all connected edges. 
   template<class Func>
-  void ForEachEdge(Func func) const noexcept {
-    std::ranges::for_each(Edges(), func);
+  void ForEachEdge(Func&& func) const noexcept {
+    ranges::for_each(Edges(), func);
   }
 
   /// @brief Iterate through all connected faces. 
   /// @{
   template<class Func>
-  void ForEachFace(Func func) const noexcept {
-    std::ranges::for_each(Faces(), func);
+  void ForEachFace(Func&& func) const noexcept {
+    ranges::for_each(Faces(), func);
   }
   template<class Func>
-  void ForEachFaceCells(Func func) const noexcept {
-    std::ranges::for_each(Faces(), [&](BaseFaceReference<Mesh> face) {
+  void ForEachFaceCells(Func&& func) const noexcept {
+    ranges::for_each(Faces(), [&](BaseFaceReference<Mesh> face) {
       func(face.InnerCell(), face.OuterCell());
     });
   }
@@ -292,22 +201,22 @@ public:
 
   /// @brief Iterate through all connected cells. 
   template<class Func>
-  void ForEachCell(Func func) const noexcept {
-    std::ranges::for_each(Cells(), func);
+  void ForEachCell(Func&& func) const noexcept {
+    ranges::for_each(Cells(), func);
   }
 
 }; // class BaseElementReference
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-/// @brief Base node reference.
+/// @brief Base Node reference.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
 class BaseNodeReference final :
   public BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_> {
 public:
 
-  /// @brief Construct base node reference.
-  explicit BaseNodeReference(Mesh& mesh, NodeIndex index = {}) noexcept :
+  /// @brief Construct base Node reference.
+  explicit BaseNodeReference(Mesh& mesh, NodeIndex index) noexcept :
     BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_>(mesh, index) {
   }
 
@@ -317,12 +226,12 @@ public:
     BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_>(other) {
   }
 
-  /// @brief Get node position. 
+  /// @brief Get node position.
   vec3_t Pos() const noexcept {
     return this->Mesh_->NodePos(this->Index_);
   }
 
-  /// @brief Set node position. 
+  /// @brief Set node position @p pos.
   void SetPos(vec3_t const& pos) const noexcept requires(!std::is_const_v<Mesh>) {
     this->Mesh_->SetNodePos(this->Index_, pos);
   }
@@ -344,7 +253,7 @@ class BaseEdgeReference final :
 public:
 
   /// @brief Construct base edge reference.
-  explicit BaseEdgeReference(Mesh& mesh, EdgeIndex index = {}) noexcept :
+  explicit BaseEdgeReference(Mesh& mesh, EdgeIndex index) noexcept :
     BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_>(mesh, index) {
   }
 
@@ -364,16 +273,6 @@ public:
     return this->Mesh_->EdgeDir(this->Index_);
   }
 
-  /// @brief Set edge length. 
-  void SetLen(real_t len) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetEdgeLen(this->Index_, len);
-  }
-
-  /// @brief Set edge direction. 
-  void SetDir(vec3_t const& dir) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetEdgeDir(this->Index_, dir);
-  }
-
 }; // class BaseEdgeReference<...>
 
 /// @brief Mesh edges random-access reference.
@@ -391,7 +290,7 @@ class BaseFaceReference final :
 public:
 
   /// @brief Construct base face reference.
-  explicit BaseFaceReference(Mesh& mesh, FaceIndex index = {}) noexcept :
+  explicit BaseFaceReference(Mesh& mesh, FaceIndex index) noexcept :
     BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_>(mesh, index) {
   }
 
@@ -421,24 +320,9 @@ public:
     return this->Mesh_->FaceNormal(this->Index_);
   }
 
-  /// @brief Get face barycenter. 
+  /// @brief Get face center position.
   vec3_t CenterPos() const noexcept {
     return this->Mesh_->FaceCenterPos(this->Index_);
-  }
-
-  /// @brief Set face area/length. 
-  void SetArea(real_t area) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetFaceArea(this->Index_, area);
-  }
-
-  /// @brief Set face normal. 
-  void SetNormal(vec3_t const& normal) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetFaceNormal(this->Index_, normal);
-  }
-
-  /// @brief Set face barycenter. 
-  void SetCenterPos(vec3_t const& centerPos) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetFaceCenterPos(this->Index_, centerPos);
   }
 
 }; // class BaseFaceReference<...>
@@ -458,7 +342,7 @@ class BaseCellReference final :
 public:
 
   /// @brief Construct base cell reference.
-  explicit BaseCellReference(Mesh& mesh, CellIndex index = {}) noexcept :
+  explicit BaseCellReference(Mesh& mesh, CellIndex index) noexcept :
     BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_>(mesh, index) {
   }
 
@@ -473,19 +357,9 @@ public:
     return this->Mesh_->CellVolume(this->Index_);
   }
 
-  /// @brief Get cell barycenter. 
+  /// @brief Get cell center position.
   vec3_t CenterPos() const noexcept {
     return this->Mesh_->CellCenterPos(this->Index_);
-  }
-
-  /// @brief Set cell volume/area/length. 
-  void SetVolume(real_t volume) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetCellVolume(this->Index_, volume);
-  }
-
-  /// @brief Set cell barycenter. 
-  void SetCenterPos(vec3_t const& centerPos) const noexcept requires(!std::is_const_v<Mesh>) {
-    this->Mesh_->SetCellCenterPos(this->Index_, centerPos);
   }
 
 }; // class BaseCellReference<...>
@@ -496,20 +370,100 @@ using CellRef = BaseCellReference<Mesh const>;
 using CellMutableRef = BaseCellReference<Mesh>;
 /// @}
 
+/// @brief Range of the @p mesh nodes.
 template<class Mesh>
-auto NodeIters(Mesh& mesh) noexcept {
-  return mesh.Nodes()  |
-    std::views::transform([&mesh](NodeIndex nodeIndex) {
+auto NodeRefs(Mesh& mesh) noexcept {
+  return mesh.Nodes() |
+    views::transform([&mesh](NodeIndex nodeIndex) {
       return BaseNodeReference<Mesh>(mesh, nodeIndex);
     });
 }
 
+/// @brief Range of the @p mesh edges.
 template<class Mesh>
-auto NodeIters(Mesh& mesh, NodeMark nodeMark) noexcept {
-  return mesh.Nodes(nodeMark)  |
-    std::views::transform([&mesh](NodeIndex nodeIndex) {
+auto EdgeRefs(Mesh& mesh) noexcept {
+  return mesh.Edges() |
+    views::transform([&mesh](EdgeIndex edgeIndex) {
+      return BaseEdgeReference<Mesh>(mesh, edgeIndex);
+    });
+}
+
+/// @brief Range of the @p mesh nodes.
+template<class Mesh>
+auto FaceRefs(Mesh& mesh) noexcept {
+  return mesh.Faces() |
+    views::transform([&mesh](FaceIndex faceIndex) {
+      return BaseFaceReference<Mesh>(mesh, faceIndex);
+    });
+}
+
+/// @brief Range of the @p mesh nodes.
+template<class Mesh>
+auto CellRefs(Mesh& mesh) noexcept {
+  return mesh.Cells() |
+    views::transform([&mesh](CellIndex cellIndex) {
+      return BaseCellReference<Mesh>(mesh, cellIndex);
+    });
+}
+
+/// @brief Range of the @p mesh nodes with a @p nodeMark.
+template<class Mesh>
+auto NodeRefs(Mesh& mesh, NodeMark nodeMark) noexcept {
+  return mesh.Nodes(nodeMark) |
+    views::transform([&mesh](NodeIndex nodeIndex) {
       return BaseNodeReference<Mesh>(mesh, nodeIndex);
     });
+}
+
+/// @brief Range of the @p mesh edges with a @p edgeMark.
+template<class Mesh>
+auto EdgeRefs(Mesh& mesh, EdgeMark edgeMark) noexcept {
+  return mesh.Edges(edgeMark) |
+    views::transform([&mesh](EdgeIndex edgeIndex) {
+      return BaseEdgeReference<Mesh>(mesh, edgeIndex);
+    });
+}
+
+/// @brief Range of the @p mesh nodes with a @p faceMark.
+template<class Mesh>
+auto FaceRefs(Mesh& mesh, FaceMark faceMark) noexcept {
+  return mesh.Faces(faceMark) |
+    views::transform([&mesh](FaceIndex faceIndex) {
+      return BaseFaceReference<Mesh>(mesh, faceIndex);
+    });
+}
+
+/// @brief Range of the @p mesh nodes with a @p cellMark.
+template<class Mesh>
+auto CellRefs(Mesh& mesh, CellMark cellMark) noexcept {
+  return mesh.Cells(cellMark) |
+    views::transform([&mesh](CellIndex cellIndex) {
+      return BaseCellReference<Mesh>(mesh, cellIndex);
+    });
+}
+
+/// @brief Range of the interior @p mesh nodes.
+template<class Mesh>
+auto InteriorNodeRefs(Mesh& mesh) noexcept {
+  return NodeRefs(mesh, NodeMark{0});
+}
+
+/// @brief Range of the interior @p mesh edges.
+template<class Mesh>
+auto InteriorEdgeRefs(Mesh& mesh) noexcept {
+  return EdgeRefs(mesh, EdgeMark{0});
+}
+
+/// @brief Range of the interior @p mesh nodes.
+template<class Mesh>
+auto InteriorFaceRefs(Mesh& mesh) noexcept {
+  return FaceRefs(mesh, FaceMark{0});
+}
+
+/// @brief Range of the interior @p mesh nodes.
+template<class Mesh>
+auto InteriorCellRefs(Mesh& mesh) noexcept {
+  return CellRefs(mesh, CellMark{0});
 }
 
 #define FaceCellFunc_ \
@@ -517,371 +471,43 @@ auto NodeIters(Mesh& mesh, NodeMark nodeMark) noexcept {
      func(face.InnerCell(), face.OuterCell()); \
    })
 
-/// @brief Iterator pointing to the first node with a given mark or the first mark. 
-/// @{
+/// @brief Range of the boundary @p mesh nodes.
 template<class Mesh>
-auto BeginNode(Mesh& mesh) noexcept {
-  return BaseNodeReference<Mesh>(mesh);
+auto BoundaryNodeRefs(Mesh& mesh) noexcept {
+  return NodeRefs(mesh) | views::drop(mesh.NumNodes({}));
 }
-template<class Mesh>
-auto BeginNode(Mesh& mesh, NodeMark nodeMark) noexcept {
-  return BaseNodeReference<Mesh>(mesh, mesh.BeginNode(nodeMark));
-}
-/// @}
 
-/// @brief Iterator pointing to the first edge with a given mark or the first mark. 
-/// @{
+/// @brief Range of the boundary @p mesh edges.
 template<class Mesh>
-auto BeginEdge(Mesh& mesh) noexcept {
-  return BaseEdgeReference<Mesh>(mesh);
+auto BoundaryEdgeRefs(Mesh& mesh) noexcept {
+  return EdgeRefs(mesh) | views::drop(mesh.NumEdges({}));
 }
-template<class Mesh>
-auto BeginEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
-  return BaseEdgeReference<Mesh>(mesh, mesh.BeginEdge(edgeMark));
-}
-/// @}
 
-/// @brief Iterator pointing to the first face with a given mark or the first mark. 
-/// @{
+/// @brief Range of the boundary @p mesh nodes.
 template<class Mesh>
-auto BeginFace(Mesh& mesh) noexcept {
-  return BaseFaceReference<Mesh>(mesh);
+auto BoundaryFaceRefs(Mesh& mesh) noexcept {
+  return FaceRefs(mesh) | views::drop(mesh.NumFaces({}));
 }
-template<class Mesh>
-auto BeginFace(Mesh& mesh, FaceMark faceMark) noexcept {
-  return BaseFaceReference<Mesh>(mesh, mesh.BeginFace(faceMark));
-}
-/// @}
 
-/// @brief Iterator pointing to the first cell with a given mark or the first mark. 
-/// @{
 template<class Mesh>
-auto BeginCell(Mesh& mesh) noexcept {
-  return BaseCellReference<Mesh>(mesh);
-}
-template<class Mesh>
-auto BeginCell(Mesh& mesh, CellMark cellMark) noexcept {
-  return BaseCellReference<Mesh>(mesh, mesh.BeginCell(cellMark));
-}
-/// @}
+auto BoundaryFaceCellRefs(Mesh& mesh) noexcept; /*{
+  return FaceRefs(mesh) | views::drop(mesh.NumFaces({})) |
+    views::transform([](BaseFaceReference<Mesh> face) {
+      func(face.InnerCell(), face.OuterCell());
+    });
+}*/
 
-/// @brief Iterator pointing to a node after the last node with a given mark or the last mark. 
-/// @{
+/// @brief Range of the boundary @p mesh nodes.
 template<class Mesh>
-auto EndNode(Mesh& mesh) noexcept {
-  return BaseNodeReference<Mesh>(mesh, NodeIndex(mesh.NumNodes()));
+auto BoundaryCellRefs(Mesh& mesh) noexcept {
+  return CellRefs(mesh) | views::drop(mesh.NumCells({}));
 }
-template<class Mesh>
-auto EndNode(Mesh& mesh, NodeMark nodeMark) noexcept {
-  return BaseNodeReference<Mesh>(mesh, mesh.EndNode(nodeMark));
-}
-/// @}
 
-/// @brief Iterator pointing to an edge after the last edge with a given mark or the last mark. 
-/// @{
-template<class Mesh>
-auto EndEdge(Mesh& mesh) noexcept {
-  return BaseEdgeReference<Mesh>(mesh, EdgeIndex(mesh.NumEdges()));
-}
-template<class Mesh>
-auto EndEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
-  return BaseEdgeReference<Mesh>(mesh, mesh.EndEdge(edgeMark));
-}
-/// @}
-
-/// @brief Iterator pointing to a face after the last face with a given mark or the last mark. 
-/// @{
-template<class Mesh>
-auto EndFace(Mesh& mesh) noexcept {
-  return BaseFaceReference<Mesh>(mesh, FaceIndex(mesh.NumFaces()));
-}
-template<class Mesh>
-auto EndFace(Mesh& mesh, FaceMark faceMark) noexcept {
-  return BaseFaceReference<Mesh>(mesh, mesh.EndFace(faceMark));
-}
-/// @}
-
-/// @brief Iterator pointing to a cell after the last cell with a given mark or the last mark. 
-/// @{
-template<class Mesh>
-auto EndCell(Mesh& mesh) noexcept {
-  return BaseCellReference<Mesh>(mesh, CellIndex(mesh.NumCells()));
-}
-template<class Mesh>
-auto EndCell(Mesh& mesh, CellMark cellMark) noexcept {
-  return BaseCellReference<Mesh>(mesh, mesh.EndCell(cellMark));
-}
-/// @}
-
-/// @brief Iterate through all nodes with a given mark or all marks. 
-/// @{
+/// @brief Iterate through all boundary @p mesh faces.
 template<class Mesh, class Func>
-void ForEachNode(Mesh& mesh, Func func) noexcept {
-  for_range(BeginNode(mesh), EndNode(mesh), func);
+FEATHERS_DEPRECATED void ForEachBoundaryFaceCells(Mesh& mesh, Func func) noexcept {
+  ForEach(BoundaryFaceRefs(mesh), FaceCellFunc_);
 }
-template<class Mesh, class Func>
-void ForEachNode(Mesh& mesh, NodeMark nodeMark, Func func) noexcept {
-  for_range(BeginNode(mesh, nodeMark), EndNode(mesh, nodeMark), func);
-}
-/// @}
-
-/// @brief Iterate through all edges with a given mark or all marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachEdge(Mesh& mesh, Func func) noexcept {
-  for_range(BeginEdge(mesh), EndEdge(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachEdge(Mesh& mesh, EdgeMark edgeMark, Func func) noexcept {
-  for_range(BeginEdge(mesh, edgeMark), EndEdge(mesh, edgeMark), func);
-}
-/// @}
-
-/// @brief Iterate through all faces with a given mark or all marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachFace(Mesh& mesh, Func func) noexcept {
-  for_range(BeginFace(mesh), EndFace(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachFace(Mesh& mesh, FaceMark faceMark, Func func) noexcept {
-  for_range(BeginFace(mesh, faceMark), EndFace(mesh, faceMark), func);
-}
-template<class Mesh, class Func>
-void ForEachFaceCells(Mesh& mesh, Func func) noexcept {
-  for_range(BeginFace(mesh), EndFace(mesh), FaceCellFunc_);
-}
-template<class Mesh, class Func>
-void ForEachFaceCells(Mesh& mesh, FaceMark faceMark, Func func) noexcept {
-  for_range(BeginFace(mesh, faceMark), EndFace(mesh, faceMark), FaceCellFunc_);
-}
-/// @}
-
-/// @brief Iterate through all cells with a given mark or all marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachCell(Mesh& mesh, Func func) noexcept {
-  for_range(BeginCell(mesh), EndCell(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachCell(Mesh& mesh, CellMark cellMark, Func func) noexcept {
-  for_range(BeginCell(mesh, cellMark), EndCell(mesh, cellMark), func);
-}
-/// @}
-
-/// @brief Iterator pointing to the first interior node.
-template<class Mesh>
-auto BeginInteriorNode(Mesh& mesh) noexcept {
-  return BeginNode(mesh, {});
-}
-
-/// @brief Iterator pointing to the first interior edge. 
-template<class Mesh>
-auto BeginInteriorEdge(Mesh& mesh) noexcept {
-  return BeginEdge(mesh, {});
-}
-
-/// @brief Iterator pointing to the first interior face. 
-template<class Mesh>
-auto BeginInteriorFace(Mesh& mesh) noexcept {
-  return BeginFace(mesh, {});
-}
-
-/// @brief Iterator pointing to the first interior cell. 
-template<class Mesh>
-auto BeginInteriorCell(Mesh& mesh) noexcept {
-  return BeginCell(mesh, {});
-}
-
-/// @brief Iterator pointing to a node after the last node. 
-template<class Mesh>
-auto EndInteriorNode(Mesh& mesh) noexcept {
-  return EndNode(mesh, {});
-}
-
-/// @brief Iterator pointing to an edge after the last node. 
-template<class Mesh>
-auto EndInteriorEdge(Mesh& mesh) noexcept {
-  return EndEdge(mesh, {});
-}
-
-/// @brief Iterator pointing to a face after the last node. 
-template<class Mesh>
-auto EndInteriorFace(Mesh& mesh) noexcept {
-  return EndFace(mesh, {});
-}
-
-/// @brief Iterator pointing to a cell after the last node. 
-template<class Mesh>
-auto EndInteriorCell(Mesh& mesh) noexcept {
-  return EndCell(mesh, {});
-}
-
-/// @brief Iterate through all interior nodes. 
-template<class Mesh, class Func>
-void ForEachInteriorNode(Mesh& mesh, Func func) noexcept {
-  for_range(BeginInteriorNode(mesh), EndInteriorNode(mesh), func);
-}
-
-/// @brief Iterate through all interior edges. 
-template<class Mesh, class Func>
-void ForEachInteriorEdge(Mesh& mesh, Func func) noexcept {
-  for_range(BeginInteriorEdge(mesh), EndInteriorEdge(mesh), func);
-}
-
-/// @brief Iterate through all interior faces. 
-/// @{
-template<class Mesh, class Func>
-void ForEachInteriorCace(Mesh& mesh, Func func) noexcept {
-  for_range(BeginInteriorFace(mesh), EndInteriorFace(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachInteriorFaceCells(Mesh& mesh, Func func) noexcept {
-  for_range(BeginInteriorFace(mesh), EndInteriorFace(mesh), FaceCellFunc_);
-}
-/// @}
-
-/// @brief Iterate through all interior cells. 
-template<class Mesh, class Func>
-void ForEachInteriorCell(Mesh& mesh, Func func) noexcept {
-  for_range(BeginInteriorCell(mesh), EndInteriorCell(mesh), func);
-}
-
-/// @brief Iterator pointing to the boundary first node with a given mark or the first boundary mark.
-template<class Mesh>
-auto BeginBoundaryNode(Mesh& mesh, NodeMark nodeMark = NodeMark{1}) {
-  StormAssert(nodeMark >= 1);
-  return BeginNode(mesh, nodeMark);
-}
-
-/// @brief Iterator pointing to the boundary first edge with a given mark or the first boundary mark.
-template<class Mesh>
-auto BeginBoundaryEdge(Mesh& mesh, EdgeMark edgeMark = EdgeMark{1}) {
-  StormAssert(edgeMark >= 1);
-  return BeginEdge(mesh, edgeMark);
-}
-
-/// @brief Iterator pointing to the boundary first face with a given mark or the first boundary mark.
-template<class Mesh>
-auto BeginBoundaryFace(Mesh& mesh, FaceMark faceMark = FaceMark{1}) {
-  StormAssert(faceMark >= 1);
-  return BeginFace(mesh, faceMark);
-}
-
-/// @brief Iterator pointing to the boundary first cell with a given mark or the first boundary mark.
-template<class Mesh>
-auto BeginBoundaryCell(Mesh& mesh, CellMark cellMark = CellMark{1}) {
-  StormAssert(cellMark >= 1);
-  return BeginCell(mesh, cellMark);
-}
-
-/// @brief Iterator pointing to a node after the last node with a given or the last boundary mark. 
-/// @{
-template<class Mesh>
-auto EndBoundaryNode(Mesh& mesh) noexcept {
-  return EndNode(mesh);
-}
-template<class Mesh>
-auto EndBoundaryNode(Mesh& mesh, NodeMark nodeMark) noexcept {
-  StormAssert(nodeMark >= 1);
-  return EndNode(mesh, nodeMark);
-}
-/// @}
-
-/// @brief Iterator pointing to an edge after the last edge with a given or the last boundary mark. 
-/// @{
-template<class Mesh>
-auto EndBoundaryEdge(Mesh& mesh) noexcept {
-  return EndEdge(mesh);
-}
-template<class Mesh>
-auto EndBoundaryEdge(Mesh& mesh, EdgeMark edgeMark) noexcept {
-  StormAssert(edgeMark >= 1);
-  return EndEdge(mesh, edgeMark);
-}
-/// @}
-
-/// @brief Iterator pointing to a face after the last face with a given or the last boundary mark. 
-/// @{
-template<class Mesh>
-auto EndBoundaryFace(Mesh& mesh) noexcept {
-  return EndFace(mesh);
-}
-template<class Mesh>
-auto EndBoundaryFace(Mesh& mesh, FaceMark faceMark) noexcept {
-  StormAssert(faceMark >= 1);
-  return EndFace(mesh, faceMark);
-}
-/// @}
-
-/// @brief Iterator pointing to a cell after the last cell with a given or the last boundary mark. 
-/// @{
-template<class Mesh>
-auto EndBoundaryCell(Mesh& mesh) noexcept {
-  return EndCell(mesh);
-}
-template<class Mesh>
-auto EndBoundaryCell(Mesh& mesh, CellMark cellMark) noexcept {
-  StormAssert(cellMark >= 1);
-  return EndCell(mesh, cellMark);
-}
-/// @}
-
-/// @brief Iterate through all boundary nodes with a given mark or all boundary marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachBoundaryNode(Mesh& mesh, Func func) noexcept {
-  for_range(BeginBoundaryNode(mesh), EndBoundaryNode(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachBoundaryNode(Mesh& mesh, NodeMark nodeMark, Func func) noexcept {
-  for_range(BeginBoundaryNode(mesh, nodeMark), EndBoundaryNode(mesh, nodeMark), func);
-}
-/// @}
-
-/// @brief Iterate through all boundary edges with a given mark or all boundary marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachBoundaryEdge(Mesh& mesh, Func func) noexcept {
-  for_range(BeginBoundaryEdge(mesh), EndBoundaryEdge(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachBoundaryEdge(Mesh& mesh, EdgeMark edgeMark, Func func) noexcept {
-  for_range(BeginBoundaryEdge(mesh, edgeMark), EndBoundaryEdge(mesh, edgeMark), func);
-}
-/// @}
-
-/// @brief Iterate through all boundary faces with a given mark or all boundary marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachBoundaryFace(Mesh& mesh, Func func) noexcept {
-  for_range(BeginBoundaryFace(mesh), EndBoundaryFace(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachBoundaryFace(Mesh& mesh, FaceMark faceMark, Func func) noexcept {
-  for_range(BeginBoundaryFace(mesh, faceMark), EndBoundaryFace(mesh, faceMark), func);
-}
-template<class Mesh, class Func>
-void ForEachBoundaryFaceCells(Mesh& mesh, Func func) noexcept {
-  for_range(BeginBoundaryFace(mesh), EndBoundaryFace(mesh), FaceCellFunc_);
-}
-template<class Mesh, class Func>
-void ForEachBoundaryFaceCells(Mesh& mesh, FaceMark faceMark, Func func) noexcept {
-  for_range(BeginBoundaryFace(mesh, faceMark), EndBoundaryFace(mesh, faceMark), FaceCellFunc_);
-}
-/// @}
-
-/// @brief Iterate through all boundary cells with a given mark or all boundary marks. 
-/// @{
-template<class Mesh, class Func>
-void ForEachBoundaryCell(Mesh& mesh, Func func) noexcept {
-  for_range(BeginBoundaryCell(mesh), EndBoundaryCell(mesh), func);
-}
-template<class Mesh, class Func>
-void ForEachBoundaryCell(Mesh& mesh, CellMark cellMark, Func func) noexcept {
-  for_range(BeginBoundaryCell(mesh, cellMark), EndBoundaryCell(mesh, cellMark), func);
-}
-/// @}
 
 #undef FaceCellFunc_
 

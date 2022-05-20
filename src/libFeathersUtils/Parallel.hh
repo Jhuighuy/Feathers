@@ -67,6 +67,10 @@ template<typename tIndex, typename tFunc>
 void for_range(tIndex first_1, tIndex last_1,
                tIndex first_2, tIndex last_2,
                tIndex first_3, tIndex last_3, tFunc func);
+template<class Range, class Func>
+void ForEach(Range&& range, Func func) {
+  for_range(std::begin(range), std::end(range), [&](auto x) { func(*x); });
+}
 /** @} */
 
 // ------------------------------------------------------------------------------------ //
@@ -106,6 +110,10 @@ template<typename tValue, typename tIndex, typename tFunc>
 tValue for_range_sum(tIndex first_1, tIndex last_1,
                      tIndex first_2, tIndex last_2,
                      tIndex first_3, tIndex last_3, tValue init, tFunc func);
+template<typename tValue, class Range, class Func>
+auto ForEachSum(Range&& range, tValue init, Func func) {
+  return for_range_sum(std::begin(range), std::end(range), init, [&](auto x) { return func(*x); });
+}
 /** @} */
 
 // ------------------------------------------------------------------------------------ //
@@ -157,6 +165,10 @@ std::pair<tValue, tValue> for_range_minmax(tIndex first_1, tIndex last_1,
                                            tIndex first_2, tIndex last_2,
                                            tIndex first_3, tIndex last_3,
                                            tValue min_init, tValue max_init, tFunc func);
+template<typename tValue, class Range, class Func>
+auto ForEachMinMax(Range&& range, tValue min_init, tValue max_init, Func func) {
+  return for_range_minmax(std::begin(range), std::end(range), min_init, max_init, [&](auto x) { return func(*x); });
+}
 /** @} */
 
 }   // namespace feathers

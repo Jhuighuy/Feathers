@@ -33,8 +33,6 @@
 #include "SkunkBase.hh"
 #include "libFeathersMesh/Index.hh"
 
-#include <ranges>
-
 namespace feathers {
 
 /**
@@ -83,13 +81,13 @@ public:
 
   auto operator[](RowIndex row_index) noexcept {
     FEATHERS_ASSERT(row_index < num_rows());
-    return std::ranges::subrange(
+    return ranges::subrange(
       &m_column_indices[m_row_offsets[row_index]],
       &m_column_indices[m_row_offsets[row_index + 1]]);
   }
   auto operator[](RowIndex row_index) const noexcept requires(!std::is_same_v<RowIndex, size_t>) {
     FEATHERS_ASSERT(row_index < num_rows());
-    return std::ranges::subrange(
+    return ranges::subrange(
       &m_column_indices[m_row_offsets[row_index]],
       &m_column_indices[m_row_offsets[row_index + 1]]);
   }

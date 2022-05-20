@@ -27,6 +27,9 @@
 
 namespace feathers {
 
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// @brief Strict index.
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Tag>
 class Index {
 private:
@@ -50,6 +53,32 @@ public:
   constexpr explicit operator Index<OtherTag>() const noexcept {
     return Index<OtherTag>(Value_);
   }
+
+  /// @brief Index comparison operator.
+  /// @{
+#if 0 /// @todo Why the spaceship fails in ranges?
+  constexpr auto operator<=>(Index other) const noexcept {
+    return Value_ <=> other.Value_;
+  }
+  constexpr auto operator<=>(size_t value) const noexcept {
+    return Value_ <=> value;
+  }
+#else
+#define Operator_(OP) \
+  constexpr bool operator OP(Index other) const noexcept { \
+    return Value_ OP other.Value_; \
+  } \
+  friend constexpr bool operator OP(Index first, size_t second) noexcept { \
+    return first.Value_ OP second; \
+  } \
+  friend constexpr bool operator OP(size_t first, Index second) noexcept { \
+    return first OP second.Value_; \
+  }
+  Operator_(==) Operator_(!=)
+  Operator_(<) Operator_(<=) Operator_(>) Operator_(>=)
+#undef Operator_
+#endif
+  /// @}
 
   /// @brief Increment operator.
   /// @{
@@ -76,120 +105,39 @@ public:
   /// @}
 
   /// @brief Index addition operator.
+  /// @{
   constexpr Index& operator+=(size_t value) noexcept {
     Value_ += value;
     return *this;
   }
+  friend constexpr Index operator+(Index first, size_t second) noexcept {
+    return Index(first.Value_ + second);
+  }
+  friend constexpr Index operator+(size_t first, Index second) noexcept {
+    return Index(first + second.Value_);
+  }
+  /// @}
 
   /// @brief Index subtraction operator.
+  /// @{
   constexpr Index& operator-=(size_t value) noexcept {
     Value_ -= value;
     return *this;
   }
+  friend constexpr Index operator-(Index first, size_t second) noexcept {
+    return Index(first.Value_ - second);
+  }
+  friend constexpr Index operator-(size_t first, Index second) noexcept {
+    return Index(first - second.Value_);
+  }
+  /// @}
+
+  /// @brief Index difference operator.
+  constexpr ptrdiff_t operator-(Index other) const noexcept {
+    return Value_ - other.Value_;
+  }
 
 }; // class Index<...>
-
-/// @brief Index difference operator.
-template<class Tag>
-constexpr ptrdiff_t operator-(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) - size_t(i2);
-}
-
-/// @brief Index equality operator.
-/// @{
-template<class Tag>
-constexpr bool operator==(Index<Tag> i1, size_t i2) noexcept {
-  return size_t(i1) == i2;
-}
-template<class Tag>
-constexpr bool operator==(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) == size_t(i2);
-}
-/// @}
-
-/// @brief Inequality operator.
-/// @{
-template<class Tag>
-constexpr bool operator!=(Index<Tag> i1, size_t i2) noexcept {
-  return size_t(i1) != i2;
-}
-template<class Tag>
-constexpr bool operator!=(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) != size_t(i2);
-}
-/// @}
-
-/// @brief Index less than operator.
-/// @{
-template<class Tag>
-constexpr bool operator<(Index<Tag> i1, size_t i2) noexcept {
-  return size_t(i1) < i2;
-}
-template<class Tag>
-constexpr bool operator<(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) < size_t(i2);
-}
-/// @}
-
-/// @brief Index less than or equal operator.
-/// @{
-template<class Tag>
-constexpr bool operator<=(Index<Tag> i1, size_t i2) noexcept {
-  return size_t(i1) <= i2;
-}
-template<class Tag>
-constexpr bool operator<=(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) <= size_t(i2);
-}
-/// @}
-
-/// @brief Index greater than operator.
-/// @{
-template<class Tag>
-constexpr bool operator>(Index<Tag> i1, size_t i2) noexcept {
-  return size_t(i1) > i2;
-}
-template<class Tag>
-constexpr bool operator>(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) > size_t(i2);
-}
-/// @}
-
-/// @brief Index greater than or equal operator.
-/// @{
-template<class Tag>
-constexpr bool operator>=(Index<Tag> i1, size_t i2) noexcept {
-  return size_t(i1) >= i2;
-}
-template<class Tag>
-constexpr bool operator>=(Index<Tag> i1, Index<Tag> i2) noexcept {
-  return size_t(i1) >= size_t(i2);
-}
-/// @}
-
-/// @brief Index addition operator.
-/// @{
-template<class Tag>
-constexpr Index<Tag> operator+(Index<Tag> i1, size_t i2) noexcept {
-  return i1 += i2;
-}
-template<class Tag>
-constexpr Index<Tag> operator+(size_t i1, Index<Tag> i2) noexcept {
-  return Index<Tag>(i1) += size_t(i1);
-}
-/// @}
-
-/// @brief Index subtraction operator.
-/// @{
-template<class Tag>
-constexpr Index<Tag> operator-(Index<Tag> i1, size_t i2) noexcept {
-  return i1 -= i2;
-}
-template<class Tag>
-constexpr Index<Tag> operator-(size_t i1, Index<Tag> i2) noexcept {
-  return Index<Tag>(i1) -= size_t(i1);
-}
-/// @}
 
 /// @todo
 template<class Value, class Index>
