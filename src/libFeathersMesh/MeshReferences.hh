@@ -89,7 +89,7 @@ public:
   }
 
   /// @brief Get element object. 
-  std::unique_ptr<const iElement> get_element_object() const {
+  std::unique_ptr<const Element> get_element_object() const {
     return Mesh_->get_object(Index_);
   }
 

@@ -40,7 +40,7 @@ void Mesh::UpdateElementsGeometry() {
   // ----------------------
   std::tie(MinEdgeLen_, MaxEdgeLen_) =
     ForEachMinMax(Edges(), +huge, -huge, [this](EdgeIndex edgeIndex) {
-      std::unique_ptr<iElement const> const edgeElement = get_object(edgeIndex);
+      std::unique_ptr<Element const> const edgeElement = get_object(edgeIndex);
 
       EdgeLens_[edgeIndex] = edgeElement->LenAreaOrVolume();
       EdgeDirs_[edgeIndex] = edgeElement->Dir();
@@ -53,7 +53,7 @@ void Mesh::UpdateElementsGeometry() {
   // ----------------------
   std::tie(MinFaceArea_, MaxFaceArea_) =
     ForEachMinMax(Faces(), +huge, -huge, [&](FaceIndex faceIndex) {
-      std::unique_ptr<iElement const> const faceElement = get_object(faceIndex);
+      std::unique_ptr<Element const> const faceElement = get_object(faceIndex);
 
       FaceAreas_[faceIndex] = faceElement->LenAreaOrVolume();
       FaceNormals_[faceIndex] = faceElement->Normal();
@@ -67,7 +67,7 @@ void Mesh::UpdateElementsGeometry() {
   // ----------------------
   std::tie(MinFaceArea_, MaxFaceArea_) =
     ForEachMinMax(Cells(), +huge, -huge, [&](CellIndex cellIndex) {
-      std::unique_ptr<iElement const> const cellElement = get_object(cellIndex);
+      std::unique_ptr<Element const> const cellElement = get_object(cellIndex);
 
       CellVolumes_[cellIndex] = cellElement->LenAreaOrVolume();
       CellCenterPos_[cellIndex] = cellElement->CenterPos();
@@ -97,7 +97,7 @@ NodeIndex Mesh::EmplaceNode(vec3_t const& nodePos, NodeMark nodeMark) {
 
 } // Mesh<...>::EmplaceNode
 
-EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<iElement>&& edge, EdgeMark edgeMark) {
+EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark) {
 
   EdgeIndex const edgeIndex(NumEdges_++);
 
@@ -109,7 +109,7 @@ EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<iElement>&& edge, EdgeMark edgeMark)
   EdgeDirs_.emplace_back(edge->Dir());
 
   // Fill the edge nodes.
-  ((CsrTable<size_t, size_t>&) EdgeNodes_).emplace_back_row(edge->get_nodes().begin(), edge->get_nodes().end());
+  ((CsrTable<size_t, size_t>&) EdgeNodes_).emplace_back_row(edge->NodeIndices().begin(), edge->NodeIndices().end());
 
   // Emplace empty rows into the remaining edge
   // adjacency tables to keep the mesh consistent. */
@@ -121,7 +121,7 @@ EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<iElement>&& edge, EdgeMark edgeMark)
 
 } // Mesh<...>::EmplaceEdge
 
-FaceIndex Mesh::EmplaceFace(std::unique_ptr<iElement>&& face, FaceMark faceMark) {
+FaceIndex Mesh::EmplaceFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
 
   FaceIndex const faceIndex(NumFaces_++);
 
@@ -134,11 +134,11 @@ FaceIndex Mesh::EmplaceFace(std::unique_ptr<iElement>&& face, FaceMark faceMark)
   FaceCenterPos_.emplace_back(face->CenterPos());
 
   // Fill the face nodes.
-  ((CsrTable<size_t, size_t>&) FaceNodes_).emplace_back_row(face->get_nodes().begin(), face->get_nodes().end());
+  ((CsrTable<size_t, size_t>&) FaceNodes_).emplace_back_row(face->NodeIndices().begin(), face->NodeIndices().end());
 
   // Preallocate/emplace empty rows into the remaining face
   // adjacency tables to keep the mesh consistent.
-  FaceEdges_.emplace_back_row(face->num_edges());
+  FaceEdges_.emplace_back_row(face->NumEdges());
   FaceFaces_.emplace_back_row(/* dynamic value */);
   FaceCells_.emplace_back_row(2);
 
@@ -146,7 +146,7 @@ FaceIndex Mesh::EmplaceFace(std::unique_ptr<iElement>&& face, FaceMark faceMark)
 
 } // Mesh<...>::EmplaceFace
 
-CellIndex Mesh::EmplaceCell(std::unique_ptr<iElement>&& cell, CellMark cellMark) {
+CellIndex Mesh::EmplaceCell(std::unique_ptr<Element>&& cell, CellMark cellMark) {
 
   CellIndex const cellIndex(NumCells_++);
 
@@ -158,13 +158,13 @@ CellIndex Mesh::EmplaceCell(std::unique_ptr<iElement>&& cell, CellMark cellMark)
   CellCenterPos_.emplace_back(cell->CenterPos());
 
   // Fill the cell nodes.
-  ((CsrTable<size_t, size_t>&) CellNodes_).emplace_back_row(cell->get_nodes().begin(), cell->get_nodes().end());
+  ((CsrTable<size_t, size_t>&) CellNodes_).emplace_back_row(cell->NodeIndices().begin(), cell->NodeIndices().end());
 
   // Preallocate rows into the remaining cell
   // adjacency tables to keep the mesh consistent.
-  CellEdges_.emplace_back_row(cell->num_edges());
-  CellFaces_.emplace_back_row(cell->num_faces());
-  CellCells_.emplace_back_row(cell->num_faces());
+  CellEdges_.emplace_back_row(cell->NumEdges());
+  CellFaces_.emplace_back_row(cell->NumFaces());
+  CellCells_.emplace_back_row(cell->NumFaces());
 
   return cellIndex;
 
@@ -363,7 +363,7 @@ void Mesh::FinalizeEdges_() {
   // find the edge in the lookup table or emplace the new edge.
   // ----------------------
   ranges::for_each(FaceRefs(*this), [&](FaceMutableRef face) {
-    tElementDescList edgesDesc = face.get_element_object()->get_edges_desc();
+    ElementDescArray edgesDesc = face.get_element_object()->MakeEdgesDesc();
     for (size_t edgeLocal = 0; edgeLocal < face.NumEdges(); ++edgeLocal) {
       EdgeIndex& edgeIndex = AdjacentEdges(face)[edgeLocal];
       if (edgeIndex != npos) {
@@ -419,7 +419,7 @@ void Mesh::FinalizeFaces_() {
   // Also fill the face-to-cell adjacency table.
   // ----------------------
   ranges::for_each(CellRefs(*this), [&](CellMutableRef cell) {
-    tElementDescList facesDesc = cell.get_element_object()->get_faces_desc();
+    ElementDescArray facesDesc = cell.get_element_object()->MakeFacesDesc();
     for (size_t faceLocal = 0; faceLocal < cell.NumFaces(); ++faceLocal) {
       FaceIndex& faceIndex = AdjacentFaces(cell)[faceLocal];
       if (faceIndex != npos) {

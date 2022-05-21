@@ -51,134 +51,133 @@ struct ElementDesc {
 }; // ElementDesc
 
 /// @brief Array of the element descriptions.
-using tElementDescList = std::vector<ElementDesc>;
+using ElementDescArray = std::vector<ElementDesc>;
 
 /// ----------------------------------------------------------------- ///
 /// @brief Abstract element class.
 /// ----------------------------------------------------------------- ///
-class iElement {
+class Element /*: public NonCopyable*/ {
 protected:
-  size_t NumGlobalNodes_ = 0;
-  const vec3_t* GlobalNodeCoords_ = nullptr;
+  std::span<vec3_t const> NodePos_;
   std::vector<size_t> NodeIndices_;
+
+  template<class... Indices>
+  auto PartDesc_(ShapeType partShape, Indices... nodeLocals) const {
+    return ElementDesc{partShape, {NodeIndices_[nodeLocals]...}};
+  }
+
+  Element() = default;
 
 public:
 
-  /// @brief Construct a new element object \
-  ///   with a @p description and a @p nodes_span.
-  static std::unique_ptr<iElement> make(ElementDesc&& desc,
-                                        size_t num_global_nodes,
-                                        const vec3_t* global_node_coords);
+  /// @brief Virtual destructor.
+  virtual ~Element() = default;
 
-  virtual ~iElement() = default;
+  /// @brief Construct a new element object \
+  ///   with a description @p desc and a node position array @p nodePos.
+  static std::unique_ptr<Element> make(ElementDesc&& desc,
+                                       std::span<vec3_t const> nodePos);
 
   /** Get element node indices. */
-  std::vector<size_t> const& get_nodes() const {
+  std::vector<size_t> const& NodeIndices() const {
     return NodeIndices_;
   }
 
-  /** Get node position. */
-  const vec3_t& get_node_coords(size_t node_local) const {
-      StormAssert(node_local < NodeIndices_.size());
-    return GlobalNodeCoords_[NodeIndices_[node_local]];
+  /// @brief Get node @p position.
+  vec3_t NodePos(size_t nodeLocal) const {
+    StormAssert(nodeLocal < NodeIndices_.size());
+    return NodePos_[NodeIndices_[nodeLocal]];
   }
 
-  template<typename... tIndex>
-  ElementDesc get_part(ShapeType part_shape, tIndex... node_locals) const {
-    return { part_shape, std::vector<size_t>{ NodeIndices_[node_locals]... } };
-  }
-
-  // ---------------------------------------------------------------------- //
-  // ---------------------------------------------------------------------- //
-
-  /** Get element diameter. */
-  virtual real_t get_diameter() const {
+  /// @brief Compute the element diameter
+  virtual real_t Diam() const {
     return qnan;
   }
-  /** Get element length/area/volume. */
+
+  /// @brief Compute the element length/area/volume.
   virtual real_t LenAreaOrVolume() const {
     return qnan;
   }
-  /** Get normal to element. */
+
+  /// @brief Compute the normal to element.
   virtual vec3_t Normal() const {
     return vec3_t(qnan);
   }
-  /** Get element direction. */
+
+  /// @brief Compute the element direction.
   virtual vec3_t Dir() const {
     return vec3_t(qnan);
   }
-  /** Get element barycenter. */
+
+  /// @brief Compute the element center position.
   virtual vec3_t CenterPos() const {
     return vec3_t(qnan);
   }
 
-  // ---------------------------------------------------------------------- //
-  // ---------------------------------------------------------------------- //
+  /// @brief Get element shape.
+  virtual ShapeType Shape() const noexcept = 0;
 
-  /** Get element Shape. */
-  virtual ShapeType Shape() const = 0;
+  /// @brief Number of nodes in the element.
+  virtual size_t NumNodes() const noexcept = 0;
 
-  /** Number of nodes in the element. */
-  virtual size_t num_nodes() const = 0;
-
-  /** Number of edges in the element. */
-  size_t num_edges() const {
-    return get_edges_desc().size();
+  /// @brief Number of edges in the element.
+  virtual size_t NumEdges() const {
+    return MakeEdgesDesc().size();
   }
-  /** Get element edges description. */
-  virtual tElementDescList get_edges_desc() const = 0;
 
-  /** Number of faces in the element. */
-  size_t num_faces() const {
-    return get_faces_desc().size();
+  /// @brief Make element edges description array.
+  virtual ElementDescArray MakeEdgesDesc() const = 0;
+
+  /// @brief Number of faces in the element.
+  size_t NumFaces() const {
+    return MakeFacesDesc().size();
   }
-  /** Get element faces description. */
-  virtual tElementDescList get_faces_desc() const = 0;
 
-};  // class iElement
+  /// @brief Make element faces description.
+  virtual ElementDescArray MakeFacesDesc() const = 0;
 
-/**
- * Abstract simplex element class.
- */
-class iSimplexElement : public iElement {
-};  // class iSimplexElement
+}; // class Element
 
-/**
- * Abstract complex (not simplex) element class.
- */
-class iComplexElement : public iElement {
+/// ----------------------------------------------------------------- ///
+/// @brief Abstract simplex element class.
+/// ----------------------------------------------------------------- ///
+class SimplexElement : public Element {};
+
+/// ----------------------------------------------------------------- ///
+/// @brief Abstract complex (not simplex) element class.
+/// ----------------------------------------------------------------- ///
+class ComplexElement : public Element {
 public:
-  real_t get_diameter() const final;
+  real_t Diam() const final;
   real_t LenAreaOrVolume() const final;
   vec3_t Normal() const final;
   vec3_t CenterPos() const final;
 
-  /**
-   * Get splitting into the simplex parts.
-   */
-  virtual tElementDescList get_simplicial_parts(size_t partition_index) const = 0;
+  /// @brief Make splitting into the simplex parts.
+  virtual ElementDescArray MakeSimplicialPartsDesc() const = 0;
 
 private:
-  template<typename tFunc>
-  void for_each_simplex_(tFunc func) const;
-};  // class iComplexElement
 
+  template<class Func>
+  void ForEachSimplex_(Func&& func) const;
 
-/**
- * Dummy nodal element.
- */
-class cNode final : public iSimplexElement {
+}; // class ComplexElement
+
+/// ----------------------------------------------------------------- ///
+/// @brief Dummy nodal element.
+/// ----------------------------------------------------------------- ///
+class Node final : public SimplexElement {
 public:
-  real_t get_diameter() const final;
+  real_t Diam() const final;
   real_t LenAreaOrVolume() const final;
   vec3_t Normal() const final;
   vec3_t CenterPos() const final;
 
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-};  // class cNode
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+}; // class Node
 
 /// ----------------------------------------------------------------- ///
 /// @brief Segmental element.
@@ -194,19 +193,19 @@ public:
 ///
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Segment final : public iSimplexElement {
+class Segment final : public SimplexElement {
 public:
-  real_t get_diameter() const final;
+  real_t Diam() const final;
   real_t LenAreaOrVolume() const final;
   vec3_t Normal() const final;
   vec3_t Dir() const final;
   vec3_t CenterPos() const final;
 
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-};  // class tSegmentShape
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+}; // class tSegmentShape
 
 /// ----------------------------------------------------------------- ///
 /// Triangular element.
@@ -222,18 +221,18 @@ public:
 ///        e0/f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Triangle final : public iSimplexElement {
+class Triangle final : public SimplexElement {
 public:
-  real_t get_diameter() const final;
+  real_t Diam() const final;
   real_t LenAreaOrVolume() const final;
   vec3_t Normal() const final;
   vec3_t CenterPos() const final;
 
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-};  // class Triangle
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+}; // class Triangle
 
 /// ----------------------------------------------------------------- ///
 /// @brief Quadrangular element.
@@ -247,14 +246,14 @@ public:
 ///          e0/f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Quadrangle final : public iComplexElement {
+class Quadrangle final : public ComplexElement {
 public:
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-  tElementDescList get_simplicial_parts(size_t partition_index) const final;
-};  // class Quadrangle
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+  ElementDescArray MakeSimplicialPartsDesc() const final;
+}; // class Quadrangle
 
 /// ----------------------------------------------------------------- ///
 /// @brief Tetrahedral element.
@@ -281,17 +280,17 @@ public:
 ///                      f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Tetrahedron final : public iSimplexElement {
+class Tetrahedron final : public SimplexElement {
 public:
-  real_t get_diameter() const final;
+  real_t Diam() const final;
   real_t LenAreaOrVolume() const final;
   vec3_t CenterPos() const final;
 
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-};  // class Tetrahedron
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+}; // class Tetrahedron
 
 /// ----------------------------------------------------------------- ///
 /// @brief Pyramidal element.
@@ -318,14 +317,14 @@ public:
 ///                            f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Pyramid final : public iComplexElement {
+class Pyramid final : public ComplexElement {
 public:
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-  tElementDescList get_simplicial_parts(size_t partition_index) const final;
-};  // class Pyramid
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+  ElementDescArray MakeSimplicialPartsDesc() const final;
+}; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
 /// @brief Pentahedral element (triangular prism).
@@ -356,13 +355,13 @@ public:
 ///                       f3
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Pentahedron final : public iComplexElement {
+class Pentahedron final : public ComplexElement {
 public:
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-  tElementDescList get_simplicial_parts(size_t partition_index) const final;
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+  ElementDescArray MakeSimplicialPartsDesc() const final;
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
@@ -393,13 +392,13 @@ public:
 ///                  f4
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Hexahedron final : public iComplexElement {
+class Hexahedron final : public ComplexElement {
 public:
-  ShapeType Shape() const final;
-  size_t num_nodes() const final;
-  tElementDescList get_edges_desc() const final;
-  tElementDescList get_faces_desc() const final;
-  tElementDescList get_simplicial_parts(size_t partition_index) const final;
+  ShapeType Shape() const noexcept final;
+  size_t NumNodes() const noexcept final;
+  ElementDescArray MakeEdgesDesc() const final;
+  ElementDescArray MakeFacesDesc() const final;
+  ElementDescArray MakeSimplicialPartsDesc() const final;
 }; // class Hexahedron
 
 } // namespace feathers

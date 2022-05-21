@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include "SkunkBase.hh"
+
 namespace feathers {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///

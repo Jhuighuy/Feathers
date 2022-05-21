@@ -232,10 +232,19 @@ namespace views = ranges::views;
         /*empty*/, type, method_name, arguments, __VA_ARGS__)
 /** @} */
 
-#define StormAutoConstOverload(name, arguments, ...) \
+#define StormPass2_(...) __VA_ARGS__
+#define StormPass_(...) StormPass2_(__VA_ARGS__)
+
+#define StormAutoConstOverload_(name, arguments, ...) \
   /** @{ */ \
   auto name arguments __VA_ARGS__ \
   auto name arguments const __VA_ARGS__ \
+  /** @} */
+
+#define StormAutoConstOverloadT_(templates, name, arguments, ...) \
+  /** @{ */ \
+  templates auto name arguments __VA_ARGS__ \
+  templates auto name arguments const __VA_ARGS__ \
   /** @} */
 
 /* https://stackoverflow.com/a/67374211 */
