@@ -222,18 +222,18 @@ void Mesh::save_vtk(const char* path,
   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
   file << "POINTS " << NumNodes() << " double" << std::endl;
-  ranges::for_each(NodeRefs(*this), [&](NodeRef node) {
+  ranges::for_each(NodeViews(*this), [&](NodeView node) {
     const vec3_t& pos = node.Pos();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
   });
   file << std::endl;
 
   size_t const sumNumCellAdjNodes =
-    ForEachSum(InteriorCellRefs(*this), size_t(0), [](CellRef cell) {
+    ForEachSum(InteriorCellViews(*this), size_t(0), [](CellView cell) {
       return cell.NumNodes() + 1;
     });
   file << "CELLS " << Cells({}).size() << " " << sumNumCellAdjNodes << std::endl;
-  ranges::for_each(InteriorCellRefs(*this), [&](CellRef cell) {
+  ranges::for_each(InteriorCellViews(*this), [&](CellView cell) {
     file << cell.NumNodes() << " ";
     cell.ForEachNode([&](size_t node_index) {
       file << node_index << " ";
@@ -243,7 +243,7 @@ void Mesh::save_vtk(const char* path,
   file << std::endl;
 
   file << "CELL_TYPES " << Cells({}).size() << std::endl;
-  ranges::for_each(InteriorCellRefs(*this), [&](CellRef cell) {
+  ranges::for_each(InteriorCellViews(*this), [&](CellView cell) {
     static const std::map<ShapeType, const char*> shapes = {
       { ShapeType::Node, "1" }, { ShapeType::Segment2, "2" },
       { ShapeType::Triangle3, "5" }, { ShapeType::Quadrangle4, "9" },
@@ -258,7 +258,7 @@ void Mesh::save_vtk(const char* path,
   for (const sFieldDesc& field : fields) {
     file << "SCALARS " << field.name << " double 1" << std::endl;
     file << "LOOKUP_TABLE default" << std::endl;
-    ranges::for_each(InteriorCellRefs(*this), [&](CellRef cell) {
+    ranges::for_each(InteriorCellViews(*this), [&](CellView cell) {
       file << (*field.scalar)[cell][field.var_index] << std::endl;
     });
   }
