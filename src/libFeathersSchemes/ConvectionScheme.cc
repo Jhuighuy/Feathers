@@ -38,7 +38,7 @@ void cUpwindConvectionScheme::get_cell_convection(size_t num_vars,
                                                   const tScalarField& u) const {
 
   /* Compute the first order numerical fluxes. */
-  tScalarField flux_u(num_vars, m_mesh->NumFaces());
+  tScalarField flux_u(num_vars, m_mesh->Faces().size());
   ForEach(FaceViews(*m_mesh), [&](FaceView face) {
     const CellView cell_outer = face.OuterCell();
     const CellView cell_inner = face.InnerCell();
@@ -80,15 +80,15 @@ void cUpwind2ConvectionScheme::get_cell_convection(size_t num_vars,
                                                    tScalarField& div_f,
                                                    const tScalarField& u) const {
   /* Compute the second order limited gradients. */
-  tVectorField grad_u(num_vars, m_mesh->NumCells());
+  tVectorField grad_u(num_vars, m_mesh->Cells().size());
   m_gradient_scheme->get_gradients(num_vars, grad_u, u);
 
-  tScalarField lim_u(num_vars, m_mesh->NumCells());
+  tScalarField lim_u(num_vars, m_mesh->Cells().size());
   m_gradient_limiter_scheme->get_cell_limiter(num_vars, lim_u, u, grad_u);
 
   /* Compute the second order numerical fluxes:
    * integrate the numerical flux over the face nodes. */
-  tScalarField flux_f(num_vars, m_mesh->NumFaces());
+  tScalarField flux_f(num_vars, m_mesh->Faces().size());
   ForEach(FaceViews(*m_mesh), [&](FaceView face) {
     const CellView cell_outer = face.OuterCell();
     const CellView cell_inner = face.InnerCell();

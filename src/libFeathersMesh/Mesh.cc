@@ -316,22 +316,22 @@ void Mesh::reorder_faces() {
 
   /** @todo Refactor me! */
   {
-    std::vector<size_t> node_reordering(NumNodes());
+    std::vector<size_t> node_reordering(Nodes().size());
     std::iota(node_reordering.begin(), node_reordering.end(), 0);
     PermuteNodes(std::move(node_reordering));
   }
   {
-    std::vector<size_t> edge_reordering(NumEdges());
+    std::vector<size_t> edge_reordering(Edges().size());
     std::iota(edge_reordering.begin(), edge_reordering.end(), 0);
     PermuteEdges(std::move(edge_reordering));
   }
   {
-    std::vector<size_t> face_reordering(NumFaces());
+    std::vector<size_t> face_reordering(Faces().size());
     std::iota(face_reordering.begin(), face_reordering.end(), 0);
     PermuteFaces(std::move(face_reordering));
   }
   {
-    std::vector<size_t> cell_reordering(NumCells());
+    std::vector<size_t> cell_reordering(Cells().size());
     std::iota(cell_reordering.begin(), cell_reordering.end(), 0);
     PermuteCells(std::move(cell_reordering));
   }
@@ -364,7 +364,7 @@ void Mesh::FinalizeEdges_() {
   // ----------------------
   ranges::for_each(FaceViews(*this), [&](MutableFaceView face) {
     ElementDescArray edgesDesc = face.get_element_object()->MakeEdgesDesc();
-    for (size_t edgeLocal = 0; edgeLocal < face.NumEdges(); ++edgeLocal) {
+    for (size_t edgeLocal = 0; edgeLocal < face.Edges().size(); ++edgeLocal) {
       EdgeIndex& edgeIndex = AdjacentEdges(face)[edgeLocal];
       if (edgeIndex != npos) {
         continue;
@@ -420,7 +420,7 @@ void Mesh::FinalizeFaces_() {
   // ----------------------
   ranges::for_each(CellViews(*this), [&](MutableCellView cell) {
     ElementDescArray facesDesc = cell.get_element_object()->MakeFacesDesc();
-    for (size_t faceLocal = 0; faceLocal < cell.NumFaces(); ++faceLocal) {
+    for (size_t faceLocal = 0; faceLocal < cell.Faces().size(); ++faceLocal) {
       FaceIndex& faceIndex = AdjacentFaces(cell)[faceLocal];
       if (faceIndex != npos) {
         continue;

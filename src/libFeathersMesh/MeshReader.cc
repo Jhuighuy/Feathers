@@ -221,7 +221,7 @@ void Mesh::save_vtk(const char* path,
   file << "ASCII" << std::endl;
   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
-  file << "POINTS " << NumNodes() << " double" << std::endl;
+  file << "POINTS " << Nodes().size() << " double" << std::endl;
   ranges::for_each(NodeViews(*this), [&](NodeView node) {
     const vec3_t& pos = node.Pos();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
@@ -230,11 +230,11 @@ void Mesh::save_vtk(const char* path,
 
   size_t const sumNumCellAdjNodes =
     ForEachSum(InteriorCellViews(*this), size_t(0), [](CellView cell) {
-      return cell.NumNodes() + 1;
+      return cell.Nodes().size() + 1;
     });
   file << "CELLS " << Cells({}).size() << " " << sumNumCellAdjNodes << std::endl;
   ranges::for_each(InteriorCellViews(*this), [&](CellView cell) {
-    file << cell.NumNodes() << " ";
+    file << cell.Nodes().size() << " ";
     cell.ForEachNode([&](size_t node_index) {
       file << node_index << " ";
     });

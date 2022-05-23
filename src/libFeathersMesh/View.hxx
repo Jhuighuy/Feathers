@@ -49,24 +49,26 @@ BaseCellView(Mesh&, CellIndex) -> BaseCellView<Mesh>;
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Base element view.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-template<class Iterator, class Mesh, class Tag>
+template<class Mesh, class Tag>
 class BaseElementView {
 protected:
   Mesh* Mesh_;
   Index<Tag> Index_;
 
-  template<class, class, class>
+  template<class, class>
   friend class BaseElementView;
 
+  // "NOLINT" is a bug here.
   BaseElementView( // NOLINT(cppcoreguidelines-pro-type-member-init)
     Mesh& mesh, Index<Tag> index) noexcept :
       Mesh_{&mesh}, Index_{index} {
     StormAssert(Index_ != npos);
   }
 
-  template<class OtherIterator, class OtherMesh>
+  // "NOLINT" for member initialization is a bug here.
+  template<class OtherMesh>
   BaseElementView( // NOLINT(google-explicit-constructor,cppcoreguidelines-pro-type-member-init)
-    BaseElementView<OtherIterator, OtherMesh, Tag> const& other) noexcept :
+    BaseElementView<OtherMesh, Tag> const& other) noexcept :
       Mesh_{other.Mesh_}, Index_{other.Index_} {
     StormAssert(Index_ != npos);
   }
@@ -82,7 +84,7 @@ public:
   }
 
   /// @brief Comparison operator.
-  auto operator<=>(Iterator const& other) const noexcept {
+  auto operator<=>(BaseElementView const& other) const noexcept {
     StormAssert(Mesh_ == other.Mesh_);
     return Index_ <=> other.Index_;
   }
@@ -100,26 +102,6 @@ public:
   /// @brief Get element object. 
   std::unique_ptr<const Element> get_element_object() const {
     return Mesh_->get_object(Index_);
-  }
-
-  /// @brief Number of nodes in the element. 
-  size_t NumNodes() const noexcept {
-    return std::size(Mesh_->AdjacentNodes(Index_));
-  }
-
-  /// @brief Number of edges in the element. 
-  size_t NumEdges() const noexcept {
-    return std::size(Mesh_->AdjacentEdges(Index_));
-  }
-
-  /// @brief Number of faces in the element. 
-  size_t NumFaces() const noexcept {
-    return std::size(Mesh_->AdjacentFaces(Index_));
-  }
-
-  /// @brief Number of cells in the element. 
-  size_t NumCells() const noexcept {
-    return std::size(Mesh_->AdjacentCells(Index_));
   }
 
   /// @brief Ranges of the adjacent nodes.
@@ -192,19 +174,18 @@ public:
 /// @brief Base Node view.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseNodeView final :
-  public BaseElementView<BaseNodeView<Mesh>, Mesh, NodeTag> {
+class BaseNodeView final : public BaseElementView<Mesh, NodeTag> {
 public:
 
   /// @brief Construct base node view.
-  explicit BaseNodeView(Mesh& mesh, NodeIndex index) noexcept :
-    BaseElementView<BaseNodeView<Mesh>, Mesh, NodeTag>(mesh, index) {
+  BaseNodeView(Mesh& mesh, NodeIndex index) noexcept :
+    BaseElementView<Mesh, NodeTag>(mesh, index) {
   }
 
   /// @brief Copy constructor.
   BaseNodeView( // NOLINT(google-explicit-constructor)
       BaseNodeView<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementView<BaseNodeView<Mesh>, Mesh, NodeTag>(other) {
+    BaseElementView<Mesh, NodeTag>(other) {
   }
 
   /// @brief Get node position.
@@ -230,19 +211,18 @@ using MutableNodeView = BaseNodeView<Mesh>;
 /// @brief Base edge view.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseEdgeView final :
-  public BaseElementView<BaseEdgeView<Mesh>, Mesh, EdgeTag> {
+class BaseEdgeView final : public BaseElementView<Mesh, EdgeTag> {
 public:
 
   /// @brief Construct base edge view.
-  explicit BaseEdgeView(Mesh& mesh, EdgeIndex index) noexcept :
-    BaseElementView<BaseEdgeView<Mesh>, Mesh, EdgeTag>(mesh, index) {
+  BaseEdgeView(Mesh& mesh, EdgeIndex index) noexcept :
+    BaseElementView<Mesh, EdgeTag>(mesh, index) {
   }
 
   /// @brief Copy constructor.
   BaseEdgeView( // NOLINT(google-explicit-constructor)
       BaseEdgeView<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementView<BaseEdgeView<Mesh>, Mesh, EdgeTag>(other) {
+    BaseElementView<Mesh, EdgeTag>(other) {
   }
 
   /// @brief Get edge length. 
@@ -267,19 +247,18 @@ using MutableEdgeView = BaseEdgeView<Mesh>;
 /// @brief Base face view.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseFaceView final :
-  public BaseElementView<BaseFaceView<Mesh>, Mesh, FaceTag> {
+class BaseFaceView final : public BaseElementView<Mesh, FaceTag> {
 public:
 
   /// @brief Construct base face view.
-  explicit BaseFaceView(Mesh& mesh, FaceIndex index) noexcept :
-    BaseElementView<BaseFaceView<Mesh>, Mesh, FaceTag>(mesh, index) {
+  BaseFaceView(Mesh& mesh, FaceIndex index) noexcept :
+    BaseElementView<Mesh, FaceTag>(mesh, index) {
   }
 
   /// @brief Copy constructor.
   BaseFaceView( // NOLINT(google-explicit-constructor)
       BaseFaceView<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementView<BaseFaceView<Mesh>, Mesh, FaceTag>(other) {
+    BaseElementView<Mesh, FaceTag>(other) {
   }
 
   /// @brief Get connected inner cell. 
@@ -319,19 +298,18 @@ using MutableFaceView = BaseFaceView<Mesh>;
 /// @brief Base cell view.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
-class BaseCellView final :
-  public BaseElementView<BaseCellView<Mesh>, Mesh, CellTag> {
+class BaseCellView final : public BaseElementView<Mesh, CellTag> {
 public:
 
   /// @brief Construct base cell view.
-  explicit BaseCellView(Mesh& mesh, CellIndex index) noexcept :
-    BaseElementView<BaseCellView<Mesh>, Mesh, CellTag>(mesh, index) {
+  BaseCellView(Mesh& mesh, CellIndex index) noexcept :
+    BaseElementView<Mesh, CellTag>(mesh, index) {
   }
 
   /// @brief Copy constructor.
   BaseCellView( // NOLINT(google-explicit-constructor)
       BaseCellView<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementView<BaseCellView<Mesh>, Mesh, CellTag>(other) {
+    BaseElementView<Mesh, CellTag>(other) {
   }
 
   /// @brief Get cell volume/area/length.

@@ -60,7 +60,7 @@ public:
     /** Initialize the gradient scheme. */
     explicit cLeastSquaresGradientScheme(std::shared_ptr<const Mesh> mesh):
         m_mesh(std::move(mesh)),
-        m_inverse_matrices(1, m_mesh->NumCells()) {
+        m_inverse_matrices(1, m_mesh->Cells().size()) {
         init_gradients_();
     }
 
