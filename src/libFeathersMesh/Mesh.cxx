@@ -23,7 +23,7 @@
 /// OTHER DEALINGS IN THE SOFTWARE.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
-#include <libFeathersMesh/Mesh.hh>
+#include <libFeathersMesh/Mesh.hxx>
 #include <libFeathersMesh/Element.hh>
 #include <libFeathersUtils/Parallel.hh>
 #include <libFeathersUtils/Permute.hh>

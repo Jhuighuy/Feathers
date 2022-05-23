@@ -25,15 +25,14 @@
 
 #pragma once
 
+#include <map>
+
 #include "SkunkBase.hh"
-#include "Index.hh"
+#include "Index.hxx"
 #include "libFeathersUtils/Table.hh"
 #include "libFeathersUtils/Image.hh"
 #include "Field.hh"
 #include "Element.hh"
-
-#include <string_view>
-#include <map>
 
 namespace feathers {
 

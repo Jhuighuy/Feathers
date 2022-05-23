@@ -31,7 +31,7 @@
 #define TABLE_HH_
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Index.hh"
+#include "libFeathersMesh/Index.hxx"
 
 namespace feathers {
 

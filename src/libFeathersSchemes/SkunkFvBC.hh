@@ -30,7 +30,7 @@
 #define MHD_FV_BC_HH
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Mesh.hh"
+#include "libFeathersMesh/Mesh.hxx"
 #include "SkunkHydro.hh"
 #include <functional>
 

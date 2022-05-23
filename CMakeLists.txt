@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(src)
 
-file(GLOB_RECURSE SOURCES src/*.cc src/*.hh src/*.inl)
+file(GLOB_RECURSE SOURCES src/*.cc src/*.cxx src/*.hh src/*.hxx src/*.inl)
 
 add_executable(Feathers ${SOURCES})
 

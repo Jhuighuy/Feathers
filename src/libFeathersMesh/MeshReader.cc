@@ -26,7 +26,7 @@
  * SOFTWARE.
  */
 
-#include <libFeathersMesh/Mesh.hh>
+#include <libFeathersMesh/Mesh.hxx>
 
 #include <fstream>
 #include <iomanip>

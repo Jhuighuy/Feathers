@@ -31,7 +31,7 @@
 #define GRADIENT_LIMITER_SCHEME_HH_
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Mesh.hh"
+#include "libFeathersMesh/Mesh.hxx"
 
 namespace feathers {
 

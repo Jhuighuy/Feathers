@@ -25,10 +25,10 @@
 
 #pragma once
 
+#include <range/v3/all.hpp>
+
 #include <SkunkBase.hh>
 #include <libFeathersUtils/Parallel.hh>
-
-#include <range/v3/all.hpp>
 
 namespace feathers {
 
@@ -75,13 +75,15 @@ protected:
 
 public:
 
-  /// @brief Cast to index operator. 
+  /// @brief Cast to index operator.
+  /// @{
   operator Index<Tag>() const noexcept {
     return Index_;
   }
   FEATHERS_DEPRECATED operator size_t() const noexcept {
     return static_cast<size_t>(Index_);
   }
+  /// @}
 
   /// @brief Comparison operator.
   auto operator<=>(BaseElementView const& other) const noexcept {
