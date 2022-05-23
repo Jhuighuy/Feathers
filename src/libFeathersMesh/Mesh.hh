@@ -42,35 +42,35 @@ enum : size_t {
   FaceOuterCell_ = 1,
 }; // enum
 
-class NodeTag_;
-class EdgeTag_;
-class FaceTag_;
-class CellTag_;
-template<class> class MarkTag_;
+class NodeTag;
+class EdgeTag;
+class FaceTag;
+class CellTag;
+template<class> class MarkTag;
 
 /// @brief Node index.
-using NodeIndex = Index<NodeTag_>;
+using NodeIndex = Index<NodeTag>;
 
 /// @brief Edge index.
-using EdgeIndex = Index<EdgeTag_>;
+using EdgeIndex = Index<EdgeTag>;
 
 /// @brief Face index.
-using FaceIndex = Index<FaceTag_>;
+using FaceIndex = Index<FaceTag>;
 
 /// @brief Cell index.
-using CellIndex = Index<CellTag_>;
+using CellIndex = Index<CellTag>;
 
 /// @brief Node mark index.
-using NodeMark = Index<MarkTag_<NodeTag_>>;
+using NodeMark = Index<MarkTag<NodeTag>>;
 
 /// @brief Edge mark index.
-using EdgeMark = Index<MarkTag_<EdgeTag_>>;
+using EdgeMark = Index<MarkTag<EdgeTag>>;
 
 /// @brief Face mark index.
-using FaceMark = Index<MarkTag_<FaceTag_>>;
+using FaceMark = Index<MarkTag<FaceTag>>;
 
 /// @brief Cell mark index.
-using CellMark = Index<MarkTag_<CellTag_>>;
+using CellMark = Index<MarkTag<CellTag>>;
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Hybrid unstructured multidimensional mesh.
@@ -90,10 +90,10 @@ private:
   IndexedVector<EdgeMark, EdgeIndex> EdgeMarks_;
   IndexedVector<FaceMark, FaceIndex> FaceMarks_;
   IndexedVector<CellMark, CellIndex> CellMarks_;
-  IndexedVector<NodeIndex, NodeMark> NodeRanges_{NodeIndex{0}};
-  IndexedVector<EdgeIndex, EdgeMark> EdgeRanges_{EdgeIndex{0}};
-  IndexedVector<FaceIndex, FaceMark> FaceRanges_{FaceIndex{0}};
-  IndexedVector<CellIndex, CellMark> CellRanges_{CellIndex{0}};
+  IndexedVector<NodeIndex, NodeMark> NodeRanges_;
+  IndexedVector<EdgeIndex, EdgeMark> EdgeRanges_;
+  IndexedVector<FaceIndex, FaceMark> FaceRanges_;
+  IndexedVector<CellIndex, CellMark> CellRanges_;
 
   IndexedVector<ShapeType, EdgeIndex> EdgeShapes_;
   IndexedVector<ShapeType, FaceIndex> FaceShapes_;
@@ -186,22 +186,22 @@ public:
 
   /// @brief Range of nodes.
   auto Nodes() const noexcept {
-    return views::iota(NodeIndex{0}, NodeIndex{NumNodes()});
+    return views::iota(NodeIndex{0}, NodeIndex{NumNodes_});
   }
 
   /// @brief Range of edges.
   auto Edges() const noexcept {
-    return views::iota(EdgeIndex{0}, EdgeIndex{NumEdges()});
+    return views::iota(EdgeIndex{0}, EdgeIndex{NumEdges_});
   }
 
   /// @brief Range of faces.
   auto Faces() const noexcept {
-    return views::iota(FaceIndex{0}, FaceIndex{NumFaces()});
+    return views::iota(FaceIndex{0}, FaceIndex{NumFaces_});
   }
 
   /// @brief Range of cells.
   auto Cells() const noexcept {
-    return views::iota(CellIndex{0}, CellIndex{NumCells()});
+    return views::iota(CellIndex{0}, CellIndex{NumCells_});
   }
 
   // ---------------------------------------------------------------- //
@@ -256,44 +256,27 @@ public:
     return views::iota(CellRanges_[cellMark], CellRanges_[cellMark + 1]);
   }
 
-  /// @brief Number of nodes in the mesh with a @p nodeMark.
-  size_t NumNodes(NodeMark nodeMark) const noexcept {
-    return std::size(Nodes(nodeMark));
-  }
-
-  /// @brief Number of edges in the mesh with an @p edgeMark.
-  size_t NumEdges(EdgeMark edgeMark) const noexcept {
-    return std::size(Edges(edgeMark));
-  }
-
-  /// @brief Number of faces in the mesh with a @p faceMark.
-  size_t NumFaces(FaceMark faceMark) const noexcept {
-    return std::size(Faces(faceMark));
-  }
-
-  /// @brief Number of cells in the mesh with a @p cellMark.
-  size_t NumCells(CellMark cellMark) const noexcept {
-    return std::size(Cells(cellMark));
-  }
-
   /// @brief Get node @p nodeIndex mark.
   NodeMark Mark(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes());
+    StormAssert(nodeIndex < NumNodes_);
     return NodeMarks_[nodeIndex];
   }
+
   /// @brief Get edge @p edgeIndex mark.
   EdgeMark Mark(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges());
+    StormAssert(edgeIndex < NumEdges_);
     return EdgeMarks_[edgeIndex];
   }
+
   /// @brief Get face @p faceIndex mark.
   FaceMark Mark(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces());
+    StormAssert(faceIndex < NumFaces_);
     return FaceMarks_[faceIndex];
   }
+
   /// @brief Get cell @p cellIndex mark.
   CellMark Mark(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells());
+    StormAssert(cellIndex < NumCells_);
     return CellMarks_[cellIndex];
   }
 
@@ -303,24 +286,26 @@ public:
 
   /// @brief Get edge @p edgeIndex shape.
   ShapeType Shape(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges());
+    StormAssert(edgeIndex < NumEdges_);
     return EdgeShapes_[edgeIndex];
   }
+
   /// @brief Get face @p faceIndex shape.
   ShapeType Shape(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces());
+    StormAssert(faceIndex < NumFaces_);
     return FaceShapes_[faceIndex];
   }
+
   /// @brief Get cell @p cellIndex shape.
   ShapeType Shape(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells());
+    StormAssert(cellIndex < NumCells_);
     return CellShapes_[cellIndex];
   }
 
 private:
 
-  std::unique_ptr<Element> make_element(ElementDesc&& desc) const {
-    return Element::make(std::forward<ElementDesc>(desc), NodePos_);
+  auto MakeElement_(ElementDesc&& desc) const {
+    return Element::Make(std::forward<ElementDesc>(desc), NodePos_);
   }
 
 public:
@@ -328,57 +313,65 @@ public:
   /// @brief Get element object.
   template<class Tag>
   auto get_object(Index<Tag> index) const {
-    return make_element({Shape(index),
-                         std::vector<size_t>(std::begin(AdjacentNodes(index)),
-                                             std::end(AdjacentNodes(index)))});
+    auto const nodeIndices =
+      AdjacentNodes(index) | views::transform([](NodeIndex nodeIndex) {
+        return static_cast<size_t>(nodeIndex);
+      });
+    return MakeElement_({Shape(index),
+      std::vector(nodeIndices.begin(), nodeIndices.end())});
   }
 
   /// @brief Get node @p nodeIndex position.
-  vec3_t const& NodePos(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes());
+  vec3_t NodePos(NodeIndex nodeIndex) const noexcept {
+    StormAssert(nodeIndex < NumNodes_);
     return NodePos_[nodeIndex];
   }
+
   /// @brief Set node @p nodeIndex position @p pos.
   void SetNodePos(NodeIndex nodeIndex, vec3_t const& pos) noexcept {
-    StormAssert(nodeIndex < NumNodes());
+    StormAssert(nodeIndex < NumNodes_);
     NodePos_[nodeIndex] = pos;
   }
 
   /// @brief Get edge @p edgeIndex length.
   real_t EdgeLen(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges());
+    StormAssert(edgeIndex < NumEdges_);
     return EdgeLens_[edgeIndex];
   }
+
   /// @brief Get edge @p edgeIndex direction.
   vec3_t EdgeDir(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges());
+    StormAssert(edgeIndex < NumEdges_);
     return EdgeDirs_[edgeIndex];
   }
 
   /// @brief Get face @p faceIndex area/length.
   real_t FaceArea(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces());
+    StormAssert(faceIndex < NumFaces_);
     return FaceAreas_[faceIndex];
   }
+
   /// @brief Get face @p faceIndex normal.
   vec3_t FaceNormal(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces());
+    StormAssert(faceIndex < NumFaces_);
     return FaceNormals_[faceIndex];
   }
+
   /// @brief Get face @p faceIndex barycenter.
   vec3_t FaceCenterPos(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces());
+    StormAssert(faceIndex < NumFaces_);
     return FaceCenterPos_[faceIndex];
   }
 
   /// @brief Get cell @p cellIndex volume/area/length.
   real_t CellVolume(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells());
+    StormAssert(cellIndex < NumCells_);
     return CellVolumes_[cellIndex];
   }
+
   /// @brief Get cell @p cellIndex center position.
   vec3_t CellCenterPos(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells());
+    StormAssert(cellIndex < NumCells_);
     return CellCenterPos_[cellIndex];
   }
 
@@ -386,6 +379,7 @@ public:
   real_t MaxEdgeLen() const noexcept {
     return MaxEdgeLen_;
   }
+
   /// @brief Get minimal edge length.
   real_t MinEdgeLen() const noexcept {
     return MinEdgeLen_;
@@ -395,6 +389,7 @@ public:
   real_t MaxFaceArea() const noexcept {
     return MaxFaceArea_;
   }
+
   /// @brief Get minimal face area.
   real_t MinFaceArea() const noexcept {
     return MinFaceArea_;
@@ -404,6 +399,7 @@ public:
   real_t MaxCellVolume() const noexcept {
     return MaxCellVolume_;
   }
+
   /// @brief Get minimal cell volume.
   real_t MinCellVolume() const noexcept {
     return MinCellVolume_;
@@ -426,16 +422,19 @@ public:
     StormAssert(nodeIndex < NumNodes());
     return NodeNodes_[nodeIndex];
   })
+
   /// @brief Range of the edge @p edgeIndex adjacent nodes.
   StormAutoConstOverload_(AdjacentNodes, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges());
     return EdgeNodes_[edgeIndex];
   })
+
   /// @brief Range of the face @p faceIndex adjacent nodes.
   StormAutoConstOverload_(AdjacentNodes, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces());
     return FaceNodes_[faceIndex];
   })
+
   /// @brief Range of the cell @p cellIndex adjacent nodes.
   StormAutoConstOverload_(AdjacentNodes, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells());
@@ -447,16 +446,19 @@ public:
     StormAssert(nodeIndex < NumNodes());
     return NodeEdges_[nodeIndex];
   })
+
   /// @brief Range of the edge @p edgeIndex adjacent edges.
   StormAutoConstOverload_(AdjacentEdges, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges());
     return EdgeEdges_[edgeIndex];
   })
+
   /// @brief Range of the face @p faceIndex adjacent edges.
   StormAutoConstOverload_(AdjacentEdges, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces());
     return FaceEdges_[faceIndex];
   })
+
   /// @brief Range of the cell @p cellIndex adjacent edges.
   StormAutoConstOverload_(AdjacentEdges, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells());
@@ -468,16 +470,19 @@ public:
     StormAssert(nodeIndex < NumNodes());
     return NodeFaces_[nodeIndex];
   })
+
   /// @brief Range of the edge @p edgeIndex adjacent faces.
   StormAutoConstOverload_(AdjacentFaces, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges());
     return EdgeFaces_[edgeIndex];
   })
+
   /// @brief Range of the face @p faceIndex adjacent faces.
   StormAutoConstOverload_(AdjacentFaces, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces());
     return FaceFaces_[faceIndex];
   })
+
   /// @brief Range of the cell @p cellIndex adjacent faces.
   StormAutoConstOverload_(AdjacentFaces, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells());
@@ -489,16 +494,19 @@ public:
     StormAssert(nodeIndex < NumNodes());
     return NodeCells_[nodeIndex];
   })
+
   /// @brief Range of the edge @p edgeIndex adjacent cells.
   StormAutoConstOverload_(AdjacentCells, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges());
     return EdgeCells_[edgeIndex];
   })
+
   /// @brief Range of the face @p faceIndex adjacent cells.
   StormAutoConstOverload_(AdjacentCells, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces());
     return FaceCells_[faceIndex];
   })
+
   /// @brief Range of the cell @p cellIndex adjacent cells.
   StormAutoConstOverload_(AdjacentCells, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells());
@@ -509,13 +517,13 @@ private:
 
   StormAutoConstOverloadT_(StormPass_(template<class OtherTag, class Tag>),
       AdjacentElements_, (Index<Tag> elementIndex), noexcept {
-    if constexpr (std::is_same_v<OtherTag, NodeTag_>) {
+    if constexpr (std::is_same_v<OtherTag, NodeTag>) {
       return AdjacentNodes(elementIndex);
-    } else if constexpr (std::is_same_v<OtherTag, EdgeTag_>) {
+    } else if constexpr (std::is_same_v<OtherTag, EdgeTag>) {
       return AdjacentEdges(elementIndex);
-    } else if constexpr (std::is_same_v<OtherTag, FaceTag_>) {
+    } else if constexpr (std::is_same_v<OtherTag, FaceTag>) {
       return AdjacentFaces(elementIndex);
-    } else if constexpr (std::is_same_v<OtherTag, CellTag_>) {
+    } else if constexpr (std::is_same_v<OtherTag, CellTag>) {
       return AdjacentCells(elementIndex);
     }
   })
@@ -534,7 +542,7 @@ public:
   /// @{
   EdgeIndex EmplaceEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark = {});
   EdgeIndex EmplaceEdge(ElementDesc&& edgeDesc, EdgeMark edgeMark = {}) {
-    return EmplaceEdge(make_element(std::forward<ElementDesc>(edgeDesc)), edgeMark);
+    return EmplaceEdge(MakeElement_(std::forward<ElementDesc>(edgeDesc)), edgeMark);
   }
   /// @}
 
@@ -543,7 +551,7 @@ public:
   /// @{
   FaceIndex EmplaceFace(std::unique_ptr<Element>&& face, FaceMark faceMark = {});
   FaceIndex EmplaceFace(ElementDesc&& faceDesc, FaceMark faceMark = {}) {
-    return EmplaceFace(make_element(std::forward<ElementDesc>(faceDesc)), faceMark);
+    return EmplaceFace(MakeElement_(std::forward<ElementDesc>(faceDesc)), faceMark);
   }
   /// @}
 
@@ -552,7 +560,7 @@ public:
   /// @{
   CellIndex EmplaceCell(std::unique_ptr<Element>&& cell, CellMark cellMark = {});
   CellIndex EmplaceCell(ElementDesc&& cellDesc, CellMark cellMark = {}) {
-    return EmplaceCell(make_element(std::forward<ElementDesc>(cellDesc)), cellMark);
+    return EmplaceCell(MakeElement_(std::forward<ElementDesc>(cellDesc)), cellMark);
   }
   /// @}
 

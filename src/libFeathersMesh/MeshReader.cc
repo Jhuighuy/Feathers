@@ -232,7 +232,7 @@ void Mesh::save_vtk(const char* path,
     ForEachSum(InteriorCellRefs(*this), size_t(0), [](CellRef cell) {
       return cell.NumNodes() + 1;
     });
-  file << "CELLS " << NumCells({}) << " " << sumNumCellAdjNodes << std::endl;
+  file << "CELLS " << Cells({}).size() << " " << sumNumCellAdjNodes << std::endl;
   ranges::for_each(InteriorCellRefs(*this), [&](CellRef cell) {
     file << cell.NumNodes() << " ";
     cell.ForEachNode([&](size_t node_index) {
@@ -242,7 +242,7 @@ void Mesh::save_vtk(const char* path,
   });
   file << std::endl;
 
-  file << "CELL_TYPES " << NumCells({}) << std::endl;
+  file << "CELL_TYPES " << Cells({}).size() << std::endl;
   ranges::for_each(InteriorCellRefs(*this), [&](CellRef cell) {
     static const std::map<ShapeType, const char*> shapes = {
       { ShapeType::Node, "1" }, { ShapeType::Segment2, "2" },
@@ -254,7 +254,7 @@ void Mesh::save_vtk(const char* path,
   });
   file << std::endl;
 
-  file << "CELL_DATA " << NumCells({}) << std::endl;
+  file << "CELL_DATA " << Cells({}).size() << std::endl;
   for (const sFieldDesc& field : fields) {
     file << "SCALARS " << field.name << " double 1" << std::endl;
     file << "LOOKUP_TABLE default" << std::endl;

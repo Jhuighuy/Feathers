@@ -79,7 +79,7 @@ public:
   }
 
   /// @brief Get mark. 
-  Index<MarkTag_<Tag>> Mark() const noexcept {
+  Index<MarkTag<Tag>> Mark() const noexcept {
     return Mesh_->Mark(Index_);
   }
 
@@ -145,34 +145,6 @@ public:
       });
   }
 
-  /// @brief Get the adjacent node at @p nodeLocal.
-  auto Node(size_t nodeLocal) const noexcept {
-    StormAssert(nodeLocal < NumNodes());
-    return BaseNodeReference<Mesh>(
-      *Mesh_, Mesh_->AdjacentNodes(Index_)[nodeLocal]);
-  }
-
-  /// @brief Get the adjacent edge at @p edgeLocal.
-  auto Edge(size_t edgeLocal) const noexcept {
-    StormAssert(edgeLocal < NumEdges());
-    return BaseEdgeReference<Mesh>(
-      *Mesh_, Mesh_->AdjacentEdges(Index_)[edgeLocal]);
-  }
-
-  /// @brief Get the adjacent face at @p faceLocal.
-  auto Face(size_t faceLocal) const noexcept {
-    StormAssert(faceLocal < NumFaces());
-    return BaseFaceReference<Mesh>(
-      *Mesh_, Mesh_->AdjacentFaces(Index_)[faceLocal]);
-  }
-
-  /// @brief Get the adjacent cell at @p cellLocal.
-  auto Cell(size_t cellLocal) const noexcept {
-    StormAssert(cellLocal < NumCells());
-    return BaseCellReference<Mesh>(
-      *Mesh_, Mesh_->AdjacentCells(Index_)[cellLocal]);
-  }
-
   /// @brief Iterate through all connected nodes. 
   template<class Func>
   void ForEachNode(Func&& func) const noexcept {
@@ -212,18 +184,18 @@ public:
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
 class BaseNodeReference final :
-  public BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_> {
+  public BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag> {
 public:
 
   /// @brief Construct base Node reference.
   explicit BaseNodeReference(Mesh& mesh, NodeIndex index) noexcept :
-    BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_>(mesh, index) {
+    BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag>(mesh, index) {
   }
 
-  /// @brief Copy (make const) constructor. 
+  /// @brief Copy constructor.
   BaseNodeReference( // NOLINT(google-explicit-constructor)
       BaseNodeReference<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag_>(other) {
+    BaseElementReference<BaseNodeReference<Mesh>, Mesh, NodeTag>(other) {
   }
 
   /// @brief Get node position.
@@ -232,7 +204,8 @@ public:
   }
 
   /// @brief Set node position @p pos.
-  void SetPos(vec3_t const& pos) const noexcept requires(!std::is_const_v<Mesh>) {
+  void SetPos(vec3_t const& pos) const noexcept 
+                                 requires (!std::is_const_v<Mesh>) {
     this->Mesh_->SetNodePos(this->Index_, pos);
   }
 
@@ -249,18 +222,18 @@ using NodeMutableRef = BaseNodeReference<Mesh>;
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
 class BaseEdgeReference final :
-  public BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_> {
+  public BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag> {
 public:
 
   /// @brief Construct base edge reference.
   explicit BaseEdgeReference(Mesh& mesh, EdgeIndex index) noexcept :
-    BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_>(mesh, index) {
+    BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag>(mesh, index) {
   }
 
-  /// @brief Copy (make const) constructor. 
+  /// @brief Copy constructor.
   BaseEdgeReference( // NOLINT(google-explicit-constructor)
       BaseEdgeReference<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag_>(other) {
+    BaseElementReference<BaseEdgeReference<Mesh>, Mesh, EdgeTag>(other) {
   }
 
   /// @brief Get edge length. 
@@ -286,28 +259,28 @@ using EdgeMutableRef = BaseEdgeReference<Mesh>;
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
 class BaseFaceReference final :
-  public BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_> {
+  public BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag> {
 public:
 
   /// @brief Construct base face reference.
   explicit BaseFaceReference(Mesh& mesh, FaceIndex index) noexcept :
-    BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_>(mesh, index) {
+    BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag>(mesh, index) {
   }
 
-  /// @brief Copy (make const) constructor. 
+  /// @brief Copy constructor.
   BaseFaceReference( // NOLINT(google-explicit-constructor)
       BaseFaceReference<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag_>(other) {
+    BaseElementReference<BaseFaceReference<Mesh>, Mesh, FaceTag>(other) {
   }
 
   /// @brief Get connected inner cell. 
   auto InnerCell() const noexcept {
-    return this->Cell(FaceInnerCell_);
+    return this->Cells()[FaceInnerCell_];
   }
 
   /// @brief Get connected outer cell. 
   auto OuterCell() const noexcept {
-    return this->Cell(FaceOuterCell_);
+    return this->Cells()[FaceOuterCell_];
   }
 
   /// @brief Get face area/length. 
@@ -338,18 +311,18 @@ using FaceMutableRef = BaseFaceReference<Mesh>;
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 template<class Mesh>
 class BaseCellReference final :
-  public BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_> {
+  public BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag> {
 public:
 
   /// @brief Construct base cell reference.
   explicit BaseCellReference(Mesh& mesh, CellIndex index) noexcept :
-    BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_>(mesh, index) {
+    BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag>(mesh, index) {
   }
 
-  /// @brief Copy (make const) constructor. 
+  /// @brief Copy constructor.
   BaseCellReference( // NOLINT(google-explicit-constructor)
       BaseCellReference<std::remove_const_t<Mesh>> const& other) noexcept :
-    BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag_>(other) {
+    BaseElementReference<BaseCellReference<Mesh>, Mesh, CellTag>(other) {
   }
 
   /// @brief Get cell volume/area/length.
@@ -370,73 +343,45 @@ using CellRef = BaseCellReference<Mesh const>;
 using CellMutableRef = BaseCellReference<Mesh>;
 /// @}
 
-/// @brief Range of the @p mesh nodes.
-template<class Mesh>
-auto NodeRefs(Mesh& mesh) noexcept {
-  return mesh.Nodes() |
+/// @brief Range of the @p mesh nodes \
+///   (or nodes with a @p nodeMark, if present).
+template<class Mesh, std::same_as<NodeMark>... NodeMark_>
+  requires (sizeof...(NodeMark_) <= 1)
+auto NodeRefs(Mesh& mesh, NodeMark_... nodeMark) noexcept {
+  return mesh.Nodes(nodeMark...) |
     views::transform([&mesh](NodeIndex nodeIndex) {
       return BaseNodeReference<Mesh>(mesh, nodeIndex);
     });
 }
 
-/// @brief Range of the @p mesh edges.
-template<class Mesh>
-auto EdgeRefs(Mesh& mesh) noexcept {
-  return mesh.Edges() |
+/// @brief Range of the @p mesh edges \
+///   (or edges with an @p edgeMark, if present).
+template<class Mesh, std::same_as<EdgeMark>... EdgeMark_>
+  requires (sizeof...(EdgeMark_) <= 1)
+auto EdgeRefs(Mesh& mesh, EdgeMark_... edgeMark) noexcept {
+  return mesh.Edges(edgeMark...) |
     views::transform([&mesh](EdgeIndex edgeIndex) {
       return BaseEdgeReference<Mesh>(mesh, edgeIndex);
     });
 }
 
-/// @brief Range of the @p mesh nodes.
-template<class Mesh>
-auto FaceRefs(Mesh& mesh) noexcept {
-  return mesh.Faces() |
+/// @brief Range of the @p mesh faces \
+///   (or faces with a @p faceMark, if present).
+template<class Mesh, std::same_as<FaceMark>... FaceMark_>
+  requires (sizeof...(FaceMark_) <= 1)
+auto FaceRefs(Mesh& mesh, FaceMark_... faceMark) noexcept {
+  return mesh.Faces(faceMark...) |
     views::transform([&mesh](FaceIndex faceIndex) {
       return BaseFaceReference<Mesh>(mesh, faceIndex);
     });
 }
 
-/// @brief Range of the @p mesh nodes.
-template<class Mesh>
-auto CellRefs(Mesh& mesh) noexcept {
-  return mesh.Cells() |
-    views::transform([&mesh](CellIndex cellIndex) {
-      return BaseCellReference<Mesh>(mesh, cellIndex);
-    });
-}
-
-/// @brief Range of the @p mesh nodes with a @p nodeMark.
-template<class Mesh>
-auto NodeRefs(Mesh& mesh, NodeMark nodeMark) noexcept {
-  return mesh.Nodes(nodeMark) |
-    views::transform([&mesh](NodeIndex nodeIndex) {
-      return BaseNodeReference<Mesh>(mesh, nodeIndex);
-    });
-}
-
-/// @brief Range of the @p mesh edges with a @p edgeMark.
-template<class Mesh>
-auto EdgeRefs(Mesh& mesh, EdgeMark edgeMark) noexcept {
-  return mesh.Edges(edgeMark) |
-    views::transform([&mesh](EdgeIndex edgeIndex) {
-      return BaseEdgeReference<Mesh>(mesh, edgeIndex);
-    });
-}
-
-/// @brief Range of the @p mesh nodes with a @p faceMark.
-template<class Mesh>
-auto FaceRefs(Mesh& mesh, FaceMark faceMark) noexcept {
-  return mesh.Faces(faceMark) |
-    views::transform([&mesh](FaceIndex faceIndex) {
-      return BaseFaceReference<Mesh>(mesh, faceIndex);
-    });
-}
-
-/// @brief Range of the @p mesh nodes with a @p cellMark.
-template<class Mesh>
-auto CellRefs(Mesh& mesh, CellMark cellMark) noexcept {
-  return mesh.Cells(cellMark) |
+/// @brief Range of the @p mesh nodes \
+///   (or nodes with a @p cellMark, if present).
+template<class Mesh, std::same_as<CellMark>... CellMark_>
+  requires (sizeof...(CellMark_) <= 1)
+auto CellRefs(Mesh& mesh, CellMark_... cellMark) noexcept {
+  return mesh.Cells(cellMark...) |
     views::transform([&mesh](CellIndex cellIndex) {
       return BaseCellReference<Mesh>(mesh, cellIndex);
     });
@@ -466,49 +411,45 @@ auto InteriorCellRefs(Mesh& mesh) noexcept {
   return CellRefs(mesh, CellMark{0});
 }
 
-#define FaceCellFunc_ \
-  ([&](BaseFaceReference<Mesh> face) { \
-     func(face.InnerCell(), face.OuterCell()); \
-   })
-
 /// @brief Range of the boundary @p mesh nodes.
 template<class Mesh>
 auto BoundaryNodeRefs(Mesh& mesh) noexcept {
-  return NodeRefs(mesh) | views::drop(mesh.NumNodes({}));
+  return NodeRefs(mesh) | views::drop(mesh.Nodes(NodeMark{0}).size());
 }
 
 /// @brief Range of the boundary @p mesh edges.
 template<class Mesh>
 auto BoundaryEdgeRefs(Mesh& mesh) noexcept {
-  return EdgeRefs(mesh) | views::drop(mesh.NumEdges({}));
+  return EdgeRefs(mesh) | views::drop(mesh.Edges(EdgeMark{0}).size());
 }
 
 /// @brief Range of the boundary @p mesh nodes.
 template<class Mesh>
 auto BoundaryFaceRefs(Mesh& mesh) noexcept {
-  return FaceRefs(mesh) | views::drop(mesh.NumFaces({}));
+  return FaceRefs(mesh) | views::drop(mesh.Faces(FaceMark{0}).size());
 }
 
 template<class Mesh>
-auto BoundaryFaceCellRefs(Mesh& mesh) noexcept; /*{
-  return FaceRefs(mesh) | views::drop(mesh.NumFaces({})) |
+auto BoundaryFaceCellRefs(Mesh& mesh) noexcept {
+  return FaceRefs(mesh) |
+    views::drop(mesh.Faces(FaceMark{0}).size()) |
     views::transform([](BaseFaceReference<Mesh> face) {
-      func(face.InnerCell(), face.OuterCell());
+      return std::make_pair(face.InnerCell(), face.OuterCell());
     });
-}*/
-
-/// @brief Range of the boundary @p mesh nodes.
-template<class Mesh>
-auto BoundaryCellRefs(Mesh& mesh) noexcept {
-  return CellRefs(mesh) | views::drop(mesh.NumCells({}));
 }
 
 /// @brief Iterate through all boundary @p mesh faces.
 template<class Mesh, class Func>
 FEATHERS_DEPRECATED void ForEachBoundaryFaceCells(Mesh& mesh, Func func) noexcept {
-  ForEach(BoundaryFaceRefs(mesh), FaceCellFunc_);
+  ForEach(BoundaryFaceRefs(mesh), [&](BaseFaceReference<Mesh> face) {
+    func(face.InnerCell(), face.OuterCell());
+  });
 }
 
-#undef FaceCellFunc_
+/// @brief Range of the boundary @p mesh nodes.
+template<class Mesh>
+auto BoundaryCellRefs(Mesh& mesh) noexcept {
+  return CellRefs(mesh) | views::drop(mesh.Cells(CellMark{0}).size());
+}
 
 } // namespace feathers

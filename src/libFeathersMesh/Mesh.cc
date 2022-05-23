@@ -42,7 +42,7 @@ void Mesh::UpdateElementsGeometry() {
     ForEachMinMax(Edges(), +huge, -huge, [this](EdgeIndex edgeIndex) {
       std::unique_ptr<Element const> const edgeElement = get_object(edgeIndex);
 
-      EdgeLens_[edgeIndex] = edgeElement->LenAreaOrVolume();
+      EdgeLens_[edgeIndex] = edgeElement->Volume();
       EdgeDirs_[edgeIndex] = edgeElement->Dir();
 
       return EdgeLens_[edgeIndex];
@@ -55,7 +55,7 @@ void Mesh::UpdateElementsGeometry() {
     ForEachMinMax(Faces(), +huge, -huge, [&](FaceIndex faceIndex) {
       std::unique_ptr<Element const> const faceElement = get_object(faceIndex);
 
-      FaceAreas_[faceIndex] = faceElement->LenAreaOrVolume();
+      FaceAreas_[faceIndex] = faceElement->Volume();
       FaceNormals_[faceIndex] = faceElement->Normal();
       FaceCenterPos_[faceIndex] = faceElement->CenterPos();
 
@@ -69,7 +69,7 @@ void Mesh::UpdateElementsGeometry() {
     ForEachMinMax(Cells(), +huge, -huge, [&](CellIndex cellIndex) {
       std::unique_ptr<Element const> const cellElement = get_object(cellIndex);
 
-      CellVolumes_[cellIndex] = cellElement->LenAreaOrVolume();
+      CellVolumes_[cellIndex] = cellElement->Volume();
       CellCenterPos_[cellIndex] = cellElement->CenterPos();
 
       return CellVolumes_[cellIndex];
@@ -105,7 +105,7 @@ EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark) 
   EdgeMarks_.emplace_back(edgeMark);
 
   EdgeShapes_.emplace_back(edge->Shape());
-  EdgeLens_.emplace_back(edge->LenAreaOrVolume());
+  EdgeLens_.emplace_back(edge->Volume());
   EdgeDirs_.emplace_back(edge->Dir());
 
   // Fill the edge nodes.
@@ -129,7 +129,7 @@ FaceIndex Mesh::EmplaceFace(std::unique_ptr<Element>&& face, FaceMark faceMark) 
   FaceMarks_.emplace_back(faceMark);
 
   FaceShapes_.emplace_back(face->Shape());
-  FaceAreas_.emplace_back(face->LenAreaOrVolume());
+  FaceAreas_.emplace_back(face->Volume());
   FaceNormals_.emplace_back(face->Normal());
   FaceCenterPos_.emplace_back(face->CenterPos());
 
@@ -154,7 +154,7 @@ CellIndex Mesh::EmplaceCell(std::unique_ptr<Element>&& cell, CellMark cellMark) 
   CellMarks_.emplace_back(cellMark);
 
   CellShapes_.emplace_back(cell->Shape());
-  CellVolumes_.emplace_back(cell->LenAreaOrVolume());
+  CellVolumes_.emplace_back(cell->Volume());
   CellCenterPos_.emplace_back(cell->CenterPos());
 
   // Fill the cell nodes.
@@ -221,7 +221,7 @@ void Mesh::FixPermutationAndAdjacency_(std::vector<size_t>& permutation) {
 void Mesh::PermuteNodes(std::vector<size_t>&& nodePermutation) {
 
   /* Permute Node properties and fix the adjacency tables. */
-  FixPermutationAndAdjacency_<NodeTag_>(nodePermutation);
+  FixPermutationAndAdjacency_<NodeTag>(nodePermutation);
   permute_rows(nodePermutation.begin(), nodePermutation.end(),
                NodeNodes_, NodeEdges_, NodeFaces_, NodeCells_);
   permute_inplace(nodePermutation.begin(), nodePermutation.end(),
@@ -242,7 +242,7 @@ void Mesh::PermuteNodes(std::vector<size_t>&& nodePermutation) {
 void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
 
   /* Permute edge properties and fix the adjacency tables. */
-  FixPermutationAndAdjacency_<EdgeTag_>(edgePermutation);
+  FixPermutationAndAdjacency_<EdgeTag>(edgePermutation);
   permute_rows(edgePermutation.begin(), edgePermutation.end(),
                EdgeNodes_, EdgeEdges_, EdgeFaces_, EdgeCells_);
   permute_inplace(edgePermutation.begin(), edgePermutation.end(),
@@ -264,7 +264,7 @@ void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
 void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
 
   /* Permute data. */
-  FixPermutationAndAdjacency_<FaceTag_>(facePermutation);
+  FixPermutationAndAdjacency_<FaceTag>(facePermutation);
   permute_rows(
     facePermutation.begin(), facePermutation.end(),
     FaceNodes_, FaceEdges_, FaceFaces_, FaceCells_);
@@ -288,7 +288,7 @@ void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
 void Mesh::PermuteCells(std::vector<size_t>&& cellPermutation) {
 
   /* Permute data. */
-  FixPermutationAndAdjacency_<CellTag_>(cellPermutation);
+  FixPermutationAndAdjacency_<CellTag>(cellPermutation);
   permute_rows(
     cellPermutation.begin(), cellPermutation.end(),
     CellNodes_, CellEdges_, CellFaces_, CellCells_);

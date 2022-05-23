@@ -75,13 +75,16 @@ public:
 
   /// @brief Construct a new element object \
   ///   with a description @p desc and a node position array @p nodePos.
-  static std::unique_ptr<Element> make(ElementDesc&& desc,
+  static std::unique_ptr<Element> Make(ElementDesc&& desc,
                                        std::span<vec3_t const> nodePos);
 
   /** Get element node indices. */
   std::vector<size_t> const& NodeIndices() const {
     return NodeIndices_;
   }
+
+  /// @brief Get element shape.
+  virtual ShapeType Shape() const noexcept = 0;
 
   /// @brief Get node @p position.
   vec3_t NodePos(size_t nodeLocal) const {
@@ -94,8 +97,8 @@ public:
     return qnan;
   }
 
-  /// @brief Compute the element length/area/volume.
-  virtual real_t LenAreaOrVolume() const {
+  /// @brief Compute the element volume (area or length).
+  virtual real_t Volume() const {
     return qnan;
   }
 
@@ -113,9 +116,6 @@ public:
   virtual vec3_t CenterPos() const {
     return vec3_t(qnan);
   }
-
-  /// @brief Get element shape.
-  virtual ShapeType Shape() const noexcept = 0;
 
   /// @brief Number of nodes in the element.
   virtual size_t NumNodes() const noexcept = 0;
@@ -138,10 +138,25 @@ public:
 
 }; // class Element
 
+template<ShapeType Shape_, size_t NumNodes_, class Base>
+class ElementHelper_ : public Base {
+public:
+  ShapeType Shape() const noexcept final {
+    return Shape_;
+  }
+  size_t NumNodes() const noexcept final {
+    return NumNodes_;
+  }
+}; // class ElementHelper_<...>
+
 /// ----------------------------------------------------------------- ///
 /// @brief Abstract simplex element class.
 /// ----------------------------------------------------------------- ///
-class SimplexElement : public Element {};
+class SimplexElement : public Element {
+public:
+  real_t Diam() const final;
+  vec3_t CenterPos() const final;
+}; // SimplexElement
 
 /// ----------------------------------------------------------------- ///
 /// @brief Abstract complex (not simplex) element class.
@@ -149,12 +164,12 @@ class SimplexElement : public Element {};
 class ComplexElement : public Element {
 public:
   real_t Diam() const final;
-  real_t LenAreaOrVolume() const final;
+  real_t Volume() const final;
   vec3_t Normal() const final;
   vec3_t CenterPos() const final;
 
   /// @brief Make splitting into the simplex parts.
-  virtual ElementDescArray MakeSimplicialPartsDesc() const = 0;
+  virtual ElementDescArray MakeSimplicesDesc() const = 0;
 
 private:
 
@@ -166,15 +181,11 @@ private:
 /// ----------------------------------------------------------------- ///
 /// @brief Dummy nodal element.
 /// ----------------------------------------------------------------- ///
-class Node final : public SimplexElement {
+class Node final :
+  public ElementHelper_<ShapeType::Node, 1, SimplexElement> {
 public:
-  real_t Diam() const final;
-  real_t LenAreaOrVolume() const final;
+  real_t Volume() const final;
   vec3_t Normal() const final;
-  vec3_t CenterPos() const final;
-
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
 }; // class Node
@@ -193,16 +204,12 @@ public:
 ///
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Segment final : public SimplexElement {
+class Segment final :
+  public ElementHelper_<ShapeType::Segment2, 2, SimplexElement> {
 public:
-  real_t Diam() const final;
-  real_t LenAreaOrVolume() const final;
+  real_t Volume() const final;
   vec3_t Normal() const final;
   vec3_t Dir() const final;
-  vec3_t CenterPos() const final;
-
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
 }; // class tSegmentShape
@@ -221,15 +228,11 @@ public:
 ///        e0/f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Triangle final : public SimplexElement {
+class Triangle final :
+  public ElementHelper_<ShapeType::Triangle3, 3, SimplexElement> {
 public:
-  real_t Diam() const final;
-  real_t LenAreaOrVolume() const final;
+  real_t Volume() const final;
   vec3_t Normal() const final;
-  vec3_t CenterPos() const final;
-
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
 }; // class Triangle
@@ -246,13 +249,12 @@ public:
 ///          e0/f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Quadrangle final : public ComplexElement {
+class Quadrangle final :
+  public ElementHelper_<ShapeType::Quadrangle4, 4, ComplexElement> {
 public:
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicialPartsDesc() const final;
+  ElementDescArray MakeSimplicesDesc() const final;
 }; // class Quadrangle
 
 /// ----------------------------------------------------------------- ///
@@ -280,14 +282,10 @@ public:
 ///                      f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Tetrahedron final : public SimplexElement {
+class Tetrahedron final :
+  public ElementHelper_<ShapeType::Tetrahedron4, 4, SimplexElement> {
 public:
-  real_t Diam() const final;
-  real_t LenAreaOrVolume() const final;
-  vec3_t CenterPos() const final;
-
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
+  real_t Volume() const final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
 }; // class Tetrahedron
@@ -317,13 +315,12 @@ public:
 ///                            f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Pyramid final : public ComplexElement {
+class Pyramid final :
+  public ElementHelper_<ShapeType::Pyramid5, 5, ComplexElement> {
 public:
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicialPartsDesc() const final;
+  ElementDescArray MakeSimplicesDesc() const final;
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
@@ -347,21 +344,20 @@ public:
 ///          \      |        e2 ,/            f2 = (n2,n0,n3,n5)
 ///           \     |     o   ,/`             f3 = (n0,n2,n1)
 ///            \    ^ e4  | ,/`               f4 = (n3,n4,n5)
-///          e0 v   |     ,^ e1
-///              \  |   ,/|
-///               \ | ,/` |
+///          e0 v   |     ,^ e1            split = ((n0,n1,n2,n4),
+///              \  |   ,/|                         (n2,n0,n3,n4),
+///               \ | ,/` |                         (n3,n5,n2,n4))
 ///                \|/`   |
 ///                 O n1  v
 ///                       f3
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Pentahedron final : public ComplexElement {
+class Pentahedron final :
+  public ElementHelper_<ShapeType::Pentahedron6, 6, ComplexElement> {
 public:
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicialPartsDesc() const final;
+  ElementDescArray MakeSimplicesDesc() const final;
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
@@ -392,13 +388,12 @@ public:
 ///                  f4
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Hexahedron final : public ComplexElement {
+class Hexahedron final :
+  public ElementHelper_<ShapeType::Hexahedron8, 8, ComplexElement> {
 public:
-  ShapeType Shape() const noexcept final;
-  size_t NumNodes() const noexcept final;
   ElementDescArray MakeEdgesDesc() const final;
   ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicialPartsDesc() const final;
+  ElementDescArray MakeSimplicesDesc() const final;
 }; // class Hexahedron
 
 } // namespace feathers
