@@ -59,7 +59,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
    * Compute.
    */
   calc_func(u, u_hat);
-  ForEach(interiorCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
     for (uint_t i = 0; i < num_vars; ++i) {
       u_hat[cell][i] = u[cell][i] - dt * u_hat[cell][i];
     }

@@ -91,22 +91,22 @@ public:
   }
 
   /// @brief Get mark. 
-  Index<MarkTag<Tag>> Mark() const noexcept {
+  Index<MarkTag<Tag>> mark() const noexcept {
     return Mesh_->Mark(Index_);
   }
 
-  /// @brief Get Shape.
-  ShapeType Shape() const noexcept {
-    return Mesh_->Shape(Index_);
+  /// @brief Get shape type.
+  ShapeType shapeType() const noexcept {
+    return Mesh_->shapeType(Index_);
   }
 
-  /// @brief Get element object. 
-  std::unique_ptr<const Element> get_element_object() const {
+  /// @brief Get shape.
+  std::unique_ptr<Element> shape() const {
     return Mesh_->get_object(Index_);
   }
 
   /// @brief Ranges of the adjacent nodes.
-  auto Nodes() const noexcept {
+  auto nodes() const noexcept {
     return Mesh_->AdjacentNodes(Index_) |
       views::transform([&mesh = *Mesh_](NodeIndex nodeIndex) {
         return BaseNodeView(mesh, nodeIndex);
@@ -114,7 +114,7 @@ public:
   }
 
   /// @brief Ranges of the adjacent edges.
-  auto Edges() const noexcept {
+  auto edges() const noexcept {
     return Mesh_->AdjacentEdges(Index_) |
       views::transform([&mesh = *Mesh_](EdgeIndex edgeIndex) {
         return BaseEdgeView(mesh, edgeIndex);
@@ -122,7 +122,7 @@ public:
   }
 
   /// @brief Ranges of the adjacent faces.
-  auto Faces() const noexcept {
+  auto faces() const noexcept {
     return Mesh_->AdjacentFaces(Index_) |
       views::transform([&mesh = *Mesh_](FaceIndex faceIndex) {
         return BaseFaceView(mesh, faceIndex);
@@ -130,7 +130,7 @@ public:
   }
 
   /// @brief Ranges of the adjacent cells.
-  auto Cells() const noexcept {
+  auto cells() const noexcept {
     return Mesh_->AdjacentCells(Index_) |
       views::transform([&mesh = *Mesh_](CellIndex cellIndex) {
         return BaseCellView(mesh, cellIndex);
@@ -140,24 +140,24 @@ public:
   /// @brief Iterate through all adjacent nodes.
   template<class Func>
   void forEachNode(Func&& func) const noexcept {
-    ranges::for_each(Nodes(), func);
+    ranges::for_each(nodes(), func);
   }
 
   /// @brief Iterate through all adjacent edges.
   template<class Func>
   void forEachEdge(Func&& func) const noexcept {
-    ranges::for_each(Edges(), func);
+    ranges::for_each(edges(), func);
   }
 
   /// @brief Iterate through all adjacent faces.
   /// @{
   template<class Func>
   void forEachFace(Func&& func) const noexcept {
-    ranges::for_each(Faces(), func);
+    ranges::for_each(faces(), func);
   }
   template<class Func>
   void forEachFaceCells(Func&& func) const noexcept {
-    ranges::for_each(Faces(), [&](BaseFaceView<Mesh> face) {
+    ranges::for_each(faces(), [&](BaseFaceView<Mesh> face) {
       func(face.innerCell(), face.outerCell());
     });
   }
@@ -166,7 +166,7 @@ public:
   /// @brief Iterate through all adjacent cells.
   template<class Func>
   void forEachCell(Func&& func) const noexcept {
-    ranges::for_each(Cells(), func);
+    ranges::for_each(cells(), func);
   }
 
 }; // class BaseElementView
@@ -191,12 +191,12 @@ public:
 
   /// @brief Get node position.
   vec3_t pos() const noexcept {
-    return this->Mesh_->NodePos(this->Index_);
+    return this->Mesh_->nodePos(this->Index_);
   }
 
   /// @brief Set node position @p pos.
   void setPos(vec3_t const& pos) const noexcept requires (!std::is_const_v<Mesh>) {
-    this->Mesh_->SetNodePos(this->Index_, pos);
+    this->Mesh_->setNodePos(this->Index_, pos);
   }
 
 }; // class BaseNodeView<...>
@@ -227,12 +227,12 @@ public:
 
   /// @brief Get edge length. 
   real_t len() const noexcept {
-    return this->Mesh_->EdgeLen(this->Index_);
+    return this->Mesh_->edgeLen(this->Index_);
   }
 
   /// @brief Get edge direction. 
   vec3_t dir() const noexcept {
-    return this->Mesh_->EdgeDir(this->Index_);
+    return this->Mesh_->edgeDir(this->Index_);
   }
 
 }; // class BaseEdgeView<...>
@@ -263,27 +263,27 @@ public:
 
   /// @brief Get connected inner cell. 
   auto innerCell() const noexcept {
-    return this->Cells()[FaceInnerCell_];
+    return this->cells()[FaceInnerCell_];
   }
 
   /// @brief Get connected outer cell. 
   auto outerCell() const noexcept {
-    return this->Cells()[FaceOuterCell_];
+    return this->cells()[FaceOuterCell_];
   }
 
   /// @brief Get face area/length. 
   real_t area() const noexcept {
-    return this->Mesh_->FaceArea(this->Index_);
+    return this->Mesh_->faceArea(this->Index_);
   }
 
   /// @brief Get face normal. 
   vec3_t normal() const noexcept {
-    return this->Mesh_->FaceNormal(this->Index_);
+    return this->Mesh_->faceNormal(this->Index_);
   }
 
   /// @brief Get face center position.
   vec3_t centerPos() const noexcept {
-    return this->Mesh_->FaceCenterPos(this->Index_);
+    return this->Mesh_->faceCenterPos(this->Index_);
   }
 
 }; // class BaseFaceView<...>
@@ -314,12 +314,12 @@ public:
 
   /// @brief Get cell volume/area/length.
   real_t volume() const noexcept {
-    return this->Mesh_->CellVolume(this->Index_);
+    return this->Mesh_->cellVolume(this->Index_);
   }
 
   /// @brief Get cell center position.
   vec3_t centerPos() const noexcept {
-    return this->Mesh_->CellCenterPos(this->Index_);
+    return this->Mesh_->cellCenterPos(this->Index_);
   }
 
 }; // class BaseCellView<...>
@@ -335,7 +335,7 @@ using MutableCellView = BaseCellView<Mesh>;
 template<class Mesh, std::same_as<NodeMark>... NodeMark_>
   requires (sizeof...(NodeMark_) <= 1)
 auto nodeViews(Mesh& mesh, NodeMark_... nodeMark) noexcept {
-  return mesh.Nodes(nodeMark...) |
+  return mesh.nodeIndices(nodeMark...) |
     views::transform([&mesh](NodeIndex nodeIndex) {
       return BaseNodeView(mesh, nodeIndex);
     });
@@ -346,7 +346,7 @@ auto nodeViews(Mesh& mesh, NodeMark_... nodeMark) noexcept {
 template<class Mesh, std::same_as<EdgeMark>... EdgeMark_>
   requires (sizeof...(EdgeMark_) <= 1)
 auto edgeViews(Mesh& mesh, EdgeMark_... edgeMark) noexcept {
-  return mesh.Edges(edgeMark...) |
+  return mesh.edgeIndices(edgeMark...) |
     views::transform([&mesh](EdgeIndex edgeIndex) {
       return BaseEdgeView(mesh, edgeIndex);
     });
@@ -357,7 +357,7 @@ auto edgeViews(Mesh& mesh, EdgeMark_... edgeMark) noexcept {
 template<class Mesh, std::same_as<FaceMark>... FaceMark_>
   requires (sizeof...(FaceMark_) <= 1)
 auto faceViews(Mesh& mesh, FaceMark_... faceMark) noexcept {
-  return mesh.Faces(faceMark...) |
+  return mesh.faceIndices(faceMark...) |
     views::transform([&mesh](FaceIndex faceIndex) {
       return BaseFaceView(mesh, faceIndex);
     });
@@ -368,7 +368,7 @@ auto faceViews(Mesh& mesh, FaceMark_... faceMark) noexcept {
 template<class Mesh, std::same_as<CellMark>... CellMark_>
   requires (sizeof...(CellMark_) <= 1)
 auto cellViews(Mesh& mesh, CellMark_... cellMark) noexcept {
-  return mesh.Cells(cellMark...) |
+  return mesh.cellIndices(cellMark...) |
     views::transform([&mesh](CellIndex cellIndex) {
       return BaseCellView(mesh, cellIndex);
     });
@@ -376,67 +376,66 @@ auto cellViews(Mesh& mesh, CellMark_... cellMark) noexcept {
 
 /// @brief Range of the interior @p mesh nodes.
 template<class Mesh>
-auto interiorNodeViews(Mesh& mesh) noexcept {
+auto intNodeViews(Mesh& mesh) noexcept {
   return nodeViews(mesh, NodeMark{0});
 }
 
 /// @brief Range of the interior @p mesh edges.
 template<class Mesh>
-auto interiorEdgeViews(Mesh& mesh) noexcept {
+auto intEdgeViews(Mesh& mesh) noexcept {
   return edgeViews(mesh, EdgeMark{0});
 }
 
 /// @brief Range of the interior @p mesh nodes.
 template<class Mesh>
-auto interiorFaceViews(Mesh& mesh) noexcept {
+auto intFaceViews(Mesh& mesh) noexcept {
   return faceViews(mesh, FaceMark{0});
 }
 
 /// @brief Range of the interior @p mesh nodes.
 template<class Mesh>
-auto interiorCellViews(Mesh& mesh) noexcept {
+auto intCellViews(Mesh& mesh) noexcept {
   return cellViews(mesh, CellMark{0});
 }
 
 /// @brief Range of the boundary @p mesh nodes.
 template<class Mesh>
-auto boundaryNodeViews(Mesh& mesh) noexcept {
-  return nodeViews(mesh) | views::drop(mesh.Nodes(NodeMark{0}).size());
+auto bndNodeViews(Mesh& mesh) noexcept {
+  return nodeViews(mesh) | views::drop(mesh.nodeIndices(NodeMark{0}).size());
 }
 
 /// @brief Range of the boundary @p mesh edges.
 template<class Mesh>
-auto boundaryEdgeViews(Mesh& mesh) noexcept {
-  return edgeViews(mesh) | views::drop(mesh.Edges(EdgeMark{0}).size());
+auto bndEdgeViews(Mesh& mesh) noexcept {
+  return edgeViews(mesh) | views::drop(mesh.edgeIndices(EdgeMark{0}).size());
 }
 
 /// @brief Range of the boundary @p mesh faces.
 template<class Mesh>
-auto boundaryFaceViews(Mesh& mesh) noexcept {
-  return faceViews(mesh) | views::drop(mesh.Faces(FaceMark{0}).size());
+auto bndFaceViews(Mesh& mesh) noexcept {
+  return faceViews(mesh) | views::drop(mesh.faceIndices(FaceMark{0}).size());
 }
 
 template<class Mesh>
-auto boundaryFaceCellViews(Mesh& mesh) noexcept {
+auto bndFaceCellViews(Mesh& mesh) noexcept {
   return faceViews(mesh) |
-    views::drop(mesh.Faces(FaceMark{0}).size()) |
+    views::drop(mesh.faceIndices(FaceMark{0}).size()) |
     views::transform([](BaseFaceView<Mesh> face) {
       return std::make_pair(face.innerCell(), face.outerCell());
     });
 }
 
-/// @brief Iterate through all boundary @p mesh faces.
 template<class Mesh, class Func>
-FEATHERS_DEPRECATED void forEachBoundaryFaceCells(Mesh& mesh, Func func) noexcept {
-  ForEach(boundaryFaceViews(mesh), [&](BaseFaceView<Mesh> face) {
+void forEachBoundaryFaceCells(Mesh& mesh, Func func) noexcept {
+  ForEach(bndFaceViews(mesh), [&](BaseFaceView<Mesh> face) {
     func(face.innerCell(), face.outerCell());
   });
 }
 
 /// @brief Range of the boundary @p mesh cells.
 template<class Mesh>
-auto boundaryCellViews(Mesh& mesh) noexcept {
-  return cellViews(mesh) | views::drop(mesh.Cells(CellMark{0}).size());
+auto bndCellViews(Mesh& mesh) noexcept {
+  return cellViews(mesh) | views::drop(mesh.cellIndices(CellMark{0}).size());
 }
 
 } // namespace feathers

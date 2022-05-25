@@ -75,7 +75,7 @@ using CellMark = Index<MarkTag<CellTag>>;
 /// @brief Hybrid unstructured multidimensional mesh.
 /// @todo Do not use iterators in the mesh implementation.
 /// @todo Switch to ranges.
-/// @todo "Element" -> "Shape".
+/// @todo "Element" -> "shapeType".
 /// @todo Make Dim a template parameter.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 //template<size_t SDim, size_t TDim, template<class, class, class> class Table>
@@ -163,22 +163,22 @@ public:
   // ---------------------------------------------------------------- //
 
   /// @brief Range of node indices.
-  auto Nodes() const noexcept {
+  auto nodeIndices() const noexcept {
     return views::iota(NodeIndex{0}, NodeIndex{NumNodes_});
   }
 
   /// @brief Range of edge indices.
-  auto Edges() const noexcept {
+  auto edgeIndices() const noexcept {
     return views::iota(EdgeIndex{0}, EdgeIndex{NumEdges_});
   }
 
   /// @brief Range of face indices.
-  auto Faces() const noexcept {
+  auto faceIndices() const noexcept {
     return views::iota(FaceIndex{0}, FaceIndex{NumFaces_});
   }
 
   /// @brief Range of cell indices.
-  auto Cells() const noexcept {
+  auto cellIndices() const noexcept {
     return views::iota(CellIndex{0}, CellIndex{NumCells_});
   }
 
@@ -211,25 +211,25 @@ public:
   }
 
   /// @brief Range of node indices with a @p nodeMark.
-  auto Nodes(NodeMark nodeMark) const noexcept {
+  auto nodeIndices(NodeMark nodeMark) const noexcept {
     StormAssert(nodeMark < NumNodeMarks());
     return views::iota(NodeRanges_[nodeMark], NodeRanges_[nodeMark + 1]);
   }
 
   /// @brief Range of edge indices with a @p edgeMark.
-  auto Edges(EdgeMark edgeMark) const noexcept {
+  auto edgeIndices(EdgeMark edgeMark) const noexcept {
     StormAssert(edgeMark < NumEdgeMarks());
     return views::iota(EdgeRanges_[edgeMark], EdgeRanges_[edgeMark + 1]);
   }
 
   /// @brief Range of face indices with a @p faceMark.
-  auto Faces(FaceMark faceMark) const noexcept {
+  auto faceIndices(FaceMark faceMark) const noexcept {
     StormAssert(faceMark < NumFaceMarks());
     return views::iota(FaceRanges_[faceMark], FaceRanges_[faceMark + 1]);
   }
 
   /// @brief Range of cell indices with a @p cellMark.
-  auto Cells(CellMark cellMark) const noexcept {
+  auto cellIndices(CellMark cellMark) const noexcept {
     StormAssert(cellMark < NumCellMarks());
     return views::iota(CellRanges_[cellMark], CellRanges_[cellMark + 1]);
   }
@@ -262,20 +262,20 @@ public:
   // Shapes.
   // ---------------------------------------------------------------- //
 
-  /// @brief Get edge @p edgeIndex shape.
-  ShapeType Shape(EdgeIndex edgeIndex) const noexcept {
+  /// @brief Get edge @p edgeIndex shape type.
+  ShapeType shapeType(EdgeIndex edgeIndex) const noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeShapes_[edgeIndex];
   }
 
-  /// @brief Get face @p faceIndex shape.
-  ShapeType Shape(FaceIndex faceIndex) const noexcept {
+  /// @brief Get face @p faceIndex shape type.
+  ShapeType shapeType(FaceIndex faceIndex) const noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceShapes_[faceIndex];
   }
 
-  /// @brief Get cell @p cellIndex shape.
-  ShapeType Shape(CellIndex cellIndex) const noexcept {
+  /// @brief Get cell @p cellIndex shape type.
+  ShapeType shapeType(CellIndex cellIndex) const noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellShapes_[cellIndex];
   }
@@ -295,91 +295,91 @@ public:
       AdjacentNodes(index) | views::transform([](NodeIndex nodeIndex) {
         return static_cast<size_t>(nodeIndex);
       });
-    return MakeElement_({Shape(index),
+    return MakeElement_({shapeType(index),
       std::vector(nodeIndices.begin(), nodeIndices.end())});
   }
 
   /// @brief Get node @p nodeIndex position.
-  vec3_t NodePos(NodeIndex nodeIndex) const noexcept {
+  vec3_t nodePos(NodeIndex nodeIndex) const noexcept {
     StormAssert(nodeIndex < NumNodes_);
     return NodePos_[nodeIndex];
   }
 
   /// @brief Set node @p nodeIndex position @p pos.
-  void SetNodePos(NodeIndex nodeIndex, vec3_t const& pos) noexcept {
+  void setNodePos(NodeIndex nodeIndex, vec3_t const& pos) noexcept {
     StormAssert(nodeIndex < NumNodes_);
     NodePos_[nodeIndex] = pos;
   }
 
   /// @brief Get edge @p edgeIndex length.
-  real_t EdgeLen(EdgeIndex edgeIndex) const noexcept {
+  real_t edgeLen(EdgeIndex edgeIndex) const noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeLens_[edgeIndex];
   }
 
   /// @brief Get edge @p edgeIndex direction.
-  vec3_t EdgeDir(EdgeIndex edgeIndex) const noexcept {
+  vec3_t edgeDir(EdgeIndex edgeIndex) const noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeDirs_[edgeIndex];
   }
 
   /// @brief Get face @p faceIndex area/length.
-  real_t FaceArea(FaceIndex faceIndex) const noexcept {
+  real_t faceArea(FaceIndex faceIndex) const noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceAreas_[faceIndex];
   }
 
   /// @brief Get face @p faceIndex normal.
-  vec3_t FaceNormal(FaceIndex faceIndex) const noexcept {
+  vec3_t faceNormal(FaceIndex faceIndex) const noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceNormals_[faceIndex];
   }
 
   /// @brief Get face @p faceIndex barycenter.
-  vec3_t FaceCenterPos(FaceIndex faceIndex) const noexcept {
+  vec3_t faceCenterPos(FaceIndex faceIndex) const noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceCenterPos_[faceIndex];
   }
 
   /// @brief Get cell @p cellIndex volume/area/length.
-  real_t CellVolume(CellIndex cellIndex) const noexcept {
+  real_t cellVolume(CellIndex cellIndex) const noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellVolumes_[cellIndex];
   }
 
   /// @brief Get cell @p cellIndex center position.
-  vec3_t CellCenterPos(CellIndex cellIndex) const noexcept {
+  vec3_t cellCenterPos(CellIndex cellIndex) const noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellCenterPos_[cellIndex];
   }
 
   /// @brief Get maximal edge length.
-  real_t MaxEdgeLen() const noexcept {
+  real_t maxEdgeLen() const noexcept {
     return MaxEdgeLen_;
   }
 
   /// @brief Get minimal edge length.
-  real_t MinEdgeLen() const noexcept {
+  real_t minEdgeLen() const noexcept {
     return MinEdgeLen_;
   }
 
   /// @brief Get maximal face area.
-  real_t MaxFaceArea() const noexcept {
+  real_t maxFaceArea() const noexcept {
     return MaxFaceArea_;
   }
 
   /// @brief Get minimal face area.
-  real_t MinFaceArea() const noexcept {
+  real_t minFaceArea() const noexcept {
     return MinFaceArea_;
   }
 
   /// @brief Get maximal cell volume.
-  real_t MaxCellVolume() const noexcept {
+  real_t maxCellVolume() const noexcept {
     return MaxCellVolume_;
   }
 
   /// @brief Get minimal cell volume.
-  real_t MinCellVolume() const noexcept {
+  real_t minCellVolume() const noexcept {
     return MinCellVolume_;
   }
 

@@ -183,7 +183,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
   size_t num_vars, tScalarField& lim_u, const tScalarField& u, const tVectorField& grad_u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
-  ForEach(interiorCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
     static const real_t k = 0.1;
     const real_t eps_sqr = std::pow(k * cell.volume(), 3);
     /* Find the largest negative and positive differences

@@ -38,7 +38,7 @@ void cUpwindConvectionScheme::get_cell_convection(size_t num_vars,
                                                   const tScalarField& u) const {
 
   /* Compute the first order numerical fluxes. */
-  tScalarField flux_u(num_vars, m_mesh->Faces().size());
+  tScalarField flux_u(num_vars, m_mesh->faceIndices().size());
   ForEach(faceViews(*m_mesh), [&](FaceView face) {
     const CellView cell_outer = face.outerCell();
     const CellView cell_inner = face.innerCell();
@@ -49,7 +49,7 @@ void cUpwindConvectionScheme::get_cell_convection(size_t num_vars,
   });
 
   /* Compute the first order convection. */
-  ForEach(interiorCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
     div_f[cell] = {};
     cell.forEachFace([&](FaceView face) {
       const CellView cell_outer = face.outerCell();
@@ -80,15 +80,15 @@ void cUpwind2ConvectionScheme::get_cell_convection(size_t num_vars,
                                                    tScalarField& div_f,
                                                    const tScalarField& u) const {
   /* Compute the second order limited gradients. */
-  tVectorField grad_u(num_vars, m_mesh->Cells().size());
+  tVectorField grad_u(num_vars, m_mesh->cellIndices().size());
   m_gradient_scheme->get_gradients(num_vars, grad_u, u);
 
-  tScalarField lim_u(num_vars, m_mesh->Cells().size());
+  tScalarField lim_u(num_vars, m_mesh->cellIndices().size());
   m_gradient_limiter_scheme->get_cell_limiter(num_vars, lim_u, u, grad_u);
 
   /* Compute the second order numerical fluxes:
    * integrate the numerical flux over the face nodes. */
-  tScalarField flux_f(num_vars, m_mesh->Faces().size());
+  tScalarField flux_f(num_vars, m_mesh->faceIndices().size());
   ForEach(faceViews(*m_mesh), [&](FaceView face) {
     const CellView cell_outer = face.outerCell();
     const CellView cell_inner = face.innerCell();
@@ -110,7 +110,7 @@ void cUpwind2ConvectionScheme::get_cell_convection(size_t num_vars,
   });
 
     /* Compute the second order convection. */
-  ForEach(interiorCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
     div_f[cell] = {};
     cell.forEachFace([&](FaceView face) {
       const CellView cell_outer = face.outerCell();

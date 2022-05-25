@@ -221,7 +221,7 @@ void Mesh::save_vtk(const char* path,
   file << "ASCII" << std::endl;
   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
-  file << "POINTS " << Nodes().size() << " double" << std::endl;
+  file << "POINTS " << nodeIndices().size() << " double" << std::endl;
   ranges::for_each(nodeViews(*this), [&](NodeView node) {
     const vec3_t& pos = node.pos();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
@@ -229,12 +229,12 @@ void Mesh::save_vtk(const char* path,
   file << std::endl;
 
   size_t const sumNumCellAdjNodes =
-    ForEachSum(interiorCellViews(*this), size_t(0), [](CellView cell) {
-      return cell.Nodes().size() + 1;
+    ForEachSum(intCellViews(*this), size_t(0), [](CellView cell) {
+      return cell.nodes().size() + 1;
     });
-  file << "CELLS " << Cells({}).size() << " " << sumNumCellAdjNodes << std::endl;
-  ranges::for_each(interiorCellViews(*this), [&](CellView cell) {
-    file << cell.Nodes().size() << " ";
+  file << "CELLS " << cellIndices({}).size() << " " << sumNumCellAdjNodes << std::endl;
+  ranges::for_each(intCellViews(*this), [&](CellView cell) {
+    file << cell.nodes().size() << " ";
     cell.forEachNode([&](size_t node_index) {
       file << node_index << " ";
     });
@@ -242,23 +242,23 @@ void Mesh::save_vtk(const char* path,
   });
   file << std::endl;
 
-  file << "CELL_TYPES " << Cells({}).size() << std::endl;
-  ranges::for_each(interiorCellViews(*this), [&](CellView cell) {
+  file << "CELL_TYPES " << cellIndices({}).size() << std::endl;
+  ranges::for_each(intCellViews(*this), [&](CellView cell) {
     static const std::map<ShapeType, const char*> shapes = {
       { ShapeType::Node, "1" }, { ShapeType::Segment2, "2" },
       { ShapeType::Triangle3, "5" }, { ShapeType::Quadrangle4, "9" },
       { ShapeType::Tetrahedron4, "10" }, { ShapeType::Pyramid5, "14" },
       { ShapeType::Pentahedron6, "13" }, { ShapeType::Hexahedron8, "12" }
     };
-    file << shapes.at(cell.Shape()) << std::endl;
+    file << shapes.at(cell.shapeType()) << std::endl;
   });
   file << std::endl;
 
-  file << "CELL_DATA " << Cells({}).size() << std::endl;
+  file << "CELL_DATA " << cellIndices({}).size() << std::endl;
   for (const sFieldDesc& field : fields) {
     file << "SCALARS " << field.name << " double 1" << std::endl;
     file << "LOOKUP_TABLE default" << std::endl;
-    ranges::for_each(interiorCellViews(*this), [&](CellView cell) {
+    ranges::for_each(intCellViews(*this), [&](CellView cell) {
       file << (*field.scalar)[cell][field.var_index] << std::endl;
     });
   }

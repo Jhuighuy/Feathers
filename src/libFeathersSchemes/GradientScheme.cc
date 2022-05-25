@@ -37,7 +37,7 @@ void cLeastSquaresGradientScheme::init_gradients_() {
 
   /* Compute the least-squares
    * problem matrices for the interior cells. */
-  ForEach(interiorCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
     mat3_t& mat = (m_inverse_matrices[cell][0] = mat3_t(0.0));
     cell.forEachFaceCells([&](CellView cell_inner, CellView cell_outer) {
       const vec3_t dr =
@@ -83,7 +83,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
                                                 const tScalarField& u) const {
   /* Compute the least-squares
    * problem right-hand statements for the interior cells. */
-  ForEach(interiorCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
     grad_u[cell].fill(vec3_t(0.0));
     cell.forEachFaceCells([&](CellView cell_inner, CellView cell_outer) {
       const vec3_t dr =
