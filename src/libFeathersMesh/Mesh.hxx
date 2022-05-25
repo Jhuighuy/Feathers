@@ -34,6 +34,38 @@
 #include "Field.hh"
 #include "Element.hh"
 
+#define This_
+
+#define DeducingThisEmulation_(name) \
+  /** @copydoc name */ \
+  /** @{ */ \
+  template<std::same_as<void> = void, class... Args> \
+  auto name(Args const&... args) noexcept { \
+    using Self = std::decay_t<decltype(*this)>; \
+    return name<Self>(*this, args...); \
+  } \
+  template<std::same_as<void> = void, class... Args> \
+  auto name(Args const&... args) const noexcept { \
+    using Self = std::decay_t<decltype(*this)>; \
+    return const_cast<Self&>(*this).name<Self const>(*this, args...); \
+  } \
+  /** @} */
+
+#define DeducingThisEmulationT_(name) \
+  /** @copydoc name */ \
+  /** @{ */ \
+  template<class T, std::same_as<void> = void, class... Args> \
+  auto name(Args const&... args) noexcept { \
+    using Self = std::decay_t<decltype(*this)>; \
+    return name<T, Self>(*this, args...); \
+  } \
+  template<class T, std::same_as<void> = void, class... Args> \
+  auto name(Args const&... args) const noexcept { \
+    using Self = std::decay_t<decltype(*this)>; \
+    return const_cast<Self&>(*this).name<T, Self const>(*this, args...); \
+  } \
+  /** @} */
+
 namespace feathers {
 
 enum : size_t {
@@ -282,21 +314,21 @@ public:
 
 private:
 
-  auto MakeElement_(ElementDesc&& desc) const {
-    return Element::Make(std::forward<ElementDesc>(desc), NodePos_);
+  auto makeShape_(ShapeDesc&& desc) const {
+    return Element::Make(std::forward<ShapeDesc>(desc), NodePos_);
   }
 
 public:
 
   /// @brief Get element object.
   template<class Tag>
-  auto get_object(Index<Tag> index) const {
-    auto const nodeIndices =
-      adjNodeIndices(index) | views::transform([](NodeIndex nodeIndex) {
+  auto shape(Index<Tag> index) const {
+    auto const nodeIndices = adjNodeIndices(index) |
+      views::transform([](NodeIndex nodeIndex) {
         return static_cast<size_t>(nodeIndex);
       });
-    return MakeElement_({shapeType(index),
-      std::vector(nodeIndices.begin(), nodeIndices.end())});
+    return makeShape_({shapeType(index),
+                        std::vector(nodeIndices.begin(), nodeIndices.end())});
   }
 
   /// @brief Get node @p nodeIndex position.
@@ -396,115 +428,138 @@ public:
   // ---------------------------------------------------------------- //
 
   /// @brief Range of the node @p nodeIndex adjacent nodes.
-  StormAutoConstOverload_(adjNodeIndices, (NodeIndex nodeIndex), noexcept {
-    StormAssert(nodeIndex < NumNodes_);
-    return NodeNodes_[nodeIndex];
-  })
+  template<class Self>
+  auto adjNodeIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.NodeNodes_[nodeIndex];
+  }
 
   /// @brief Range of the edge @p edgeIndex adjacent nodes.
-  StormAutoConstOverload_(adjNodeIndices, (EdgeIndex edgeIndex), noexcept {
-    StormAssert(edgeIndex < NumEdges_);
-    return EdgeNodes_[edgeIndex];
-  })
+  template<class Self>
+  auto adjNodeIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
+    StormAssert(edgeIndex < self.NumEdges_);
+    return self.EdgeNodes_[edgeIndex];
+  }
 
   /// @brief Range of the face @p faceIndex adjacent nodes.
-  StormAutoConstOverload_(adjNodeIndices, (FaceIndex faceIndex), noexcept {
-    StormAssert(faceIndex < NumFaces_);
-    return FaceNodes_[faceIndex];
-  })
+  template<class Self>
+  auto adjNodeIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+    StormAssert(faceIndex < self.NumFaces_);
+    return self.FaceNodes_[faceIndex];
+  }
 
   /// @brief Range of the cell @p cellIndex adjacent nodes.
-  StormAutoConstOverload_(adjNodeIndices, (CellIndex cellIndex), noexcept {
-    StormAssert(cellIndex < NumCells_);
-    return CellNodes_[cellIndex];
-  })
+  template<class Self>
+  auto adjNodeIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+    StormAssert(cellIndex < self.NumCells_);
+    return self.CellNodes_[cellIndex];
+  }
 
   /// @brief Range of the node @p nodeIndex adjacent edges.
-  StormAutoConstOverload_(adjEdgeIndices, (NodeIndex nodeIndex), noexcept {
-    StormAssert(nodeIndex < NumNodes_);
-    return NodeEdges_[nodeIndex];
-  })
+  template<class Self>
+  auto adjEdgeIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.NodeEdges_[nodeIndex];
+  }
 
   /// @brief Range of the edge @p edgeIndex adjacent edges.
-  StormAutoConstOverload_(adjEdgeIndices, (EdgeIndex edgeIndex), noexcept {
-    StormAssert(edgeIndex < NumEdges_);
-    return EdgeEdges_[edgeIndex];
-  })
+  template<class Self>
+  auto adjEdgeIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
+    StormAssert(edgeIndex < self.NumEdges_);
+    return self.EdgeEdges_[edgeIndex];
+  }
 
   /// @brief Range of the face @p faceIndex adjacent edges.
-  StormAutoConstOverload_(adjEdgeIndices, (FaceIndex faceIndex), noexcept {
-    StormAssert(faceIndex < NumFaces_);
-    return FaceEdges_[faceIndex];
-  })
+  template<class Self>
+  auto adjEdgeIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+    StormAssert(faceIndex < self.NumFaces_);
+    return self.FaceEdges_[faceIndex];
+  }
 
   /// @brief Range of the cell @p cellIndex adjacent edges.
-  StormAutoConstOverload_(adjEdgeIndices, (CellIndex cellIndex), noexcept {
-    StormAssert(cellIndex < NumCells_);
-    return CellEdges_[cellIndex];
-  })
+  template<class Self>
+  auto adjEdgeIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+    StormAssert(cellIndex < self.NumCells_);
+    return self.CellEdges_[cellIndex];
+  }
 
   /// @brief Range of the node @p nodeIndex adjacent faces.
-  StormAutoConstOverload_(adjFaceIndices, (NodeIndex nodeIndex), noexcept {
-    StormAssert(nodeIndex < NumNodes_);
-    return NodeFaces_[nodeIndex];
-  })
+  template<class Self>
+  auto adjFaceIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.NodeFaces_[nodeIndex];
+  }
 
   /// @brief Range of the edge @p edgeIndex adjacent faces.
-  StormAutoConstOverload_(adjFaceIndices, (EdgeIndex edgeIndex), noexcept {
-    StormAssert(edgeIndex < NumEdges_);
-    return EdgeFaces_[edgeIndex];
-  })
+  template<class Self>
+  auto adjFaceIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
+    StormAssert(edgeIndex < self.NumEdges_);
+    return self.EdgeFaces_[edgeIndex];
+  }
 
   /// @brief Range of the face @p faceIndex adjacent faces.
-  StormAutoConstOverload_(adjFaceIndices, (FaceIndex faceIndex), noexcept {
-    StormAssert(faceIndex < NumFaces_);
-    return FaceFaces_[faceIndex];
-  })
+  template<class Self>
+  auto adjFaceIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+    StormAssert(faceIndex < self.NumFaces_);
+    return self.FaceFaces_[faceIndex];
+  }
 
   /// @brief Range of the cell @p cellIndex adjacent faces.
-  StormAutoConstOverload_(adjFaceIndices, (CellIndex cellIndex), noexcept {
-    StormAssert(cellIndex < NumCells_);
-    return CellFaces_[cellIndex];
-  })
+  template<class Self>
+  auto adjFaceIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+    StormAssert(cellIndex < self.NumCells_);
+    return self.CellFaces_[cellIndex];
+  }
 
   /// @brief Range of the node @p nodeIndex adjacent cells.
-  StormAutoConstOverload_(adjCellIndices, (NodeIndex nodeIndex), noexcept {
-    StormAssert(nodeIndex < NumNodes_);
-    return NodeCells_[nodeIndex];
-  })
+  template<class Self>
+  auto adjCellIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.NodeCells_[nodeIndex];
+  }
 
   /// @brief Range of the edge @p edgeIndex adjacent cells.
-  StormAutoConstOverload_(adjCellIndices, (EdgeIndex edgeIndex), noexcept {
-    StormAssert(edgeIndex < NumEdges_);
-    return EdgeCells_[edgeIndex];
-  })
+  template<class Self>
+  auto adjCellIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
+    StormAssert(edgeIndex < self.NumEdges_);
+    return self.EdgeCells_[edgeIndex];
+  }
 
   /// @brief Range of the face @p faceIndex adjacent cells.
-  StormAutoConstOverload_(adjCellIndices, (FaceIndex faceIndex), noexcept {
-    StormAssert(faceIndex < NumFaces_);
-    return FaceCells_[faceIndex];
-  })
+  template<class Self>
+  auto adjCellIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+    StormAssert(faceIndex < self.NumFaces_);
+    return self.FaceCells_[faceIndex];
+  }
 
   /// @brief Range of the cell @p cellIndex adjacent cells.
-  StormAutoConstOverload_(adjCellIndices, (CellIndex cellIndex), noexcept {
-    StormAssert(cellIndex < NumCells_);
-    return CellCells_[cellIndex];
-  })
+  template<class Self>
+  auto adjCellIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+    StormAssert(cellIndex < self.NumCells_);
+    return self.CellCells_[cellIndex];
+  }
+
+  DeducingThisEmulation_(adjNodeIndices)
+  DeducingThisEmulation_(adjEdgeIndices)
+  DeducingThisEmulation_(adjFaceIndices)
+  DeducingThisEmulation_(adjCellIndices)
 
 private:
 
-  StormAutoConstOverloadT_(StormPass_(template<class OtherTag, class Tag>),
-      AdjacentElements_, (Index<Tag> elementIndex), noexcept {
+  template<class OtherTag, class Self, class Tag>
+  auto AdjacentElements_(This_ Self& self, Index<Tag> elementIndex) noexcept {
     if constexpr (std::is_same_v<OtherTag, NodeTag>) {
-      return adjNodeIndices(elementIndex);
+      return self.adjNodeIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, EdgeTag>) {
-      return adjEdgeIndices(elementIndex);
+      return self.adjEdgeIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, FaceTag>) {
-      return adjFaceIndices(elementIndex);
+      return self.adjFaceIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, CellTag>) {
-      return adjCellIndices(elementIndex);
+      return self.adjCellIndices(elementIndex);
     }
-  })
+  }
+
+  DeducingThisEmulationT_(AdjacentElements_)
 
 public:
 
@@ -519,8 +574,8 @@ public:
   /// @returns Index of the inserted edge.
   /// @{
   EdgeIndex EmplaceEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark = {});
-  EdgeIndex EmplaceEdge(ElementDesc&& edgeDesc, EdgeMark edgeMark = {}) {
-    return EmplaceEdge(MakeElement_(std::forward<ElementDesc>(edgeDesc)), edgeMark);
+  EdgeIndex EmplaceEdge(ShapeDesc&& edgeDesc, EdgeMark edgeMark = {}) {
+    return EmplaceEdge(makeShape_(std::forward<ShapeDesc>(edgeDesc)), edgeMark);
   }
   /// @}
 
@@ -528,8 +583,8 @@ public:
   /// @returns Index of the inserted face.
   /// @{
   FaceIndex EmplaceFace(std::unique_ptr<Element>&& face, FaceMark faceMark = {});
-  FaceIndex EmplaceFace(ElementDesc&& faceDesc, FaceMark faceMark = {}) {
-    return EmplaceFace(MakeElement_(std::forward<ElementDesc>(faceDesc)), faceMark);
+  FaceIndex EmplaceFace(ShapeDesc&& faceDesc, FaceMark faceMark = {}) {
+    return EmplaceFace(makeShape_(std::forward<ShapeDesc>(faceDesc)), faceMark);
   }
   /// @}
 
@@ -537,8 +592,8 @@ public:
   /// @returns Index of the inserted cell.
   /// @{
   CellIndex EmplaceCell(std::unique_ptr<Element>&& cell, CellMark cellMark = {});
-  CellIndex EmplaceCell(ElementDesc&& cellDesc, CellMark cellMark = {}) {
-    return EmplaceCell(MakeElement_(std::forward<ElementDesc>(cellDesc)), cellMark);
+  CellIndex EmplaceCell(ShapeDesc&& cellDesc, CellMark cellMark = {}) {
+    return EmplaceCell(makeShape_(std::forward<ShapeDesc>(cellDesc)), cellMark);
   }
   /// @}
 

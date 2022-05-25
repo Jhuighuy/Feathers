@@ -40,7 +40,7 @@ void Mesh::UpdateElementsGeometry() {
   // ----------------------
   std::tie(MinEdgeLen_, MaxEdgeLen_) =
     ForEachMinMax(edgeIndices(), +huge, -huge, [this](EdgeIndex edgeIndex) {
-      std::unique_ptr<Element const> const edgeElement = get_object(edgeIndex);
+      std::unique_ptr<Element const> const edgeElement = shape(edgeIndex);
 
       EdgeLens_[edgeIndex] = edgeElement->Volume();
       EdgeDirs_[edgeIndex] = edgeElement->Dir();
@@ -53,7 +53,7 @@ void Mesh::UpdateElementsGeometry() {
   // ----------------------
   std::tie(MinFaceArea_, MaxFaceArea_) =
     ForEachMinMax(faceIndices(), +huge, -huge, [&](FaceIndex faceIndex) {
-      std::unique_ptr<Element const> const faceElement = get_object(faceIndex);
+      std::unique_ptr<Element const> const faceElement = shape(faceIndex);
 
       FaceAreas_[faceIndex] = faceElement->Volume();
       FaceNormals_[faceIndex] = faceElement->Normal();
@@ -67,7 +67,7 @@ void Mesh::UpdateElementsGeometry() {
   // ----------------------
   std::tie(MinFaceArea_, MaxFaceArea_) =
     ForEachMinMax(cellIndices(), +huge, -huge, [&](CellIndex cellIndex) {
-      std::unique_ptr<Element const> const cellElement = get_object(cellIndex);
+      std::unique_ptr<Element const> const cellElement = shape(cellIndex);
 
       CellVolumes_[cellIndex] = cellElement->Volume();
       CellCenterPos_[cellIndex] = cellElement->CenterPos();
@@ -363,7 +363,7 @@ void Mesh::FinalizeEdges_() {
   // find the edge in the lookup table or emplace the new edge.
   // ----------------------
   ranges::for_each(faceViews(*this), [&](MutableFaceView face) {
-    ElementDescArray edgesDesc = face.shape()->MakeEdgesDesc();
+    ShapeDescArray edgesDesc = face.shape()->MakeEdgesDesc();
     for (size_t edgeLocal = 0; edgeLocal < face.adjEdges().size(); ++edgeLocal) {
       EdgeIndex& edgeIndex = adjEdgeIndices(face)[edgeLocal];
       if (edgeIndex != npos) {
@@ -371,7 +371,7 @@ void Mesh::FinalizeEdges_() {
       }
 
       // Create the face or add current cell to the adjacency list.
-      ElementDesc& edgeDesc = edgesDesc[edgeLocal];
+      ShapeDesc& edgeDesc = edgesDesc[edgeLocal];
       std::set<NodeIndex> edgeLookupKey(
         edgeDesc.NodeIndices.begin(), edgeDesc.NodeIndices.end());
       if (edgeLookupTable.count(edgeLookupKey) == 0) {
@@ -419,7 +419,7 @@ void Mesh::FinalizeFaces_() {
   // Also fill the face-to-cell adjacency table.
   // ----------------------
   ranges::for_each(cellViews(*this), [&](MutableCellView cell) {
-    ElementDescArray facesDesc = cell.shape()->MakeFacesDesc();
+    ShapeDescArray facesDesc = cell.shape()->MakeFacesDesc();
     for (size_t faceLocal = 0; faceLocal < cell.adjFaces().size(); ++faceLocal) {
       FaceIndex& faceIndex = adjFaceIndices(cell)[faceLocal];
       if (faceIndex != npos) {
@@ -427,7 +427,7 @@ void Mesh::FinalizeFaces_() {
       }
 
       /* Create the face or add current cell to the adjacency list. */
-      ElementDesc& faceDesc = facesDesc[faceLocal];
+      ShapeDesc& faceDesc = facesDesc[faceLocal];
       std::set<NodeIndex> faceLookupKey(
         faceDesc.NodeIndices.begin(), faceDesc.NodeIndices.end());
       if (faceLookupTable.count(faceLookupKey) == 0) {

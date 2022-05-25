@@ -49,7 +49,7 @@ void cLeastSquaresGradientScheme::init_gradients_() {
   /* Compute the least squares problem
    * right-hand statements for the boundary cells.
    * Use the same stencil as for the interior cell, but centered to a boundary cell. */
-  forEachBoundaryFaceCells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
+  forEachBndFaceCells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
     mat3_t& mat = (m_inverse_matrices[cell_outer][0] = mat3_t(0.0));
     const vec3_t dr =
       cell_outer.centerPos() - cell_inner.centerPos();
@@ -97,7 +97,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
     /* Compute the least squares problem
      * right-hand statements for the boundary cells.
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
-  forEachBoundaryFaceCells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
+  forEachBndFaceCells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
     grad_u[cell_outer].fill(vec3_t(0.0));
     const vec3_t dr =
       cell_outer.centerPos() - cell_inner.centerPos();

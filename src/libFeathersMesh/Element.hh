@@ -31,7 +31,7 @@
 
 namespace feathers {
 
-/// @brief Element Shape type.
+/// @brief Shape type.
 enum class ShapeType : byte_t {
   Null,
   Node,
@@ -44,14 +44,14 @@ enum class ShapeType : byte_t {
   Hexahedron8,
 }; // enum class ShapeType
 
-/// @brief Element description.
-struct ElementDesc {
+/// @brief Shape description.
+struct ShapeDesc {
   ShapeType Shape;
   std::vector<size_t> NodeIndices;
-}; // ElementDesc
+}; // ShapeDesc
 
-/// @brief Array of the element descriptions.
-using ElementDescArray = std::vector<ElementDesc>;
+/// @brief Array of the shape descriptions.
+using ShapeDescArray = std::vector<ShapeDesc>;
 
 /// ----------------------------------------------------------------- ///
 /// @brief Abstract element class.
@@ -63,7 +63,7 @@ protected:
 
   template<class... Indices>
   auto PartDesc_(ShapeType partShape, Indices... nodeLocals) const {
-    return ElementDesc{partShape, {NodeIndices_[nodeLocals]...}};
+    return ShapeDesc{partShape, {NodeIndices_[nodeLocals]...}};
   }
 
   Element() = default;
@@ -75,7 +75,7 @@ public:
 
   /// @brief Construct a new element object \
   ///   with a description @p desc and a node position array @p nodePos.
-  static std::unique_ptr<Element> Make(ElementDesc&& desc,
+  static std::unique_ptr<Element> Make(ShapeDesc&& desc,
                                        std::span<vec3_t const> nodePos);
 
   /** Get element node indices. */
@@ -126,7 +126,7 @@ public:
   }
 
   /// @brief Make element edges description array.
-  virtual ElementDescArray MakeEdgesDesc() const = 0;
+  virtual ShapeDescArray MakeEdgesDesc() const = 0;
 
   /// @brief Number of faces in the element.
   size_t NumFaces() const {
@@ -134,7 +134,7 @@ public:
   }
 
   /// @brief Make element faces description.
-  virtual ElementDescArray MakeFacesDesc() const = 0;
+  virtual ShapeDescArray MakeFacesDesc() const = 0;
 
 }; // class Element
 
@@ -169,7 +169,7 @@ public:
   vec3_t CenterPos() const final;
 
   /// @brief Make splitting into the simplex parts.
-  virtual ElementDescArray MakeSimplicesDesc() const = 0;
+  virtual ShapeDescArray MakeSimplicesDesc() const = 0;
 
 private:
 
@@ -186,8 +186,8 @@ class Node final :
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
 }; // class Node
 
 /// ----------------------------------------------------------------- ///
@@ -210,8 +210,8 @@ public:
   real_t Volume() const final;
   vec3_t Normal() const final;
   vec3_t Dir() const final;
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
 }; // class tSegmentShape
 
 /// ----------------------------------------------------------------- ///
@@ -233,8 +233,8 @@ class Triangle final :
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
 }; // class Triangle
 
 /// ----------------------------------------------------------------- ///
@@ -252,9 +252,9 @@ public:
 class Quadrangle final :
   public ElementHelper_<ShapeType::Quadrangle4, 4, ComplexElement> {
 public:
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Quadrangle
 
 /// ----------------------------------------------------------------- ///
@@ -286,8 +286,8 @@ class Tetrahedron final :
   public ElementHelper_<ShapeType::Tetrahedron4, 4, SimplexElement> {
 public:
   real_t Volume() const final;
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
 }; // class Tetrahedron
 
 /// ----------------------------------------------------------------- ///
@@ -318,9 +318,9 @@ public:
 class Pyramid final :
   public ElementHelper_<ShapeType::Pyramid5, 5, ComplexElement> {
 public:
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
@@ -355,9 +355,9 @@ public:
 class Pentahedron final :
   public ElementHelper_<ShapeType::Pentahedron6, 6, ComplexElement> {
 public:
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
@@ -391,9 +391,9 @@ public:
 class Hexahedron final :
   public ElementHelper_<ShapeType::Hexahedron8, 8, ComplexElement> {
 public:
-  ElementDescArray MakeEdgesDesc() const final;
-  ElementDescArray MakeFacesDesc() const final;
-  ElementDescArray MakeSimplicesDesc() const final;
+  ShapeDescArray MakeEdgesDesc() const final;
+  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Hexahedron
 
 } // namespace feathers

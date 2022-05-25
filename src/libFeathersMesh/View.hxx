@@ -102,7 +102,7 @@ public:
 
   /// @brief Get shape.
   std::unique_ptr<Element> shape() const {
-    return Mesh_->get_object(Index_);
+    return Mesh_->shape(Index_);
   }
 
   /// @brief Ranges of the adjacent nodes.
@@ -137,19 +137,19 @@ public:
       });
   }
 
-  /// @brief Sequentially iterate through all adjacent nodes.
+  /// @brief Sequentially iterate through all the adjacent nodes.
   template<class Func>
   void forEachNode(Func&& func) const noexcept {
     ranges::for_each(adjNodes(), func);
   }
 
-  /// @brief Sequentially iterate through all adjacent edges.
+  /// @brief Sequentially iterate through all the adjacent edges.
   template<class Func>
   void forEachEdge(Func&& func) const noexcept {
     ranges::for_each(adjEdges(), func);
   }
 
-  /// @brief Sequentially iterate through all adjacent faces.
+  /// @brief Sequentially iterate through all the adjacent faces.
   /// @{
   template<class Func>
   void forEachFace(Func&& func) const noexcept {
@@ -163,7 +163,7 @@ public:
   }
   /// @}
 
-  /// @brief Sequentially iterate through all adjacent cells.
+  /// @brief Sequentially iterate through all the adjacent cells.
   template<class Func>
   void forEachCell(Func&& func) const noexcept {
     ranges::for_each(adjCells(), func);
@@ -386,13 +386,13 @@ auto intEdgeViews(Mesh& mesh) noexcept {
   return edgeViews(mesh, EdgeMark{0});
 }
 
-/// @brief Range of the interior @p mesh nodes.
+/// @brief Range of the interior @p mesh faces.
 template<class Mesh>
 auto intFaceViews(Mesh& mesh) noexcept {
   return faceViews(mesh, FaceMark{0});
 }
 
-/// @brief Range of the interior @p mesh nodes.
+/// @brief Range of the interior @p mesh cells.
 template<class Mesh>
 auto intCellViews(Mesh& mesh) noexcept {
   return cellViews(mesh, CellMark{0});
@@ -426,7 +426,7 @@ auto bndFaceCellViews(Mesh& mesh) noexcept {
 }
 
 template<class Mesh, class Func>
-void forEachBoundaryFaceCells(Mesh& mesh, Func func) noexcept {
+void forEachBndFaceCells(Mesh& mesh, Func func) noexcept {
   ForEach(bndFaceViews(mesh), [&](BaseFaceView<Mesh> face) {
     func(face.innerCell(), face.outerCell());
   });
