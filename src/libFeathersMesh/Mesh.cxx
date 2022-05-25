@@ -229,7 +229,7 @@ void Mesh::PermuteNodes(std::vector<size_t>&& nodePermutation) {
 
   /* Generate the Node ranges. */
   NodeRanges_.clear();
-  ranges::for_each(NodeViews(*this), [&](NodeView node) {
+  ranges::for_each(nodeViews(*this), [&](NodeView node) {
     NodeRanges_.resize((size_t)node.Mark() + 2);
     NodeRanges_[node.Mark() + 1] += 1;
   });
@@ -251,7 +251,7 @@ void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
 
   /* Generate the edge ranges. */
   EdgeRanges_.clear();
-  ranges::for_each(EdgeViews(*this), [&](EdgeView edge) {
+  ranges::for_each(edgeViews(*this), [&](EdgeView edge) {
     EdgeRanges_.resize((size_t)edge.Mark() + 2);
     EdgeRanges_[edge.Mark() + 1] += 1;
   });
@@ -275,7 +275,7 @@ void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
 
   /* Generate mark ranges. */
   FaceRanges_.clear();
-  ranges::for_each(FaceViews(*this), [&](FaceView face) {
+  ranges::for_each(faceViews(*this), [&](FaceView face) {
     FaceRanges_.resize((size_t)face.Mark() + 2);
     FaceRanges_[face.Mark() + 1] += 1;
   });
@@ -299,7 +299,7 @@ void Mesh::PermuteCells(std::vector<size_t>&& cellPermutation) {
 
   /* Generate mark ranges. */
   CellRanges_.clear();
-  ranges::for_each(CellViews(*this), [&](CellView cell) {
+  ranges::for_each(cellViews(*this), [&](CellView cell) {
     CellRanges_.resize((size_t)cell.Mark() + 2);
     CellRanges_[cell.Mark() + 1] += 1;
   });
@@ -362,7 +362,7 @@ void Mesh::FinalizeEdges_() {
   // For each face-to-edge adjacency table entry:
   // find the edge in the lookup table or emplace the new edge.
   // ----------------------
-  ranges::for_each(FaceViews(*this), [&](MutableFaceView face) {
+  ranges::for_each(faceViews(*this), [&](MutableFaceView face) {
     ElementDescArray edgesDesc = face.get_element_object()->MakeEdgesDesc();
     for (size_t edgeLocal = 0; edgeLocal < face.Edges().size(); ++edgeLocal) {
       EdgeIndex& edgeIndex = AdjacentEdges(face)[edgeLocal];
@@ -418,7 +418,7 @@ void Mesh::FinalizeFaces_() {
   // find the face in the lookup table or emplace the new face.
   // Also fill the face-to-cell adjacency table.
   // ----------------------
-  ranges::for_each(CellViews(*this), [&](MutableCellView cell) {
+  ranges::for_each(cellViews(*this), [&](MutableCellView cell) {
     ElementDescArray facesDesc = cell.get_element_object()->MakeFacesDesc();
     for (size_t faceLocal = 0; faceLocal < cell.Faces().size(); ++faceLocal) {
       FaceIndex& faceIndex = AdjacentFaces(cell)[faceLocal];
@@ -499,13 +499,13 @@ static const std::map<ShapeType, std::pair<std::vector<size_t>, std::vector<size
  */
 void Mesh::generate_boundary_cells() {
 
-  ranges::for_each(FaceViews(*this), [&](MutableFaceView face) {
+  ranges::for_each(faceViews(*this), [&](MutableFaceView face) {
     if (face.Mark() == 0) {
       return;
     }
 
     /* Boundary faces should be oriented outwards from the mesh. */
-    if (face.InnerCell() == npos) {
+    if (face.innerCell() == npos) {
       /* Flip normal and cell connectivity. */
       FaceNormals_[face] = -FaceNormals_[face];
       std::swap(AdjacentCells(face)[FaceInnerCell_],
@@ -520,7 +520,7 @@ void Mesh::generate_boundary_cells() {
       permute_inplace(
         edge_permutation.begin(), edge_permutation.end(), std::begin(AdjacentNodes(face)));
     }
-    CellView cell = face.InnerCell();
+    CellView cell = face.innerCell();
 
     /* Generate the boundary cell: reflect a connected interior cell. */
     std::vector<size_t> ghost_cell_nodes;
@@ -528,19 +528,19 @@ void Mesh::generate_boundary_cells() {
     ghost_cell_nodes.assign(face.begin_node(), face.end_node());
 #endif
 #if 1
-    cell.ForEachNode([&](NodeView node) {
-      if (ranges::find(AdjacentNodes(face), (NodeIndex)node) == std::end(AdjacentNodes(face))) {
+    cell.forEachNode([&](NodeView node) {
+      if (ranges::find(AdjacentNodes(face), (NodeIndex) node) == std::end(AdjacentNodes(face))) {
         /* Reflect an interior cell Node. */
         // TODO: face normals are not computed here!
         // TODO: https://glm.g-truc.net/0.9.5/api/a00157.html#gab63646fc36b81cf69d3ce123a72f76f2
-        vec3_t node_coords = node.Pos();
-        const vec3_t delta = node_coords - face.CenterPos();
-        node_coords -= 2.0 * glm::dot(delta, face.Normal()) * face.Normal();
+        vec3_t node_coords = node.pos();
+        const vec3_t delta = node_coords - face.centerPos();
+        node_coords -= 2.0 * glm::dot(delta, face.normal()) * face.normal();
         ghost_cell_nodes.push_back(
-          (size_t)EmplaceNode(node_coords, (NodeMark)face.Mark()));
+          (size_t) EmplaceNode(node_coords, (NodeMark) face.Mark()));
       } else {
         /* Insert a boundary face Node. */
-        ghost_cell_nodes.push_back((size_t)node);
+        ghost_cell_nodes.push_back((size_t) node);
       }
     });
 #endif

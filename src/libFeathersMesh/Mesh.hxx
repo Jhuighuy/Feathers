@@ -75,8 +75,7 @@ using CellMark = Index<MarkTag<CellTag>>;
 /// @brief Hybrid unstructured multidimensional mesh.
 /// @todo Do not use iterators in the mesh implementation.
 /// @todo Switch to ranges.
-/// @todo "Element" "Object" naming?
-/// @todo Use span in element.
+/// @todo "Element" -> "Shape".
 /// @todo Make Dim a template parameter.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 //template<size_t SDim, size_t TDim, template<class, class, class> class Table>

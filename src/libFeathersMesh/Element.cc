@@ -88,7 +88,7 @@ vec3_t SimplexElement::CenterPos() const {
     sumOfNodePos += NodePos(i);
   }
   return sumOfNodePos/real_t(NumNodes());
-} // SimplexElement::CenterPos
+} // SimplexElement::centerPos
 
 template<class Func>
 void ComplexElement::ForEachSimplex_(Func&& func) const {
@@ -113,7 +113,7 @@ real_t ComplexElement::Volume() const {
     volume += shape.Volume();
   });
   return volume;
-} // ComplexElement::Volume
+} // ComplexElement::volume
 
 vec3_t ComplexElement::Normal() const {
   vec3_t weightedSumOfNormals(0.0);
@@ -121,7 +121,7 @@ vec3_t ComplexElement::Normal() const {
     weightedSumOfNormals += shape.Volume() * shape.Normal();
   });
   return glm::normalize(weightedSumOfNormals);
-} // ComplexElement::Normal
+} // ComplexElement::normal
 
 vec3_t ComplexElement::CenterPos() const {
   vec3_t weightedSumOfCenterPos(0.0);
@@ -132,7 +132,7 @@ vec3_t ComplexElement::CenterPos() const {
     volume += partVolume;
   });
   return weightedSumOfCenterPos / volume;
-} // ComplexElement::CenterPos
+} // ComplexElement::centerPos
 
 real_t Node::Volume() const {
   return 1.0;

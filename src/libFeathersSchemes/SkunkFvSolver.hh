@@ -18,7 +18,7 @@
 // ************************************************************************************ //
 
 /**
- * @brief A Finite Volume solver.
+ * @brief A Finite volume solver.
  */
 template<typename MhdPhysicsT>
 class MhdFvSolverT :
