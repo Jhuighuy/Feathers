@@ -106,67 +106,67 @@ public:
   }
 
   /// @brief Ranges of the adjacent nodes.
-  auto nodes() const noexcept {
-    return Mesh_->AdjacentNodes(Index_) |
+  auto adjNodes() const noexcept {
+    return Mesh_->adjNodeIndices(Index_) |
       views::transform([&mesh = *Mesh_](NodeIndex nodeIndex) {
         return BaseNodeView(mesh, nodeIndex);
       });
   }
 
   /// @brief Ranges of the adjacent edges.
-  auto edges() const noexcept {
-    return Mesh_->AdjacentEdges(Index_) |
+  auto adjEdges() const noexcept {
+    return Mesh_->adjEdgeIndices(Index_) |
       views::transform([&mesh = *Mesh_](EdgeIndex edgeIndex) {
         return BaseEdgeView(mesh, edgeIndex);
       });
   }
 
   /// @brief Ranges of the adjacent faces.
-  auto faces() const noexcept {
-    return Mesh_->AdjacentFaces(Index_) |
+  auto adjFaces() const noexcept {
+    return Mesh_->adjFaceIndices(Index_) |
       views::transform([&mesh = *Mesh_](FaceIndex faceIndex) {
         return BaseFaceView(mesh, faceIndex);
       });
   }
 
   /// @brief Ranges of the adjacent cells.
-  auto cells() const noexcept {
-    return Mesh_->AdjacentCells(Index_) |
+  auto adjCells() const noexcept {
+    return Mesh_->adjCellIndices(Index_) |
       views::transform([&mesh = *Mesh_](CellIndex cellIndex) {
         return BaseCellView(mesh, cellIndex);
       });
   }
 
-  /// @brief Iterate through all adjacent nodes.
+  /// @brief Sequentially iterate through all adjacent nodes.
   template<class Func>
   void forEachNode(Func&& func) const noexcept {
-    ranges::for_each(nodes(), func);
+    ranges::for_each(adjNodes(), func);
   }
 
-  /// @brief Iterate through all adjacent edges.
+  /// @brief Sequentially iterate through all adjacent edges.
   template<class Func>
   void forEachEdge(Func&& func) const noexcept {
-    ranges::for_each(edges(), func);
+    ranges::for_each(adjEdges(), func);
   }
 
-  /// @brief Iterate through all adjacent faces.
+  /// @brief Sequentially iterate through all adjacent faces.
   /// @{
   template<class Func>
   void forEachFace(Func&& func) const noexcept {
-    ranges::for_each(faces(), func);
+    ranges::for_each(adjFaces(), func);
   }
   template<class Func>
   void forEachFaceCells(Func&& func) const noexcept {
-    ranges::for_each(faces(), [&](BaseFaceView<Mesh> face) {
+    ranges::for_each(adjFaces(), [&](BaseFaceView<Mesh> face) {
       func(face.innerCell(), face.outerCell());
     });
   }
   /// @}
 
-  /// @brief Iterate through all adjacent cells.
+  /// @brief Sequentially iterate through all adjacent cells.
   template<class Func>
   void forEachCell(Func&& func) const noexcept {
-    ranges::for_each(cells(), func);
+    ranges::for_each(adjCells(), func);
   }
 
 }; // class BaseElementView
@@ -263,12 +263,12 @@ public:
 
   /// @brief Get connected inner cell. 
   auto innerCell() const noexcept {
-    return this->cells()[FaceInnerCell_];
+    return this->adjCells()[FaceInnerCell_];
   }
 
   /// @brief Get connected outer cell. 
   auto outerCell() const noexcept {
-    return this->cells()[FaceOuterCell_];
+    return this->adjCells()[FaceOuterCell_];
   }
 
   /// @brief Get face area/length. 

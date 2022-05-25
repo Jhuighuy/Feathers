@@ -93,9 +93,9 @@ private:
   IndexedVector<FaceIndex, FaceMark> FaceRanges_;
   IndexedVector<CellIndex, CellMark> CellRanges_;
 
-  IndexedVector<ShapeType, EdgeIndex> EdgeShapes_;
-  IndexedVector<ShapeType, FaceIndex> FaceShapes_;
-  IndexedVector<ShapeType, CellIndex> CellShapes_;
+  IndexedVector<ShapeType, EdgeIndex> EdgeShapeTypes_;
+  IndexedVector<ShapeType, FaceIndex> FaceShapeTypes_;
+  IndexedVector<ShapeType, CellIndex> CellShapeTypes_;
   // TODO: edge length + direction -> 4D oriented direction.
   // TODO: face area + normal -> 4D oriented area.
   IndexedVector<vec3_t, NodeIndex> NodePos_;
@@ -187,50 +187,50 @@ public:
   // ---------------------------------------------------------------- //
 
   /// @brief Number of node marks.
-  size_t NumNodeMarks() const noexcept {
+  size_t numNodeMarks() const noexcept {
     StormAssert(!NodeRanges_.empty());
     return NodeRanges_.size() - 1;
   }
 
   /// @brief Number of edge marks.
-  size_t NumEdgeMarks() const noexcept {
+  size_t numEdgeMarks() const noexcept {
     StormAssert(!EdgeRanges_.empty());
     return EdgeRanges_.size() - 1;
   }
 
   /// @brief Number of face marks.
-  size_t NumFaceMarks() const noexcept {
+  size_t numFaceMarks() const noexcept {
     StormAssert(!FaceRanges_.empty());
     return FaceRanges_.size() - 1;
   }
 
   /// @brief Number of cell marks.
-  size_t NumCellMarks() const noexcept {
+  size_t numCellMarks() const noexcept {
     StormAssert(!CellRanges_.empty());
     return CellRanges_.size() - 1;
   }
 
   /// @brief Range of node indices with a @p nodeMark.
   auto nodeIndices(NodeMark nodeMark) const noexcept {
-    StormAssert(nodeMark < NumNodeMarks());
+    StormAssert(nodeMark < numNodeMarks());
     return views::iota(NodeRanges_[nodeMark], NodeRanges_[nodeMark + 1]);
   }
 
   /// @brief Range of edge indices with a @p edgeMark.
   auto edgeIndices(EdgeMark edgeMark) const noexcept {
-    StormAssert(edgeMark < NumEdgeMarks());
+    StormAssert(edgeMark < numEdgeMarks());
     return views::iota(EdgeRanges_[edgeMark], EdgeRanges_[edgeMark + 1]);
   }
 
   /// @brief Range of face indices with a @p faceMark.
   auto faceIndices(FaceMark faceMark) const noexcept {
-    StormAssert(faceMark < NumFaceMarks());
+    StormAssert(faceMark < numFaceMarks());
     return views::iota(FaceRanges_[faceMark], FaceRanges_[faceMark + 1]);
   }
 
   /// @brief Range of cell indices with a @p cellMark.
   auto cellIndices(CellMark cellMark) const noexcept {
-    StormAssert(cellMark < NumCellMarks());
+    StormAssert(cellMark < numCellMarks());
     return views::iota(CellRanges_[cellMark], CellRanges_[cellMark + 1]);
   }
 
@@ -265,19 +265,19 @@ public:
   /// @brief Get edge @p edgeIndex shape type.
   ShapeType shapeType(EdgeIndex edgeIndex) const noexcept {
     StormAssert(edgeIndex < NumEdges_);
-    return EdgeShapes_[edgeIndex];
+    return EdgeShapeTypes_[edgeIndex];
   }
 
   /// @brief Get face @p faceIndex shape type.
   ShapeType shapeType(FaceIndex faceIndex) const noexcept {
     StormAssert(faceIndex < NumFaces_);
-    return FaceShapes_[faceIndex];
+    return FaceShapeTypes_[faceIndex];
   }
 
   /// @brief Get cell @p cellIndex shape type.
   ShapeType shapeType(CellIndex cellIndex) const noexcept {
     StormAssert(cellIndex < NumCells_);
-    return CellShapes_[cellIndex];
+    return CellShapeTypes_[cellIndex];
   }
 
 private:
@@ -292,7 +292,7 @@ public:
   template<class Tag>
   auto get_object(Index<Tag> index) const {
     auto const nodeIndices =
-      AdjacentNodes(index) | views::transform([](NodeIndex nodeIndex) {
+      adjNodeIndices(index) | views::transform([](NodeIndex nodeIndex) {
         return static_cast<size_t>(nodeIndex);
       });
     return MakeElement_({shapeType(index),
@@ -396,97 +396,97 @@ public:
   // ---------------------------------------------------------------- //
 
   /// @brief Range of the node @p nodeIndex adjacent nodes.
-  StormAutoConstOverload_(AdjacentNodes, (NodeIndex nodeIndex), noexcept {
+  StormAutoConstOverload_(adjNodeIndices, (NodeIndex nodeIndex), noexcept {
     StormAssert(nodeIndex < NumNodes_);
     return NodeNodes_[nodeIndex];
   })
 
   /// @brief Range of the edge @p edgeIndex adjacent nodes.
-  StormAutoConstOverload_(AdjacentNodes, (EdgeIndex edgeIndex), noexcept {
+  StormAutoConstOverload_(adjNodeIndices, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeNodes_[edgeIndex];
   })
 
   /// @brief Range of the face @p faceIndex adjacent nodes.
-  StormAutoConstOverload_(AdjacentNodes, (FaceIndex faceIndex), noexcept {
+  StormAutoConstOverload_(adjNodeIndices, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceNodes_[faceIndex];
   })
 
   /// @brief Range of the cell @p cellIndex adjacent nodes.
-  StormAutoConstOverload_(AdjacentNodes, (CellIndex cellIndex), noexcept {
+  StormAutoConstOverload_(adjNodeIndices, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellNodes_[cellIndex];
   })
 
   /// @brief Range of the node @p nodeIndex adjacent edges.
-  StormAutoConstOverload_(AdjacentEdges, (NodeIndex nodeIndex), noexcept {
+  StormAutoConstOverload_(adjEdgeIndices, (NodeIndex nodeIndex), noexcept {
     StormAssert(nodeIndex < NumNodes_);
     return NodeEdges_[nodeIndex];
   })
 
   /// @brief Range of the edge @p edgeIndex adjacent edges.
-  StormAutoConstOverload_(AdjacentEdges, (EdgeIndex edgeIndex), noexcept {
+  StormAutoConstOverload_(adjEdgeIndices, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeEdges_[edgeIndex];
   })
 
   /// @brief Range of the face @p faceIndex adjacent edges.
-  StormAutoConstOverload_(AdjacentEdges, (FaceIndex faceIndex), noexcept {
+  StormAutoConstOverload_(adjEdgeIndices, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceEdges_[faceIndex];
   })
 
   /// @brief Range of the cell @p cellIndex adjacent edges.
-  StormAutoConstOverload_(AdjacentEdges, (CellIndex cellIndex), noexcept {
+  StormAutoConstOverload_(adjEdgeIndices, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellEdges_[cellIndex];
   })
 
   /// @brief Range of the node @p nodeIndex adjacent faces.
-  StormAutoConstOverload_(AdjacentFaces, (NodeIndex nodeIndex), noexcept {
+  StormAutoConstOverload_(adjFaceIndices, (NodeIndex nodeIndex), noexcept {
     StormAssert(nodeIndex < NumNodes_);
     return NodeFaces_[nodeIndex];
   })
 
   /// @brief Range of the edge @p edgeIndex adjacent faces.
-  StormAutoConstOverload_(AdjacentFaces, (EdgeIndex edgeIndex), noexcept {
+  StormAutoConstOverload_(adjFaceIndices, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeFaces_[edgeIndex];
   })
 
   /// @brief Range of the face @p faceIndex adjacent faces.
-  StormAutoConstOverload_(AdjacentFaces, (FaceIndex faceIndex), noexcept {
+  StormAutoConstOverload_(adjFaceIndices, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceFaces_[faceIndex];
   })
 
   /// @brief Range of the cell @p cellIndex adjacent faces.
-  StormAutoConstOverload_(AdjacentFaces, (CellIndex cellIndex), noexcept {
+  StormAutoConstOverload_(adjFaceIndices, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellFaces_[cellIndex];
   })
 
   /// @brief Range of the node @p nodeIndex adjacent cells.
-  StormAutoConstOverload_(AdjacentCells, (NodeIndex nodeIndex), noexcept {
+  StormAutoConstOverload_(adjCellIndices, (NodeIndex nodeIndex), noexcept {
     StormAssert(nodeIndex < NumNodes_);
     return NodeCells_[nodeIndex];
   })
 
   /// @brief Range of the edge @p edgeIndex adjacent cells.
-  StormAutoConstOverload_(AdjacentCells, (EdgeIndex edgeIndex), noexcept {
+  StormAutoConstOverload_(adjCellIndices, (EdgeIndex edgeIndex), noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeCells_[edgeIndex];
   })
 
   /// @brief Range of the face @p faceIndex adjacent cells.
-  StormAutoConstOverload_(AdjacentCells, (FaceIndex faceIndex), noexcept {
+  StormAutoConstOverload_(adjCellIndices, (FaceIndex faceIndex), noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceCells_[faceIndex];
   })
 
   /// @brief Range of the cell @p cellIndex adjacent cells.
-  StormAutoConstOverload_(AdjacentCells, (CellIndex cellIndex), noexcept {
+  StormAutoConstOverload_(adjCellIndices, (CellIndex cellIndex), noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellCells_[cellIndex];
   })
@@ -496,13 +496,13 @@ private:
   StormAutoConstOverloadT_(StormPass_(template<class OtherTag, class Tag>),
       AdjacentElements_, (Index<Tag> elementIndex), noexcept {
     if constexpr (std::is_same_v<OtherTag, NodeTag>) {
-      return AdjacentNodes(elementIndex);
+      return adjNodeIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, EdgeTag>) {
-      return AdjacentEdges(elementIndex);
+      return adjEdgeIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, FaceTag>) {
-      return AdjacentFaces(elementIndex);
+      return adjFaceIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, CellTag>) {
-      return AdjacentCells(elementIndex);
+      return adjCellIndices(elementIndex);
     }
   })
 

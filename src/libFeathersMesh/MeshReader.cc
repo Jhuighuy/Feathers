@@ -230,11 +230,11 @@ void Mesh::save_vtk(const char* path,
 
   size_t const sumNumCellAdjNodes =
     ForEachSum(intCellViews(*this), size_t(0), [](CellView cell) {
-      return cell.nodes().size() + 1;
+      return cell.adjNodes().size() + 1;
     });
   file << "CELLS " << cellIndices({}).size() << " " << sumNumCellAdjNodes << std::endl;
   ranges::for_each(intCellViews(*this), [&](CellView cell) {
-    file << cell.nodes().size() << " ";
+    file << cell.adjNodes().size() << " ";
     cell.forEachNode([&](size_t node_index) {
       file << node_index << " ";
     });

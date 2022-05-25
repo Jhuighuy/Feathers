@@ -37,10 +37,10 @@ int main(int argc, char** argv) {
 
   mesh->ReadFromTriangle("mesh/step_.1.");
 
-    tScalarField uc(5, mesh->Cells().size());
-    tScalarField up(5, mesh->Cells().size());
+    tScalarField uc(5, mesh->cellIndices().size());
+    tScalarField up(5, mesh->cellIndices().size());
     MhdFvSolverT<tGasPhysics> solver(mesh);
-    for (uint_t cell_ind = 0; cell_ind < mesh->Cells().size(); ++cell_ind) {
+    for (uint_t cell_ind = 0; cell_ind < mesh->cellIndices().size(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
         double x = mesh->get_cell(cell_ind).centerPos().x;
         double y = mesh->Cell(cell_ind).centerPos().y;

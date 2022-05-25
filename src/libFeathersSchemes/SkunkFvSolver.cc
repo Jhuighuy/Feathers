@@ -36,7 +36,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
   ForEach(cellViews(*m_mesh), [&](CellView cell) {
     u_out[cell].fill(0.0);
   });
-  for (size_t mark = 1; mark < m_mesh->NumFaceMarks(); ++mark) {
+  for (size_t mark = 1; mark < m_mesh->numFaceMarks(); ++mark) {
       const auto& bc = m_bcs.at(mark);
     ForEach(faceViews(*m_mesh, FaceMark(mark)), [&](FaceView face) {
       bc->get_ghost_state(face.normal(),

@@ -104,7 +104,7 @@ EdgeIndex Mesh::EmplaceEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark) 
   // Emplace the edge properties.
   EdgeMarks_.emplace_back(edgeMark);
 
-  EdgeShapes_.emplace_back(edge->Shape());
+  EdgeShapeTypes_.emplace_back(edge->Shape());
   EdgeLens_.emplace_back(edge->Volume());
   EdgeDirs_.emplace_back(edge->Dir());
 
@@ -128,7 +128,7 @@ FaceIndex Mesh::EmplaceFace(std::unique_ptr<Element>&& face, FaceMark faceMark) 
   // Emplace the face properties.
   FaceMarks_.emplace_back(faceMark);
 
-  FaceShapes_.emplace_back(face->Shape());
+  FaceShapeTypes_.emplace_back(face->Shape());
   FaceAreas_.emplace_back(face->Volume());
   FaceNormals_.emplace_back(face->Normal());
   FaceCenterPos_.emplace_back(face->CenterPos());
@@ -153,7 +153,7 @@ CellIndex Mesh::EmplaceCell(std::unique_ptr<Element>&& cell, CellMark cellMark) 
   // Emplace the cell properties.
   CellMarks_.emplace_back(cellMark);
 
-  CellShapes_.emplace_back(cell->Shape());
+  CellShapeTypes_.emplace_back(cell->Shape());
   CellVolumes_.emplace_back(cell->Volume());
   CellCenterPos_.emplace_back(cell->CenterPos());
 
@@ -246,7 +246,7 @@ void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
   permute_rows(edgePermutation.begin(), edgePermutation.end(),
                EdgeNodes_, EdgeEdges_, EdgeFaces_, EdgeCells_);
   permute_inplace(edgePermutation.begin(), edgePermutation.end(),
-                  EdgeMarks_.begin(), EdgeShapes_.begin(),
+                  EdgeMarks_.begin(), EdgeShapeTypes_.begin(),
                   EdgeLens_.begin(), EdgeDirs_.begin());
 
   /* Generate the edge ranges. */
@@ -270,7 +270,7 @@ void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
     FaceNodes_, FaceEdges_, FaceFaces_, FaceCells_);
   permute_inplace(
     facePermutation.begin(), facePermutation.end(),
-    FaceMarks_.begin(), FaceShapes_.begin(),
+    FaceMarks_.begin(), FaceShapeTypes_.begin(),
     FaceAreas_.begin(), FaceNormals_.begin(), FaceCenterPos_.begin());
 
   /* Generate mark ranges. */
@@ -294,7 +294,7 @@ void Mesh::PermuteCells(std::vector<size_t>&& cellPermutation) {
     CellNodes_, CellEdges_, CellFaces_, CellCells_);
   permute_inplace(
     cellPermutation.begin(), cellPermutation.end(),
-    CellMarks_.begin(), CellShapes_.begin(),
+    CellMarks_.begin(), CellShapeTypes_.begin(),
     CellVolumes_.begin(), CellCenterPos_.begin());
 
   /* Generate mark ranges. */
@@ -354,7 +354,7 @@ void Mesh::FinalizeEdges_() {
   // ----------------------
   ranges::for_each(edgeIndices(), [&](EdgeIndex edgeIndex) {
     std::set<NodeIndex> edgeLookupKey(
-      std::begin(AdjacentNodes(edgeIndex)), std::end(AdjacentNodes(edgeIndex)));
+      std::begin(adjNodeIndices(edgeIndex)), std::end(adjNodeIndices(edgeIndex)));
     edgeLookupTable.emplace(std::move(edgeLookupKey), edgeIndex);
   });
 
@@ -364,8 +364,8 @@ void Mesh::FinalizeEdges_() {
   // ----------------------
   ranges::for_each(faceViews(*this), [&](MutableFaceView face) {
     ElementDescArray edgesDesc = face.shape()->MakeEdgesDesc();
-    for (size_t edgeLocal = 0; edgeLocal < face.edges().size(); ++edgeLocal) {
-      EdgeIndex& edgeIndex = AdjacentEdges(face)[edgeLocal];
+    for (size_t edgeLocal = 0; edgeLocal < face.adjEdges().size(); ++edgeLocal) {
+      EdgeIndex& edgeIndex = adjEdgeIndices(face)[edgeLocal];
       if (edgeIndex != npos) {
         continue;
       }
@@ -391,7 +391,7 @@ void Mesh::FinalizeEdges_() {
   // ----------------------
   ranges::for_each(faceIndices(), [&](FaceIndex faceIndex) {
     StormEnsure("Face-edge connectivity is broken" &&
-      ranges::all_of(AdjacentEdges(faceIndex), is_not_npos<EdgeIndex>));
+      ranges::all_of(adjEdgeIndices(faceIndex), is_not_npos<EdgeIndex>));
   });
 
 } // Mesh<...>::FinalizeEdges_
@@ -409,7 +409,7 @@ void Mesh::FinalizeFaces_() {
   // ----------------------
   ranges::for_each(faceIndices(), [&](FaceIndex faceIndex) {
     std::set<NodeIndex> faceLookupKey(
-      std::begin(AdjacentNodes(faceIndex)), std::end(AdjacentNodes(faceIndex)));
+      std::begin(adjNodeIndices(faceIndex)), std::end(adjNodeIndices(faceIndex)));
     faceLookupTable.emplace(std::move(faceLookupKey), faceIndex);
   });
 
@@ -420,8 +420,8 @@ void Mesh::FinalizeFaces_() {
   // ----------------------
   ranges::for_each(cellViews(*this), [&](MutableCellView cell) {
     ElementDescArray facesDesc = cell.shape()->MakeFacesDesc();
-    for (size_t faceLocal = 0; faceLocal < cell.faces().size(); ++faceLocal) {
-      FaceIndex& faceIndex = AdjacentFaces(cell)[faceLocal];
+    for (size_t faceLocal = 0; faceLocal < cell.adjFaces().size(); ++faceLocal) {
+      FaceIndex& faceIndex = adjFaceIndices(cell)[faceLocal];
       if (faceIndex != npos) {
         continue;
       }
@@ -435,22 +435,22 @@ void Mesh::FinalizeFaces_() {
          * Assign the current cell as the inner one. */
         faceIndex = EmplaceFace(std::move(faceDesc));
         faceLookupTable.emplace(std::move(faceLookupKey), faceIndex);
-        AdjacentCells(faceIndex)[FaceInnerCell_] = cell;
+        adjCellIndices(faceIndex)[FaceInnerCell_] = cell;
       } else {
         /* Face exists.
          * Determine orientation and link it. */
         faceIndex = faceLookupTable[faceLookupKey];
         MutableFaceView face(*this, faceIndex);
         if (std::equal(
-            std::begin(AdjacentNodes(face)), std::end(AdjacentNodes(face)), faceDesc.NodeIndices.begin())) {
+            std::begin(adjNodeIndices(face)), std::end(adjNodeIndices(face)), faceDesc.NodeIndices.begin())) {
           /* Face Node order matches the order
            * in the face description: face is inner. */
-          FEATHERS_ASSERT(AdjacentCells(face)[FaceInnerCell_] == npos);
-          AdjacentCells(face)[FaceInnerCell_] = cell;
+          FEATHERS_ASSERT(adjCellIndices(face)[FaceInnerCell_] == npos);
+          adjCellIndices(face)[FaceInnerCell_] = cell;
         } else {
           /* Otherwise, the face is outer. */
-          FEATHERS_ASSERT(AdjacentCells(face)[FaceOuterCell_] == npos);
-          AdjacentCells(face)[FaceOuterCell_] = cell;
+          FEATHERS_ASSERT(adjCellIndices(face)[FaceOuterCell_] == npos);
+          adjCellIndices(face)[FaceOuterCell_] = cell;
         }
       }
     }
@@ -462,7 +462,7 @@ void Mesh::FinalizeFaces_() {
   // ----------------------
   ranges::for_each(cellIndices(), [&](CellIndex cellIndex) {
     StormEnsure("Cell-face connectivity is broken" &&
-      ranges::all_of(AdjacentFaces(cellIndex), is_not_npos<FaceIndex>));
+      ranges::all_of(adjFaceIndices(cellIndex), is_not_npos<FaceIndex>));
   });
 
   // ----------------------
@@ -473,10 +473,10 @@ void Mesh::FinalizeFaces_() {
   ranges::for_each(faceIndices(), [&](FaceIndex faceIndex) {
     if (Mark(faceIndex) == 0) {
       StormEnsure("Interior face-cell connectivity is broken" &&
-        ranges::all_of(AdjacentCells(faceIndex), is_not_npos<CellIndex>));
+        ranges::all_of(adjCellIndices(faceIndex), is_not_npos<CellIndex>));
     } else {
       StormEnsure("Boundary face-cell connectivity is broken" &&
-        ranges::count_if(AdjacentCells(faceIndex), is_not_npos<CellIndex>) == 1);
+        ranges::count_if(adjCellIndices(faceIndex), is_not_npos<CellIndex>) == 1);
     }
   });
 
@@ -508,17 +508,17 @@ void Mesh::generate_boundary_cells() {
     if (face.innerCell() == npos) {
       /* Flip normal and cell connectivity. */
       FaceNormals_[face] = -FaceNormals_[face];
-      std::swap(AdjacentCells(face)[FaceInnerCell_],
-                AdjacentCells(face)[FaceOuterCell_]);
+      std::swap(adjCellIndices(face)[FaceInnerCell_],
+                adjCellIndices(face)[FaceOuterCell_]);
       /* Flip Node and edge connectivity. */
       std::vector<size_t> node_permutation;
       std::vector<size_t> edge_permutation;
       std::tie(node_permutation, edge_permutation) =
         g_face_shape_to_nodes_and_edges_flip.at(face.shapeType());
       permute_inplace(
-        node_permutation.begin(), node_permutation.end(), std::begin(AdjacentNodes(face)));
+        node_permutation.begin(), node_permutation.end(), std::begin(adjNodeIndices(face)));
       permute_inplace(
-        edge_permutation.begin(), edge_permutation.end(), std::begin(AdjacentNodes(face)));
+        edge_permutation.begin(), edge_permutation.end(), std::begin(adjNodeIndices(face)));
     }
     CellView cell = face.innerCell();
 
@@ -529,7 +529,7 @@ void Mesh::generate_boundary_cells() {
 #endif
 #if 1
     cell.forEachNode([&](NodeView node) {
-      if (ranges::find(AdjacentNodes(face), (NodeIndex) node) == std::end(AdjacentNodes(face))) {
+      if (ranges::find(adjNodeIndices(face), (NodeIndex) node) == std::end(adjNodeIndices(face))) {
         /* Reflect an interior cell Node. */
         // TODO: face normals are not computed here!
         // TODO: https://glm.g-truc.net/0.9.5/api/a00157.html#gab63646fc36b81cf69d3ce123a72f76f2
@@ -548,7 +548,7 @@ void Mesh::generate_boundary_cells() {
     // TODO:
     const CellIndex boundaryCellIndex =
       EmplaceCell({cell.shapeType(), ghost_cell_nodes}, (CellMark) face.mark());
-    AdjacentFaces(boundaryCellIndex)[0] = face;
+    adjFaceIndices(boundaryCellIndex)[0] = face;
 #if 0
     Cell& boundary_cell = get_cell(boundaryCellIndex);
         while (boundary_cell._num_faces() != 1) {
@@ -557,8 +557,8 @@ void Mesh::generate_boundary_cells() {
         boundary_cell.begin_face()[0] = face;
 #endif
 
-    StormAssert(AdjacentCells(face)[FaceOuterCell_] == npos);
-    AdjacentCells(face)[FaceOuterCell_] = boundaryCellIndex;
+    StormAssert(adjCellIndices(face)[FaceOuterCell_] == npos);
+    adjCellIndices(face)[FaceOuterCell_] = boundaryCellIndex;
 
   });
 } // Mesh<...>::generate_boundary_cells
