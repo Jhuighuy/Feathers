@@ -77,6 +77,8 @@ void Mesh::UpdateElementsGeometry() {
 
 } // Mesh<...>::UpdateElementsGeometry
 
+#if 0
+
 NodeIndex Mesh::EmplaceNode(vec3_t const& nodePos, NodeMark nodeMark) {
 
   NodeIndex const nodeIndex(NumNodes_++);
@@ -181,7 +183,7 @@ void Mesh::FixPermutationAndAdjacency_(std::vector<size_t>& permutation) {
    * permutation in the best possible way. */
   std::stable_sort(permutation.begin(), permutation.end(),
     [&](auto index1, auto index2) {
-      return Mark(Index<Tag>(index1)) < Mark(Index<Tag>(index2));
+      return mark(Index<Tag>(index1)) < mark(Index<Tag>(index2));
     });
 
   /* Fix adjacency tables. */
@@ -471,7 +473,7 @@ void Mesh::FinalizeFaces_() {
   // each boundary face should be connected to at least one cell.
   // ----------------------
   ranges::for_each(faceIndices(), [&](FaceIndex faceIndex) {
-    if (Mark(faceIndex) == 0) {
+    if (mark(faceIndex) == 0) {
       StormEnsure("Interior face-cell connectivity is broken" &&
         ranges::all_of(adjCellIndices(faceIndex), is_not_npos<CellIndex>));
     } else {
@@ -562,5 +564,7 @@ void Mesh::generate_boundary_cells() {
 
   });
 } // Mesh<...>::generate_boundary_cells
+
+#endif
 
 } // namespace feathers

@@ -34,9 +34,32 @@
 #include "Field.hh"
 #include "Element.hh"
 
-#define This_
+namespace feathers {
+template<class>
+inline constexpr bool AlwaysFalse = false;
+template<class RowIndex, class ColumnIndex>
+class CsrMapping {
+public:
+  std::span<ColumnIndex> operator[](RowIndex) const;
+};
+template<class RowIndex, class ColumnIndex>
+class BiCsrMapping {
+public:
+  std::span<ColumnIndex> operator[](RowIndex) const;
+  CsrMapping<ColumnIndex, RowIndex>& transposed() const;
+};
+template<class RowIndex, class ColumnIndex>
+class TriCsrMapping {
+public:
+  std::span<ColumnIndex> operator[](RowIndex) const;
+  CsrMapping<ColumnIndex, RowIndex>& transposed() const;
+  CsrMapping<RowIndex, RowIndex>& symmetric() const;
+};
+}
 
-#define DeducingThisEmulation_(name) \
+#define StormThis_
+
+#define StormDeducingThisEmulation_(name) \
   /** @copydoc name */ \
   /** @{ */ \
   template<std::same_as<void> = void, class... Args> \
@@ -51,7 +74,7 @@
   } \
   /** @} */
 
-#define DeducingThisEmulationT_(name) \
+#define StormDeducingThisEmulationT_(name) \
   /** @copydoc name */ \
   /** @{ */ \
   template<class T, std::same_as<void> = void, class... Args> \
@@ -142,31 +165,33 @@ private:
   real_t MaxFaceArea_ = 0.0, MinFaceArea_ = 0.0;
   real_t MaxCellVolume_ = 0.0, MinCellVolume_ = 0.0;
 
+  TriCsrMapping<EdgeIndex, NodeIndex> EdgeNodes_;
+  BiCsrMapping<FaceIndex, NodeIndex> FaceNodes_;
+  BiCsrMapping<CellIndex, NodeIndex> CellNodes_;
+  TriCsrMapping<FaceIndex, EdgeIndex> FaceEdges_;
+  BiCsrMapping<CellIndex, EdgeIndex> CellEdges_;
+  TriCsrMapping<CellIndex, FaceIndex> CellFaces_;
+  CsrMapping<NodeIndex, NodeIndex> NodeNodes_;
+
+#if 0
+  CsrTable<EdgeIndex, NodeIndex> EdgeNodes_; CsrTable<NodeIndex, EdgeIndex> NodeEdges_; CsrTable<EdgeIndex, EdgeIndex> EdgeEdges_;
+  CsrTable<FaceIndex, NodeIndex> FaceNodes_; CsrTable<NodeIndex, FaceIndex> NodeFaces_;
+  CsrTable<CellIndex, NodeIndex> CellNodes_; CsrTable<NodeIndex, CellIndex> NodeCells_;
+  
+  CsrTable<FaceIndex, EdgeIndex> FaceEdges_; CsrTable<EdgeIndex, FaceIndex> EdgeFaces_; CsrTable<FaceIndex, FaceIndex> FaceFaces_;
+  CsrTable<CellIndex, EdgeIndex> CellEdges_; CsrTable<EdgeIndex, CellIndex> EdgeCells_;
+  
+  CsrTable<CellIndex, FaceIndex> CellFaces_; CsrTable<FaceIndex, CellIndex> FaceCells_; CsrTable<CellIndex, CellIndex> CellCells_;
+
   CsrTable<NodeIndex, NodeIndex> NodeNodes_;
-  CsrTable<EdgeIndex, NodeIndex> EdgeNodes_;
-  CsrTable<FaceIndex, NodeIndex> FaceNodes_;
-  CsrTable<CellIndex, NodeIndex> CellNodes_;
-
-  CsrTable<NodeIndex, EdgeIndex> NodeEdges_;
-  CsrTable<EdgeIndex, EdgeIndex> EdgeEdges_;
-  CsrTable<FaceIndex, EdgeIndex> FaceEdges_;
-  CsrTable<CellIndex, EdgeIndex> CellEdges_;
-
-  CsrTable<NodeIndex, FaceIndex> NodeFaces_;
-  CsrTable<EdgeIndex, FaceIndex> EdgeFaces_;
-  CsrTable<FaceIndex, FaceIndex> FaceFaces_;
-  CsrTable<CellIndex, FaceIndex> CellFaces_;
-
-  CsrTable<NodeIndex, CellIndex> NodeCells_;
-  CsrTable<EdgeIndex, CellIndex> EdgeCells_;
-  CsrTable<FaceIndex, CellIndex> FaceCells_;
-  CsrTable<CellIndex, CellIndex> CellCells_;
+#endif
 
 public:
 
-  // ---------------------------------------------------------------- //
-  // Constructors.
-  // ---------------------------------------------------------------- //
+  /// ---------------------------------------------------------------- ///
+  /// @name Constructors.
+  /// ---------------------------------------------------------------- ///
+  /// @{
 
   /// @brief Initialize an empty mesh.
   Mesh() noexcept = default;
@@ -190,9 +215,12 @@ public:
     UpdateElementsGeometry();
   }
 
-  // ---------------------------------------------------------------- //
-  // Element ranges.
-  // ---------------------------------------------------------------- //
+  /// @}
+
+  /// ---------------------------------------------------------------- ///
+  /// @name Element ranges.
+  /// ---------------------------------------------------------------- ///
+  /// @{
 
   /// @brief Range of node indices.
   auto nodeIndices() const noexcept {
@@ -214,9 +242,12 @@ public:
     return views::iota(CellIndex{0}, CellIndex{NumCells_});
   }
 
-  // ---------------------------------------------------------------- //
-  // Marks.
-  // ---------------------------------------------------------------- //
+  /// @}
+
+  /// ---------------------------------------------------------------- ///
+  /// @name Marks.
+  /// ---------------------------------------------------------------- ///
+  /// @{
 
   /// @brief Number of node marks.
   size_t numNodeMarks() const noexcept {
@@ -267,32 +298,35 @@ public:
   }
 
   /// @brief Get node @p nodeIndex mark.
-  NodeMark Mark(NodeIndex nodeIndex) const noexcept {
+  NodeMark mark(NodeIndex nodeIndex) const noexcept {
     StormAssert(nodeIndex < NumNodes_);
     return NodeMarks_[nodeIndex];
   }
 
   /// @brief Get edge @p edgeIndex mark.
-  EdgeMark Mark(EdgeIndex edgeIndex) const noexcept {
+  EdgeMark mark(EdgeIndex edgeIndex) const noexcept {
     StormAssert(edgeIndex < NumEdges_);
     return EdgeMarks_[edgeIndex];
   }
 
   /// @brief Get face @p faceIndex mark.
-  FaceMark Mark(FaceIndex faceIndex) const noexcept {
+  FaceMark mark(FaceIndex faceIndex) const noexcept {
     StormAssert(faceIndex < NumFaces_);
     return FaceMarks_[faceIndex];
   }
 
   /// @brief Get cell @p cellIndex mark.
-  CellMark Mark(CellIndex cellIndex) const noexcept {
+  CellMark mark(CellIndex cellIndex) const noexcept {
     StormAssert(cellIndex < NumCells_);
     return CellMarks_[cellIndex];
   }
 
-  // ---------------------------------------------------------------- //
-  // Shapes.
-  // ---------------------------------------------------------------- //
+  /// @}
+
+  /// ---------------------------------------------------------------- ///
+  /// @name Shapes.
+  /// ---------------------------------------------------------------- ///
+  /// @{
 
   /// @brief Get edge @p edgeIndex shape type.
   ShapeType shapeType(EdgeIndex edgeIndex) const noexcept {
@@ -423,131 +457,162 @@ public:
   ///   after each node position modification.
   void UpdateElementsGeometry();
 
-  // ---------------------------------------------------------------- //
-  // Adjacency.
-  // ---------------------------------------------------------------- //
+  /// @}
 
-  /// @brief Range of the node @p nodeIndex adjacent nodes.
-  template<class Self>
-  auto adjNodeIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
-    StormAssert(nodeIndex < self.NumNodes_);
-    return self.NodeNodes_[nodeIndex];
-  }
+  /// ---------------------------------------------------------------- ///
+  /// @name Adjacency.
+  /// ---------------------------------------------------------------- ///
+  /// @{
 
-  /// @brief Range of the edge @p edgeIndex adjacent nodes.
+  /// @name Primary adjacency: adjacency, \
+  ///   that can be extracted from the shape only.
+  /// @{
+
+  /// @brief Range of the edge @p edgeIndex adjacent node indices.
+  /// Denote a node to be adjacent to an edge if it one its nodes.
   template<class Self>
-  auto adjNodeIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
+  auto adjNodeIndices(StormThis_ Self& self, EdgeIndex edgeIndex) noexcept {
     StormAssert(edgeIndex < self.NumEdges_);
     return self.EdgeNodes_[edgeIndex];
   }
 
-  /// @brief Range of the face @p faceIndex adjacent nodes.
+  /// @brief Range of the face @p faceIndex adjacent node indices.
+  /// Denote a node to be adjacent to a face if it one its nodes.
   template<class Self>
-  auto adjNodeIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+  auto adjNodeIndices(StormThis_ Self& self, FaceIndex faceIndex) noexcept {
     StormAssert(faceIndex < self.NumFaces_);
     return self.FaceNodes_[faceIndex];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent nodes.
+  /// @brief Range of the cell @p cellIndex adjacent node indices.
+  /// Denote a node to be adjacent to a cell if it one its nodes.
   template<class Self>
-  auto adjNodeIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+  auto adjNodeIndices(StormThis_ Self& self, CellIndex cellIndex) noexcept {
     StormAssert(cellIndex < self.NumCells_);
     return self.CellNodes_[cellIndex];
   }
 
-  /// @brief Range of the node @p nodeIndex adjacent edges.
+  /// @brief Range of the face @p faceIndex adjacent edge indices.
+  /// Denote an edge to be adjacent to a face if it one its edges.
   template<class Self>
-  auto adjEdgeIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
-    StormAssert(nodeIndex < self.NumNodes_);
-    return self.NodeEdges_[nodeIndex];
-  }
-
-  /// @brief Range of the edge @p edgeIndex adjacent edges.
-  template<class Self>
-  auto adjEdgeIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
-    StormAssert(edgeIndex < self.NumEdges_);
-    return self.EdgeEdges_[edgeIndex];
-  }
-
-  /// @brief Range of the face @p faceIndex adjacent edges.
-  template<class Self>
-  auto adjEdgeIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+  auto adjEdgeIndices(StormThis_ Self& self, FaceIndex faceIndex) noexcept {
     StormAssert(faceIndex < self.NumFaces_);
     return self.FaceEdges_[faceIndex];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent edges.
+  /// @brief Range of the cell @p cellIndex adjacent edge indices.
+  /// Denote an edge to be adjacent to a cell if it one its edges.
   template<class Self>
-  auto adjEdgeIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+  auto adjEdgeIndices(StormThis_ Self& self, CellIndex cellIndex) noexcept {
     StormAssert(cellIndex < self.NumCells_);
     return self.CellEdges_[cellIndex];
   }
 
-  /// @brief Range of the node @p nodeIndex adjacent faces.
+  /// @brief Range of the cell @p cellIndex adjacent face indices.
+  /// Denote a face to be adjacent to a cell if it one its faces.
   template<class Self>
-  auto adjFaceIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
-    StormAssert(nodeIndex < self.NumNodes_);
-    return self.NodeFaces_[nodeIndex];
-  }
-
-  /// @brief Range of the edge @p edgeIndex adjacent faces.
-  template<class Self>
-  auto adjFaceIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
-    StormAssert(edgeIndex < self.NumEdges_);
-    return self.EdgeFaces_[edgeIndex];
-  }
-
-  /// @brief Range of the face @p faceIndex adjacent faces.
-  template<class Self>
-  auto adjFaceIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
-    StormAssert(faceIndex < self.NumFaces_);
-    return self.FaceFaces_[faceIndex];
-  }
-
-  /// @brief Range of the cell @p cellIndex adjacent faces.
-  template<class Self>
-  auto adjFaceIndices(This_ Self& self, CellIndex cellIndex) noexcept {
+  auto adjFaceIndices(StormThis_ Self& self, CellIndex cellIndex) noexcept {
     StormAssert(cellIndex < self.NumCells_);
     return self.CellFaces_[cellIndex];
   }
 
-  /// @brief Range of the node @p nodeIndex adjacent cells.
+  /// @}
+
+  /// @name Secondary adjacency: adjacency, \
+  ///   that is a transpose of the primary adjacency.
+  /// @{
+
+  /// @brief Range of the node @p nodeIndex adjacent edge indices.
   template<class Self>
-  auto adjCellIndices(This_ Self& self, NodeIndex nodeIndex) noexcept {
+  auto adjEdgeIndices(StormThis_ Self& self, NodeIndex nodeIndex) noexcept {
     StormAssert(nodeIndex < self.NumNodes_);
-    return self.NodeCells_[nodeIndex];
+    return self.EdgeNodes_.transposed()[nodeIndex];
   }
 
-  /// @brief Range of the edge @p edgeIndex adjacent cells.
+  /// @brief Range of the node @p nodeIndex adjacent faces indices.
   template<class Self>
-  auto adjCellIndices(This_ Self& self, EdgeIndex edgeIndex) noexcept {
+  auto adjFaceIndices(StormThis_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.FaceNodes_.transposed()[nodeIndex];
+  }
+
+  /// @brief Range of the node @p nodeIndex adjacent cell indices.
+  template<class Self>
+  auto adjCellIndices(StormThis_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.CellNodes_.transposed()[nodeIndex];
+  }
+
+  /// @brief Range of the edge @p edgeIndex adjacent face indices.
+  template<class Self>
+  auto adjFaceIndices(StormThis_ Self& self, EdgeIndex edgeIndex) noexcept {
     StormAssert(edgeIndex < self.NumEdges_);
-    return self.EdgeCells_[edgeIndex];
+    return self.FaceEdges_.transposed()[edgeIndex];
   }
 
-  /// @brief Range of the face @p faceIndex adjacent cells.
+  /// @brief Range of the edge @p edgeIndex adjacent cell indices.
   template<class Self>
-  auto adjCellIndices(This_ Self& self, FaceIndex faceIndex) noexcept {
+  auto adjCellIndices(StormThis_ Self& self, EdgeIndex edgeIndex) noexcept {
+    StormAssert(edgeIndex < self.NumEdges_);
+    return self.CellEdges_.transposed()[edgeIndex];
+  }
+
+  /// @brief Range of the face @p faceIndex adjacent cell indices.
+  template<class Self>
+  auto adjCellIndices(StormThis_ Self& self, FaceIndex faceIndex) noexcept {
     StormAssert(faceIndex < self.NumFaces_);
-    return self.FaceCells_[faceIndex];
+    return self.CellFaces_.transposed()[faceIndex];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent cells.
+  /// @}
+
+  /// @name Symmetric adjacency: adjacency, that is a product \
+  ///   of the corresponding primary and secondary adjacencies.
+  /// @{
+
+  /// @brief Range of the edge @p edgeIndex adjacent edge indices.
+  /// Denote two edges as adjacent if they share a common node.
   template<class Self>
-  auto adjCellIndices(This_ Self& self, CellIndex cellIndex) noexcept {
-    StormAssert(cellIndex < self.NumCells_);
-    return self.CellCells_[cellIndex];
+  auto adjEdgeIndices(StormThis_ Self& self, EdgeIndex edgeIndex) noexcept {
+    StormAssert(edgeIndex < self.NumEdges_);
+    return self.EdgeNodes_.square()[edgeIndex];
   }
 
-  DeducingThisEmulation_(adjNodeIndices)
-  DeducingThisEmulation_(adjEdgeIndices)
-  DeducingThisEmulation_(adjFaceIndices)
-  DeducingThisEmulation_(adjCellIndices)
+  /// @brief Range of the face @p faceIndex adjacent face indices.
+  /// Denote two faces as adjacent if they share a common edge.
+  template<class Self>
+  auto adjFaceIndices(StormThis_ Self& self, FaceIndex faceIndex) noexcept {
+    StormAssert(faceIndex < self.NumFaces_);
+    return self.FaceEdges_.square()[faceIndex];
+  }
+
+  /// @brief Range of the cell @p cellIndex adjacent cell indices.
+  /// Denote two cells as adjacent if they share a common face.
+  template<class Self>
+  auto adjCellIndices(StormThis_ Self& self, CellIndex cellIndex) noexcept {
+    StormAssert(cellIndex < self.NumCells_);
+    return self.CellFaces_.square()[cellIndex];
+  }
+
+  /// @}
+
+  /// @brief Range of the node @p nodeIndex adjacent node indices.
+  /// Denote two nodes as adjacent if there is an edge connecting them.
+  template<class Self>
+  auto adjNodeIndices(StormThis_ Self& self, NodeIndex nodeIndex) noexcept {
+    StormAssert(nodeIndex < self.NumNodes_);
+    return self.NodeNodes_.square()[nodeIndex];
+  }
+
+  StormDeducingThisEmulation_(adjNodeIndices)
+  StormDeducingThisEmulation_(adjEdgeIndices)
+  StormDeducingThisEmulation_(adjFaceIndices)
+  StormDeducingThisEmulation_(adjCellIndices)
 
 private:
 
   template<class OtherTag, class Self, class Tag>
-  auto AdjacentElements_(This_ Self& self, Index<Tag> elementIndex) noexcept {
+  auto adjElemIndices_(StormThis_ Self& self, Index<Tag> elementIndex) noexcept {
     if constexpr (std::is_same_v<OtherTag, NodeTag>) {
       return self.adjNodeIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, EdgeTag>) {
@@ -556,15 +621,78 @@ private:
       return self.adjFaceIndices(elementIndex);
     } else if constexpr (std::is_same_v<OtherTag, CellTag>) {
       return self.adjCellIndices(elementIndex);
+    } else {
+      static_assert(AlwaysFalse<OtherTag>, "Invalid tag.");
     }
   }
 
-  DeducingThisEmulationT_(AdjacentElements_)
+  StormDeducingThisEmulationT_(adjElemIndices_)
 
 public:
 
-  // ---------------------------------------------------------------- //
-  // ---------------------------------------------------------------- //
+  /// @}
+
+  /// ---------------------------------------------------------------- ///
+  /// @name Insertions.
+  /// ---------------------------------------------------------------- ///
+  /// @{
+
+  /// @brief Insert a new node with a position @p pos \
+  ///   and a mark @p nodeMark into the mesh.
+  /// @returns Index of the inserted node.
+  NodeIndex insertNode(vec3_t const& nodePos,
+                       NodeMark nodeMark = {});
+
+  /// @brief Find or emplace a new edge with a shape @p edgeShape
+  ///   and node indices @p nodeIndices.
+  ///
+  /// Insertion would update the edge-node, edge-edge and
+  ///   node-node topologies.
+  ///
+  /// @param edgeMark Mark that would be assigned to an edge if
+  ///   the insertion took place, otherwise ignored.
+  /// @returns A pair of an index of the found or inserted edge
+  ///   and a boolean value denoting whether the insertion took place.
+  std::pair<EdgeIndex, bool>
+    findOrInsertEdge(std::shared_ptr<Shape> edgeShape,
+                     EdgeMark edgeMark = {});
+
+  /// @brief Find or emplace a new face with a shape @p faceShape
+  ///   and node indices @p nodeIndices.
+  ///
+  /// Insertion would implicitly insert the missing edges and
+  ///   update the face-edge and face-face topologies. The
+  ///   implicitly inserted edges would inherit the mark from
+  ///   explicitly inserted face.
+  ///
+  /// @param faceMark Mark that would be assigned to a face if
+  ///   the insertion took place, otherwise ignored.
+  /// @returns A pair of an index of the found or inserted face
+  ///   and a boolean value denoting whether the insertion took place.
+  std::pair<FaceIndex, bool>
+    findOrInsertFace(std::shared_ptr<Shape> faceShape,
+                     FaceMark faceMark = {});
+
+  /// @brief Find or emplace a new cell with a shape @p cellShape
+  ///   and node indices @p nodeIndices.
+  ///
+  /// Insertion would implicitly insert the missing faces and
+  ///   update the cell-face and cell-cell topologies. The
+  ///   implicitly inserted face would inherit the mark from
+  ///   explicitly inserted cell.
+  ///
+  /// @param cellMark Mark that would be assigned to a cell if
+  ///   the insertion took place, otherwise ignored.
+  /// @returns A pair of an index of the found or inserted cell
+  ///   and a boolean value denoting whether the insertion took place.
+  std::pair<CellIndex, bool>
+    findOrInsertCell(std::shared_ptr<Shape> cellShape,
+                     CellMark cellMark = {});
+
+  /// @}
+
+  /// ---------------------------------------------------------------- ///
+  /// ---------------------------------------------------------------- ///
 
   /// @brief Emplace a new node into the mesh.
   /// @returns Index of the inserted node.

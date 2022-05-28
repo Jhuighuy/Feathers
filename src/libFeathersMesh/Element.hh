@@ -138,6 +138,8 @@ public:
 
 }; // class Element
 
+using Shape = Element;
+
 template<ShapeType Shape_, size_t NumNodes_, class Base>
 class ElementHelper_ : public Base {
 public:

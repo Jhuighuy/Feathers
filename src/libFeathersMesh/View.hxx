@@ -92,7 +92,7 @@ public:
 
   /// @brief Get mark. 
   Index<MarkTag<Tag>> mark() const noexcept {
-    return Mesh_->Mark(Index_);
+    return Mesh_->mark(Index_);
   }
 
   /// @brief Get shape type.
@@ -330,7 +330,7 @@ using CellView = BaseCellView<Mesh const>;
 using MutableCellView = BaseCellView<Mesh>;
 /// @}
 
-/// @brief Range of the @p mesh nodes \
+/// @brief Range of the @p mesh nodes 
 ///   (or nodes with a @p nodeMark, if present).
 template<class Mesh, std::same_as<NodeMark>... NodeMark_>
   requires (sizeof...(NodeMark_) <= 1)
@@ -341,7 +341,7 @@ auto nodeViews(Mesh& mesh, NodeMark_... nodeMark) noexcept {
     });
 }
 
-/// @brief Range of the @p mesh edges \
+/// @brief Range of the @p mesh edges 
 ///   (or edges with an @p edgeMark, if present).
 template<class Mesh, std::same_as<EdgeMark>... EdgeMark_>
   requires (sizeof...(EdgeMark_) <= 1)
@@ -352,7 +352,7 @@ auto edgeViews(Mesh& mesh, EdgeMark_... edgeMark) noexcept {
     });
 }
 
-/// @brief Range of the @p mesh faces \
+/// @brief Range of the @p mesh faces 
 ///   (or faces with a @p faceMark, if present).
 template<class Mesh, std::same_as<FaceMark>... FaceMark_>
   requires (sizeof...(FaceMark_) <= 1)
@@ -363,7 +363,7 @@ auto faceViews(Mesh& mesh, FaceMark_... faceMark) noexcept {
     });
 }
 
-/// @brief Range of the @p mesh nodes \
+/// @brief Range of the @p mesh nodes 
 ///   (or nodes with a @p cellMark, if present).
 template<class Mesh, std::same_as<CellMark>... CellMark_>
   requires (sizeof...(CellMark_) <= 1)

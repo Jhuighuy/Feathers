@@ -1,34 +1,29 @@
-/*
- *  ______  ______   ______   ______  __  __   ______   ______   ______
- * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
- * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
- *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
- *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
- *
- * Copyright (c) 2021 Oleg Butakov
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// Copyright (C) 2022 Oleg Butakov
+///
+/// Permission is hereby granted, free of charge, to any person
+/// obtaining a copy of this software and associated documentation
+/// files (the "Software"), to deal in the Software without
+/// restriction, including without limitation the rights  to use,
+/// copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the
+/// Software is furnished to do so, subject to the following
+/// conditions:
+///
+/// The above copyright notice and this permission notice shall be
+/// included in all copies or substantial portions of the Software.
+///
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+/// OTHER DEALINGS IN THE SOFTWARE.
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
 #pragma once
-#ifndef FEATHERS_BASE_HH_
-#define FEATHERS_BASE_HH_
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES 1
@@ -54,6 +49,8 @@
 
 #include <glm/glm.hpp>
 
+/// @todo Move to stormUtils/RangesCompat.hxx
+// Use std::ranges when clangd is ready.
 #if 0
 #include <ranges>
 namespace ranges = std::ranges;
@@ -63,73 +60,22 @@ namespace views = std::views;
 namespace views = ranges::views;
 #endif
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-/** C++03 support. */
-/** @{ */
-#if (__cplusplus >= 199711L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 199711L)
-#define FEATHERS_HAS_CPP_03 1
-#else
-#define FEATHERS_HAS_CPP_03 0
+// Check for C++20 support.
+#if __cplusplus <= 202002L
+#error Storm requires at least C++20
 #endif
-/** @} */
 
-/** C++11 support. */
-/** @{ */
-#if (__cplusplus >= 201103L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201103L)
-#define FEATHERS_HAS_CPP_11 1
-#else
-#define FEATHERS_HAS_CPP_11 0
-#endif
-/** @} */
-
-/** C++14 support. */
-/** @{ */
-#if (__cplusplus >= 201402L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
-#define FEATHERS_HAS_CPP_14 1
-#else
-#define FEATHERS_HAS_CPP_14 0
-#endif
-/** @} */
-
-/** C++17 support. */
-/** @{ */
-#if (__cplusplus >= 201703L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
-#define FEATHERS_HAS_CPP_17 1
-#else
-#define FEATHERS_HAS_CPP_17 0
-#endif
-/** @} */
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-/* Force OpenMP 2.0 */
+/// @todo This should be moved to stormConfig.hxx
 #ifndef FEATHERS_CONFIG_FORCE_DISABLE_OPENMP
 #define FEATHERS_CONFIG_FORCE_DISABLE_OPENMP 0
 #endif
-
-/* Force OpenMP 2.0 */
 #ifndef FEATHERS_CONFIG_FORCE_OPENMP_2_0
 #define FEATHERS_CONFIG_FORCE_OPENMP_2_0 0
 #endif
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
 #ifndef FEATHERS_HAS_TBB
 #define FEATHERS_HAS_TBB 0
 #endif
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
-
-// TODO:
 #define FEATHERS_DOXYGEN 0
-
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
 
 /** Convert token to string. */
 /** @{ */
@@ -179,34 +125,6 @@ namespace views = ranges::views;
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
-
-/** Compile-time expression macro. */
-/** @{ */
-#if FEATHERS_HAS_CPP_14
-#define SKUNK_CONSTEXPR constexpr
-#else
-#define SKUNK_CONSTEXPR const
-#endif
-/** @} */
-
-/** Compile-time if statement macro. */
-/** @{ */
-#if FEATHERS_HAS_CPP_17
-#define SKUNK_IF_CONSTEXPR if constexpr
-#else
-#define SKUNK_IF_CONSTEXPR if
-#endif
-/** @} */
-
-/** Compile-time assertion macro.
- ** Assertion message is optional. */
-/** @{ */
-#if FEATHERS_HAS_CPP_17
-#define SKUNK_STATIC_ASSERT(x) static_assert(x)
-#else
-#define SKUNK_STATIC_ASSERT(x) static_assert(x, FEATHERS_TO_STRING(x))
-#endif
-/** @} */
 
 #define FEATHERS_DEPRECATED //[[deprecated("")]]
 
@@ -369,112 +287,6 @@ static constexpr real_t huge = std::numeric_limits<real_t>::max();
 /** Quiet NaN constant. */
 static constexpr real_t qnan = std::numeric_limits<real_t>::quiet_NaN();
 
-/** A @f$e@f$ constant. */
-/** @{ */
-#ifdef M_E
-static constexpr real_t c_e(M_E);
-#else
-static const real_t c_e(std::exp(1.0));
-#endif
-/** @} */
-/** A @f$\log_2(e)@f$ constant. */
-/** @{ */
-#ifdef M_LOG2E
-static constexpr real_t c_log2e(M_LOG2E);
-#else
-static const real_t c_log2e(std::log2(m_e));
-#endif
-/** @} */
-/** A @f$\log_10(e)@f$ constant. */
-/** @{ */
-#ifdef M_LOG10E
-static constexpr real_t c_log10e(M_LOG10E);
-#else
-static const real_t c_log10e(std::log10(m_e));
-#endif
-/** @} */
-/** A @f$\log(2)@f$ constant. */
-/** @{ */
-#ifdef M_LN2
-static constexpr real_t c_ln2(M_LN2);
-#else
-static const real_t c_ln2(std::log(2.0));
-#endif
-/** @} */
-/** A @f$\log(10)@f$ constant. */
-/** @{ */
-#ifdef M_LN10
-static constexpr real_t c_ln10(M_LN10);
-#else
-static const real_t c_ln10(std::log(10.0));
-#endif
-/** @} */
-
-/** A @f$\pi@f$ constant. */
-/** @{ */
-#ifdef M_PI
-static constexpr real_t c_pi(M_PI);
-#else
-static const real_t c_pi(4.0*std::atan(1.0));
-#endif
-/** @} */
-/** A @f$\frac{\pi}{2}@f$ constant. */
-/** @{ */
-#ifdef M_PI_2
-static constexpr real_t c_pi_2(M_PI_2);
-#else
-static const real_t c_pi_2(2.0*std::atan(1.0));
-#endif
-/** A @f$\frac{\pi}{4}@f$ constant. */
-/** @{ */
-#ifdef M_PI_4
-static constexpr real_t c_pi_4(M_PI_4);
-#else
-static const real_t c_pi_4(1.0*std::atan(1.0));
-#endif
-/** @} */
-/** A @f$\frac{1}{\pi}@f$ constant. */
-/** @{ */
-#ifdef M_1_PI
-static constexpr real_t c_1_pi(M_1_PI);
-#else
-static const real_t c_1_pi(1.0/m_pi);
-#endif
-/** @} */
-/** A @f$\frac{2}{\pi}@f$ constant. */
-/** @{ */
-#ifdef M_2_PI
-static constexpr real_t c_2_pi(M_2_PI);
-#else
-static const real_t c_2_pi(1.0/m_pi_2);
-#endif
-/** @} */
-/** A @f$\frac{2}{\sqrt{\pi}}@f$ constant. */
-/** @{ */
-#ifdef M_2_SQRTPI
-static constexpr real_t c_2_sqrtpi(M_2_SQRTPI);
-#else
-static const real_t c_2_sqrtpi(2.0/std::sqrt(m_pi));
-#endif
-/** @} */
-
-/** A @f$\sqrt{2}@f$ constant. */
-/** @{ */
-#ifdef M_SQRT2
-static constexpr real_t c_sqrt2(M_SQRT2);
-#else
-static const real_t c_sqrt2(std::sqrt(2.0));
-#endif
-/** @} */
-/** A @f$\frac{1}{\sqrt{2}}@f$ constant. */
-/** @{ */
-#ifdef M_SQRT1_2
-static constexpr real_t c_sqrt1_2(M_SQRT1_2);
-#else
-static const real_t c_sqrt1_2(std::sqrt(0.5));
-#endif
-/** @} */
-
 /** Compute pseudo-inverse value. */
 template<typename tValue>
 constexpr tValue safe_inverse(tValue x) {
@@ -491,8 +303,6 @@ auto shared_from_this(const obj_ptr_t& obj) {
 } // shared_from_this
 
 } // namespace feathers
-
-#endif
 
 /* TODO: Remove me. */
 using int_t = feathers::ptrdiff_t;
