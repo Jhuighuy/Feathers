@@ -107,7 +107,7 @@ public:
 
   /// @brief Ranges of the adjacent nodes.
   auto adjNodes() const noexcept {
-    return Mesh_->adjNodeIndices(Index_) |
+    return Mesh_->adjNodes(Index_) |
       views::transform([&mesh = *Mesh_](NodeIndex nodeIndex) {
         return BaseNodeView(mesh, nodeIndex);
       });
@@ -115,7 +115,7 @@ public:
 
   /// @brief Ranges of the adjacent edges.
   auto adjEdges() const noexcept {
-    return Mesh_->adjEdgeIndices(Index_) |
+    return Mesh_->adjEdges(Index_) |
       views::transform([&mesh = *Mesh_](EdgeIndex edgeIndex) {
         return BaseEdgeView(mesh, edgeIndex);
       });
@@ -123,7 +123,7 @@ public:
 
   /// @brief Ranges of the adjacent faces.
   auto adjFaces() const noexcept {
-    return Mesh_->adjFaceIndices(Index_) |
+    return Mesh_->adjFaces(Index_) |
       views::transform([&mesh = *Mesh_](FaceIndex faceIndex) {
         return BaseFaceView(mesh, faceIndex);
       });
@@ -131,7 +131,7 @@ public:
 
   /// @brief Ranges of the adjacent cells.
   auto adjCells() const noexcept {
-    return Mesh_->adjCellIndices(Index_) |
+    return Mesh_->adjCells(Index_) |
       views::transform([&mesh = *Mesh_](CellIndex cellIndex) {
         return BaseCellView(mesh, cellIndex);
       });
@@ -263,11 +263,13 @@ public:
 
   /// @brief Get connected inner cell. 
   auto innerCell() const noexcept {
+    StormAssert(this->adjCells().size() == 2);
     return this->adjCells()[FaceInnerCell_];
   }
 
   /// @brief Get connected outer cell. 
   auto outerCell() const noexcept {
+    StormAssert(this->adjCells().size() == 2);
     return this->adjCells()[FaceOuterCell_];
   }
 
@@ -332,10 +334,9 @@ using MutableCellView = BaseCellView<Mesh>;
 
 /// @brief Range of the @p mesh nodes 
 ///   (or nodes with a @p nodeMark, if present).
-template<class Mesh, std::same_as<NodeMark>... NodeMark_>
-  requires (sizeof...(NodeMark_) <= 1)
-auto nodeViews(Mesh& mesh, NodeMark_... nodeMark) noexcept {
-  return mesh.nodeIndices(nodeMark...) |
+auto nodeViews(auto& mesh, std::same_as<NodeMark> auto... nodeMark) noexcept {
+  static_assert(sizeof...(nodeMark) <= 1);
+  return mesh.nodes(nodeMark...) |
     views::transform([&mesh](NodeIndex nodeIndex) {
       return BaseNodeView(mesh, nodeIndex);
     });
@@ -343,10 +344,9 @@ auto nodeViews(Mesh& mesh, NodeMark_... nodeMark) noexcept {
 
 /// @brief Range of the @p mesh edges 
 ///   (or edges with an @p edgeMark, if present).
-template<class Mesh, std::same_as<EdgeMark>... EdgeMark_>
-  requires (sizeof...(EdgeMark_) <= 1)
-auto edgeViews(Mesh& mesh, EdgeMark_... edgeMark) noexcept {
-  return mesh.edgeIndices(edgeMark...) |
+auto edgeViews(auto& mesh, std::same_as<EdgeMark> auto... edgeMark) noexcept {
+  static_assert(sizeof...(edgeMark) <= 1);
+  return mesh.edges(edgeMark...) |
     views::transform([&mesh](EdgeIndex edgeIndex) {
       return BaseEdgeView(mesh, edgeIndex);
     });
@@ -354,10 +354,9 @@ auto edgeViews(Mesh& mesh, EdgeMark_... edgeMark) noexcept {
 
 /// @brief Range of the @p mesh faces 
 ///   (or faces with a @p faceMark, if present).
-template<class Mesh, std::same_as<FaceMark>... FaceMark_>
-  requires (sizeof...(FaceMark_) <= 1)
-auto faceViews(Mesh& mesh, FaceMark_... faceMark) noexcept {
-  return mesh.faceIndices(faceMark...) |
+auto faceViews(auto& mesh, std::same_as<FaceMark> auto... faceMark) noexcept {
+  static_assert(sizeof...(faceMark) <= 1);
+  return mesh.faces(faceMark...) |
     views::transform([&mesh](FaceIndex faceIndex) {
       return BaseFaceView(mesh, faceIndex);
     });
@@ -365,55 +364,47 @@ auto faceViews(Mesh& mesh, FaceMark_... faceMark) noexcept {
 
 /// @brief Range of the @p mesh nodes 
 ///   (or nodes with a @p cellMark, if present).
-template<class Mesh, std::same_as<CellMark>... CellMark_>
-  requires (sizeof...(CellMark_) <= 1)
-auto cellViews(Mesh& mesh, CellMark_... cellMark) noexcept {
-  return mesh.cellIndices(cellMark...) |
+auto cellViews(auto& mesh, std::same_as<CellMark> auto... cellMark) noexcept {
+  static_assert(sizeof...(cellMark) <= 1);
+  return mesh.cells(cellMark...) |
     views::transform([&mesh](CellIndex cellIndex) {
       return BaseCellView(mesh, cellIndex);
     });
 }
 
 /// @brief Range of the interior @p mesh nodes.
-template<class Mesh>
-auto intNodeViews(Mesh& mesh) noexcept {
+auto intNodeViews(auto& mesh) noexcept {
   return nodeViews(mesh, NodeMark{0});
 }
 
 /// @brief Range of the interior @p mesh edges.
-template<class Mesh>
-auto intEdgeViews(Mesh& mesh) noexcept {
+auto intEdgeViews(auto& mesh) noexcept {
   return edgeViews(mesh, EdgeMark{0});
 }
 
 /// @brief Range of the interior @p mesh faces.
-template<class Mesh>
-auto intFaceViews(Mesh& mesh) noexcept {
+auto intFaceViews(auto& mesh) noexcept {
   return faceViews(mesh, FaceMark{0});
 }
 
 /// @brief Range of the interior @p mesh cells.
-template<class Mesh>
-auto intCellViews(Mesh& mesh) noexcept {
+auto intCellViews(auto& mesh) noexcept {
   return cellViews(mesh, CellMark{0});
 }
 
 /// @brief Range of the boundary @p mesh nodes.
-template<class Mesh>
-auto bndNodeViews(Mesh& mesh) noexcept {
-  return nodeViews(mesh) | views::drop(mesh.nodeIndices(NodeMark{0}).size());
+auto bndNodeViews(auto& mesh) noexcept {
+  return nodeViews(mesh) | views::drop(mesh.nodes(NodeMark{0}).size());
 }
 
 /// @brief Range of the boundary @p mesh edges.
-template<class Mesh>
-auto bndEdgeViews(Mesh& mesh) noexcept {
-  return edgeViews(mesh) | views::drop(mesh.edgeIndices(EdgeMark{0}).size());
+auto bndEdgeViews(auto& mesh) noexcept {
+  return edgeViews(mesh) | views::drop(mesh.edges(EdgeMark{0}).size());
 }
 
 /// @brief Range of the boundary @p mesh faces.
-template<class Mesh>
-auto bndFaceViews(Mesh& mesh) noexcept {
-  return faceViews(mesh) | views::drop(mesh.faceIndices(FaceMark{0}).size());
+auto bndFaceViews(auto& mesh) noexcept {
+  return faceViews(mesh) | views::drop(mesh.faces(FaceMark{0}).size());
 }
 
 template<class Mesh>
@@ -421,21 +412,20 @@ auto bndFaceCellViews(Mesh& mesh) noexcept {
   return faceViews(mesh) |
     views::drop(mesh.faceIndices(FaceMark{0}).size()) |
     views::transform([](BaseFaceView<Mesh> face) {
-      return std::make_pair(face.innerCell(), face.outerCell());
+      return std::pair(face.innerCell(), face.outerCell());
     });
 }
 
-template<class Mesh, class Func>
-void forEachBndFaceCells(Mesh& mesh, Func func) noexcept {
+template<class Mesh>
+void forEachBndFaceCells(Mesh& mesh, auto&& func) noexcept {
   ForEach(bndFaceViews(mesh), [&](BaseFaceView<Mesh> face) {
     func(face.innerCell(), face.outerCell());
   });
 }
 
 /// @brief Range of the boundary @p mesh cells.
-template<class Mesh>
-auto bndCellViews(Mesh& mesh) noexcept {
-  return cellViews(mesh) | views::drop(mesh.cellIndices(CellMark{0}).size());
+auto bndCellViews(auto& mesh) noexcept {
+  return cellViews(mesh) | views::drop(mesh.cells(CellMark{0}).size());
 }
 
 } // namespace feathers

@@ -59,6 +59,14 @@ public:
     m_column_indices.clear();
   }
 
+  void insert(RowIndex rowIndex, ColumnIndex columnIndex) {
+    StormAssert(rowIndex < num_rows());
+    m_column_indices.insert(
+      m_column_indices.begin() + m_row_offsets[rowIndex + 1], columnIndex);
+    std::for_each(m_row_offsets.begin() + (size_t)rowIndex + 1, m_row_offsets.end(),
+      [](size_t& offset) { offset += 1; });
+  }
+
   /** Pointer to the beginning of the row. */
   ConstOverload(ColumnIndex*, begin_row, (RowIndex row_index), {
     FEATHERS_ASSERT(row_index < num_rows());
@@ -102,16 +110,19 @@ public:
 
   /** Insert a row into the table. */
   /** @{ */
-  void emplace_back_row(size_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
+  void emplaceRow(size_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
     m_column_indices.insert(
       m_column_indices.end(), num_column_indices, column_index);
     m_row_offsets.push_back(m_column_indices.size());
   }
   template<typename tColumnIndexIter>
-  void emplace_back_row(tColumnIndexIter first_index_iter, tColumnIndexIter last_index_iter) {
+  void emplaceRow(tColumnIndexIter first_index_iter, tColumnIndexIter last_index_iter) {
     m_column_indices.insert(
       m_column_indices.end(), first_index_iter, last_index_iter);
     m_row_offsets.push_back(m_column_indices.size());
+  }
+  void emplaceRow(ranges::range auto range) {
+    emplaceRow(range.begin(), range.end());
   }
   /** @} */
 };  // class CsrTable
@@ -125,7 +136,7 @@ void permute_rows(tIter first_permutation_iter,
   tTable permuted_table;
   for (tIter permutation_iter = first_permutation_iter;
        permutation_iter != last_permutation_iter; ++permutation_iter) {
-    permuted_table.emplace_back_row(
+    permuted_table.emplaceRow(
       table.begin_row(*permutation_iter), table.end_row(*permutation_iter));
   }
   table = std::move(permuted_table);

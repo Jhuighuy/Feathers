@@ -47,7 +47,7 @@ bool Mesh::ReadFromTriangle(std::string const& path) {
     vec3_t nodePos(0.0);
     nodeFile >> nodeIndex >> nodePos.x >> nodePos.y;
     std::getline(nodeFile, line);
-    StormEnsure(nodeIndex == EmplaceNode(nodePos));
+    StormEnsure(nodeIndex == insertNode(nodePos));
   }
 
   std::ifstream faceFile(path + std::string("edge"));
@@ -99,7 +99,7 @@ bool Mesh::ReadFromTetgen(std::string const& path) {
     vec3_t nodePos(0.0);
     nodeFile >> nodeIndex >> nodePos.x >> nodePos.y >> nodePos.z;
     StormEnsure(
-      nodeIndex == EmplaceNode(nodePos));
+      nodeIndex == insertNode(nodePos));
     std::getline(nodeFile, line);
   }
 
@@ -162,25 +162,25 @@ bool Mesh::ReadFromImage(const char *path,
       if (swNodeIndex == 0) {
         swNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(-0.5, -0.5), 0.0);
-        StormEnsure(swNodeIndex == EmplaceNode(nodePos));
+        StormEnsure(swNodeIndex == insertNode(nodePos));
       }
       size_t& seNodeIndex = nodesImage(x + 1, y + 0).rgba;
       if (seNodeIndex == 0) {
         seNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(+0.5, -0.5), 0.0);
-        StormEnsure(seNodeIndex == EmplaceNode(nodePos));
+        StormEnsure(seNodeIndex == insertNode(nodePos));
       }
       size_t& neNodeIndex = nodesImage(x + 1, y + 1).rgba;
       if (neNodeIndex == 0) {
         neNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(+0.5, +0.5), 0.0);
-        StormEnsure(neNodeIndex == EmplaceNode(nodePos));
+        StormEnsure(neNodeIndex == insertNode(nodePos));
       }
       size_t& nwNodeIndex = nodesImage(x + 0, y + 1).rgba;
       if (nwNodeIndex == 0) {
         nwNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(-0.5, +0.5), 0.0);
-        StormEnsure(nwNodeIndex == EmplaceNode(nodePos));
+        StormEnsure(nwNodeIndex == insertNode(nodePos));
       }
 
       // Insert the cell.
@@ -221,7 +221,7 @@ void Mesh::save_vtk(const char* path,
   file << "ASCII" << std::endl;
   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
-  file << "POINTS " << nodeIndices().size() << " double" << std::endl;
+  file << "POINTS " << nodes().size() << " double" << std::endl;
   ranges::for_each(nodeViews(*this), [&](NodeView node) {
     const vec3_t& pos = node.pos();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
@@ -232,7 +232,7 @@ void Mesh::save_vtk(const char* path,
     ForEachSum(intCellViews(*this), size_t(0), [](CellView cell) {
       return cell.adjNodes().size() + 1;
     });
-  file << "CELLS " << cellIndices({}).size() << " " << sumNumCellAdjNodes << std::endl;
+  file << "CELLS " << cells({}).size() << " " << sumNumCellAdjNodes << std::endl;
   ranges::for_each(intCellViews(*this), [&](CellView cell) {
     file << cell.adjNodes().size() << " ";
     cell.forEachNode([&](size_t node_index) {
@@ -242,7 +242,7 @@ void Mesh::save_vtk(const char* path,
   });
   file << std::endl;
 
-  file << "CELL_TYPES " << cellIndices({}).size() << std::endl;
+  file << "CELL_TYPES " << cells({}).size() << std::endl;
   ranges::for_each(intCellViews(*this), [&](CellView cell) {
     static const std::map<ShapeType, const char*> shapes = {
       { ShapeType::Node, "1" }, { ShapeType::Segment2, "2" },
@@ -254,7 +254,7 @@ void Mesh::save_vtk(const char* path,
   });
   file << std::endl;
 
-  file << "CELL_DATA " << cellIndices({}).size() << std::endl;
+  file << "CELL_DATA " << cells({}).size() << std::endl;
   for (const sFieldDesc& field : fields) {
     file << "SCALARS " << field.name << " double 1" << std::endl;
     file << "LOOKUP_TABLE default" << std::endl;
