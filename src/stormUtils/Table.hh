@@ -66,6 +66,7 @@ public:
     std::for_each(m_row_offsets.begin() + (size_t)rowIndex + 1, m_row_offsets.end(),
       [](size_t& offset) { offset += 1; });
   }
+  void insert(RowIndex, ranges::range auto&&) {}
 
   /** Pointer to the beginning of the row. */
   ConstOverload(ColumnIndex*, begin_row, (RowIndex row_index), {

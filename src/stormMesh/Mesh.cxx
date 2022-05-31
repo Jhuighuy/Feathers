@@ -23,6 +23,8 @@
 /// OTHER DEALINGS IN THE SOFTWARE.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
+#include <boost/container/small_vector.hpp>
+
 #include <stormMesh/Mesh.hxx>
 #include <stormMesh/Element.hh>
 #include <stormUtils/Parallel.hh>
@@ -70,7 +72,7 @@ NodeIndex Mesh::insert_node(vec3_t const& coords, NodeMark node_mark) {
   node_marks_.emplace_back(node_mark);
   node_coords_.emplace_back(coords);
 
-  // These should be filled later.
+  // Emplace empty rows that would be filled later on.
   node_nodes_.insert_row();
   node_edges_.insert_row();
   node_faces_.insert_row();
@@ -80,11 +82,12 @@ NodeIndex Mesh::insert_node(vec3_t const& coords, NodeMark node_mark) {
 
 } // Mesh::insert_node
 
-EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark) {
+EdgeIndex Mesh::insert_edge(std::unique_ptr<Element>&& edge_shape,
+                            EdgeMark edge_mark) {
 
-  // Try to find an edge first.
+  // Try to find an edge_shape first.
   std::set<NodeIndex> const edge_key(
-    edge->NodeIndices().begin(), edge->NodeIndices().end());
+    edge_shape->NodeIndices().begin(), edge_shape->NodeIndices().end());
   if (edge_lookup_.contains(edge_key)) {
     return edge_lookup_.at(edge_key);
   }
@@ -92,21 +95,19 @@ EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark) 
   EdgeIndex const edge_index{num_edges_++};
   edge_lookup_[edge_key] = edge_index;
 
-  // Emplace edge properties.
+  // Emplace edge_shape properties.
   edge_marks_.emplace_back(edge_mark);
-  EdgeShapeTypes_.emplace_back(edge->Shape());
-  edge_lens_.emplace_back(edge->Volume());
-  edge_dirs_.emplace_back(edge->Dir());
+  edge_shapes_.emplace_back(edge_shape->Shape());
+  edge_lens_.emplace_back(edge_shape->Volume());
+  edge_dirs_.emplace_back(edge_shape->Dir());
 
-  // Fill the edge nodes and node edges.
-  edge_nodes_.insert_row(edge->NodeIndices() |
-    views::transform([&](NodeIndex node_index) {
-      node_edges_.insert(node_index, edge_index);
-      return node_index;
-    }));
+  // Fill the edge_shape-nodes and node-edges, edge-edges and node-nodes.
+  edge_nodes_.insert_row(edge_shape->NodeIndices());
+  for (NodeIndex node_index : edge_nodes_[edge_index]) {
+    node_edges_.insert(node_index, edge_index);
+  }
 
-  // These should be filled later.
-  edge_edges_.insert_row();
+  // Emplace empty rows that would be filled later on.
   edge_faces_.insert_row();
   edge_cells_.insert_row();
 
@@ -116,13 +117,14 @@ EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark) 
 
   return edge_index;
 
-} // Mesh::insertEdge
+} // Mesh::insert_edge
 
-FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
+FaceIndex Mesh::insert_face(std::unique_ptr<Element>&& face_shape,
+                            FaceMark face_mark) {
 
   // Try to find an edge first.
   std::set<NodeIndex> const face_key(
-    face->NodeIndices().begin(), face->NodeIndices().end());
+    face_shape->NodeIndices().begin(), face_shape->NodeIndices().end());
   if (face_lookup_.contains(face_key)) {
     return face_lookup_.at(face_key);
   }
@@ -130,103 +132,96 @@ FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
   FaceIndex const face_index{num_faces_++};
   face_lookup_[face_key] = face_index;
 
-  // Emplace face properties.
-  face_marks_.emplace_back(faceMark);
-  FaceShapeTypes_.emplace_back(face->Shape());
-  face_areas_.emplace_back(face->Volume());
-  face_normals_.emplace_back(face->Normal());
-  face_barycenters_.emplace_back(face->CenterPos());
+  // Emplace the face properties.
+  face_marks_.emplace_back(face_mark);
+  face_shapes_.emplace_back(face_shape->Shape());
+  face_areas_.emplace_back(face_shape->Volume());
+  face_normals_.emplace_back(face_shape->Normal());
+  face_barycenters_.emplace_back(face_shape->CenterPos());
 
-  // Fill the face nodes and node faces.
-  face_nodes_.insert_row(face->NodeIndices() |
-    views::transform([&](NodeIndex node_index) {
-      node_faces_.insert(node_index, face_index);
-      return node_index;
-    }));
+  // Fill the face-nodes and node-faces.
+  face_nodes_.insert_row(face_shape->NodeIndices());
+  for (NodeIndex node_index : face_nodes_[face_index]) {
+    node_faces_.insert(node_index, face_index);
+  }
 
-  // Fill the face edges and edge faces.
-  //std::vector<EdgeIndex> faceEdges;
-  //ranges::transform(face->MakeEdgesDesc(),
-  //  std::back_inserter(faceEdges), [&](ShapeDesc edgeDesc) {
-  //    EdgeIndex const edge_index = insertEdge(std::move(edgeDesc));
-  //    edge_faces_.insert(edge_index, face_index);
-  //    return edge_index;
-  //  });
-  //face_edges_.insert_row(faceEdges.begin(), faceEdges.end());
-  face_edges_.insert_row();
+  // Fill the face-edges, edge-faces and face-faces.
+  face_edges_.insert_row([&]() {
+    boost::container::small_vector<EdgeIndex, 4> this_face_edges{};
+    for (ShapeDesc& edge_desc : face_shape->make_edges_desc()) {
+      EdgeIndex const edge_index{insert_edge(std::move(edge_desc))};
+      this_face_edges.emplace_back(edge_index);
+      edge_faces_.insert(edge_index, face_index);
+    }
+    return this_face_edges;
+  }());
 
-  // This should be filled later.
-  face_cells_.insert_row(2); /// @todo here should be no 2!
-
-  /// @todo Fill me!
+  // Emplace empty rows that would be filled later on.
   face_faces_.insert_row();
+  face_cells_.insert_row();
 
   return face_index;
 
-} // Mesh::insertFace
+} // Mesh::insert_face
 
-CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, bool ghost) {
+CellIndex Mesh::insert_cell(std::unique_ptr<Element>&& cell, CellMark cell_mark, bool ghost) {
 
   CellIndex const cell_index{num_cells_++};
 
   // Emplace cell properties.
-  cell_marks_.emplace_back(cellMark);
-  CellShapeTypes_.emplace_back(cell->Shape());
+  cell_marks_.emplace_back(cell_mark);
+  cell_shapes_.emplace_back(cell->Shape());
   cell_volumes_.emplace_back(cell->Volume());
   cell_barycenters_.emplace_back(cell->CenterPos());
 
   // Fill the cell nodes and node cells.
-  cell_nodes_.insert_row(cell->NodeIndices() |
-    views::transform([&](NodeIndex node_index) {
-      node_cells_.insert(node_index, cell_index);
-      return node_index;
-    }));
+  cell_nodes_.insert_row(cell->NodeIndices());
+  for (NodeIndex node_index : cell_nodes_[cell_index]) {
+    node_cells_.insert(node_index, cell_index);
+  }
 
   if (ghost) {
     cell_edges_.insert_row();
     cell_faces_.insert_row();
-    cell_edges_.insert_row();
+    cell_cells_.insert_row();
     return cell_index;
   }
 
   // Fill the cell edges and edge cells.
-  //std::vector<EdgeIndex> cellEdges;
-  //ranges::transform(cell->MakeEdgesDesc(),
-  //  std::back_inserter(cellEdges), [&](ShapeDesc edgeDesc) {
-  //    EdgeIndex const edge_index = insertEdge(std::move(edgeDesc));
-  //    edge_cells_.insert(edge_index, cell_index);
-  //    return edge_index;
-  //  });
-  //cell_edges_.insert_row(cellEdges.begin(), cellEdges.end());
-  cell_edges_.insert_row();
+  cell_edges_.insert_row([&]() {
+    boost::container::small_vector<EdgeIndex, 12> this_cell_edges{};
+    for (ShapeDesc& edge_desc : cell->make_edges_desc()) {
+      EdgeIndex const edge_index{insert_edge(std::move(edge_desc))};
+      this_cell_edges.emplace_back(edge_index);
+      edge_cells_.insert(edge_index, cell_index);
+    }
+    return this_cell_edges;
+  }());
 
   // Fill the cell faces and face cells.
-  std::vector<FaceIndex> cellFaces;
-  ranges::transform(cell->MakeFacesDesc(),
-    std::back_inserter(cellFaces), [&](ShapeDesc faceDesc) {
-      FaceIndex const face_index = EmplaceFace(std::move(ShapeDesc(faceDesc)));
-      // How to:
-      // 1. Face does not have any connected faces: flip it to make the cell inner.
-      //    Generate a ghost if a mark is outer.
-      // 2. Face has one connected cell: assert and assign on an outer cell.
-      // 3. Face already has two adjacent faces: error.
-      if (std::equal(adjacent_nodes(face_index).begin(),
-                     adjacent_nodes(face_index).end(),
-                     faceDesc.NodeIndices.begin())) {
-        face_cells_[face_index][face_inner_cell_] = cell_index;
-      } else {
-        face_cells_[face_index][face_outer_cell_] = cell_index;
+  cell_faces_.insert_row([&]() {
+    boost::container::small_vector<FaceIndex, 6> this_cell_faces{};
+    for (ShapeDesc& face_desc : cell->make_faces_desc()) {
+      FaceIndex const face_index{insert_face(ShapeDesc(face_desc))};
+      this_cell_faces.emplace_back(face_index);
+      if (face_cells_[face_index].empty() &&
+          !ranges::equal(adjacent_nodes(face_index), face_desc.NodeIndices)) {
+        flip_face(face_index);
       }
-      return face_index;
-    });
-  cell_faces_.insert_row(cellFaces.begin(), cellFaces.end());
+      face_cells_.insert(face_index, cell_index);
+      if (mark(face_index) != FaceMark{0}) {
+        face_cells_.insert(face_index, CellIndex{npos});
+      }
+    }
+    return this_cell_faces;
+  }());
 
   /// @todo Fill me!
   cell_cells_.insert_row();
 
   return cell_index;
 
-} // Mesh::insertCell
+} // Mesh::insert_cell
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
@@ -321,7 +316,7 @@ void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
   permute_rows(edgePermutation.begin(), edgePermutation.end(),
                edge_nodes_, edge_edges_, edge_faces_, edge_cells_);
   permute_inplace(edgePermutation.begin(), edgePermutation.end(),
-                  edge_marks_.begin(), EdgeShapeTypes_.begin(),
+                  edge_marks_.begin(), edge_shapes_.begin(),
                   edge_lens_.begin(), edge_dirs_.begin());
 
   /* Generate the edge ranges. */
@@ -345,7 +340,7 @@ void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
     face_nodes_, face_edges_, face_faces_, face_cells_);
   permute_inplace(
     facePermutation.begin(), facePermutation.end(),
-    face_marks_.begin(), FaceShapeTypes_.begin(),
+    face_marks_.begin(), face_shapes_.begin(),
     face_areas_.begin(), face_normals_.begin(), face_barycenters_.begin());
 
   /* Generate mark ranges. */
@@ -369,7 +364,7 @@ void Mesh::PermuteCells(std::vector<size_t>&& cellPermutation) {
     cell_nodes_, cell_edges_, cell_faces_, cell_cells_);
   permute_inplace(
     cellPermutation.begin(), cellPermutation.end(),
-    cell_marks_.begin(), CellShapeTypes_.begin(),
+    cell_marks_.begin(), cell_shapes_.begin(),
     cell_volumes_.begin(), cell_barycenters_.begin());
 
   /* Generate mark ranges. */
@@ -431,15 +426,15 @@ static const std::map<ShapeType, std::pair<std::vector<size_t>, std::vector<size
 /**
  * Generate boundary cells to complete face connectivity.
  */
-void Mesh::generate_boundary_cells() {
+void Mesh::generate_boundary_cells(FaceIndex ff) {
 
-  ranges::for_each(face_views(*this), [&](MutableFaceView face) {
+  auto const f = [&](MutableFaceView face) {
     if (face.mark() == 0) {
       return;
     }
 
     /* Boundary faces should be oriented outwards from the mesh. */
-    if (face.inner_cell() == npos) {
+    if (ff == npos && face.inner_cell() == npos) {
       /* Flip normal and cell connectivity. */
       face_normals_[face] = -face_normals_[face];
       std::swap(adjacent_cells(face)[face_inner_cell_],
@@ -481,20 +476,23 @@ void Mesh::generate_boundary_cells() {
     /* Insert the boundary cell3. */
     // TODO:
     const CellIndex boundaryCellIndex =
-      EmplaceCell({cell.shapeType(), ghost_cell_nodes}, (CellMark) face.mark(), true);
-    adjacent_faces(boundaryCellIndex)[0] = face;
-#if 0
-    Cell& boundary_cell = get_cell(boundaryCellIndex);
-        while (boundary_cell._num_faces() != 1) {
-            boundary_cell.erase_face(0);
-        }
-        boundary_cell.begin_face()[0] = face;
-#endif
+      insert_cell({cell.shapeType(), ghost_cell_nodes}, (CellMark) face.mark(), true);
+    if (ff == npos) {
+      //adjacent_faces(boundaryCellIndex)[0] = face;
+      storm_assert(adjacent_cells(face)[face_outer_cell_] == npos);
+      adjacent_cells(face)[face_outer_cell_] = boundaryCellIndex;
+    } else {
+      face_cells_.insert(face, boundaryCellIndex);
+    }
 
-    storm_assert(adjacent_cells(face)[face_outer_cell_] == npos);
-    adjacent_cells(face)[face_outer_cell_] = boundaryCellIndex;
+  };
 
-  });
+  if (ff != npos) {
+    f(MutableFaceView(*this, ff));
+    return;
+  }
+  ranges::for_each(face_views(*this), f);
+
 } // Mesh::generate_boundary_cells
 
 } // namespace feathers

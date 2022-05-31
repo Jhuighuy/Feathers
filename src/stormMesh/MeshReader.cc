@@ -58,7 +58,7 @@ bool Mesh::read_from_triangle(std::string const& path) {
     size_t faceMark{0};
     face_stream >> face_index >> face_nodes[0] >> face_nodes[1] >> faceMark;
     storm_ensure(
-      face_index == EmplaceFace({ShapeType::Segment, face_nodes}, FaceMark(faceMark)));
+      face_index == insert_face({ShapeType::Segment, face_nodes}, FaceMark(faceMark)));
     std::getline(face_stream, line);
   }
 
@@ -72,7 +72,7 @@ bool Mesh::read_from_triangle(std::string const& path) {
     std::vector<NodeIndex> cell_nodes(3);
     cell_stream >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2];
     storm_ensure(
-      cell_index == EmplaceCell({ShapeType::Triangle, cell_nodes}));
+      cell_index == insert_cell({ShapeType::Triangle, cell_nodes}));
     std::getline(cell_stream, line);
   }
 

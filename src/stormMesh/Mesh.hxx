@@ -65,9 +65,9 @@ private:
   Vector<FaceIndex, FaceMark> face_ranges_;
   Vector<CellIndex, CellMark> cell_ranges_;
 
-  Vector<ShapeType, EdgeIndex> EdgeShapeTypes_;
-  Vector<ShapeType, FaceIndex> FaceShapeTypes_;
-  Vector<ShapeType, CellIndex> CellShapeTypes_;
+  Vector<ShapeType, EdgeIndex> edge_shapes_;
+  Vector<ShapeType, FaceIndex> face_shapes_;
+  Vector<ShapeType, CellIndex> cell_shapes_;
   // TODO: edge length + direction -> 4D oriented direction.
   // TODO: face area + normal -> 4D oriented area.
   Vector<vec3_t, NodeIndex> node_coords_;
@@ -249,19 +249,19 @@ public:
   /// @brief Get edge @p edge_index shape type.
   ShapeType shapeType(EdgeIndex edge_index) const noexcept {
     storm_assert(edge_index < num_edges_);
-    return EdgeShapeTypes_[edge_index];
+    return edge_shapes_[edge_index];
   }
 
   /// @brief Get face @p face_index shape type.
   ShapeType shapeType(FaceIndex face_index) const noexcept {
     storm_assert(face_index < num_faces_);
-    return FaceShapeTypes_[face_index];
+    return face_shapes_[face_index];
   }
 
   /// @brief Get cell @p cell_index shape type.
   ShapeType shapeType(CellIndex cell_index) const noexcept {
     storm_assert(cell_index < num_cells_);
-    return CellShapeTypes_[cell_index];
+    return cell_shapes_[cell_index];
   }
 
 private:
@@ -540,42 +540,42 @@ public:
   NodeIndex insert_node(vec3_t const& coords,
                         NodeMark node_mark = {});
 
-  /// @brief Find or emplace a new edge with a shape @p edgeShape
+  /// @brief Find or emplace a new edge_shape with a shape @p edgeShape
   ///   and node indices @p nodes.
   ///
-  /// Insertion would update the edge-node, edge-edge and
+  /// Insertion would update the edge_shape-node, edge_shape-edge_shape and
   ///   node-node topologies.
   ///
-  /// @param edge_mark Mark that would be assigned to an edge if
+  /// @param edge_mark Mark that would be assigned to an edge_shape if
   ///   the insertion took place, otherwise ignored.
-  /// @returns A pair of an index of the found or inserted edge
+  /// @returns A pair of an index of the found or inserted edge_shape
   ///   and a boolean value denoting whether the insertion took place.
   //std::pair<EdgeIndex, bool>
   //  findOrInsertEdge(std::shared_ptr<Shape> edgeShape,
   //                   EdgeMark edge_mark = {});
-  EdgeIndex insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark = {});
-  EdgeIndex insertEdge(ShapeDesc&& edgeDesc, EdgeMark edge_mark = {}) {
-    return insertEdge(makeShape_(std::forward<ShapeDesc>(edgeDesc)), edge_mark);
+  EdgeIndex insert_edge(std::unique_ptr<Element>&& edge_shape, EdgeMark edge_mark = {});
+  EdgeIndex insert_edge(ShapeDesc&& edgeDesc, EdgeMark edge_mark = {}) {
+    return insert_edge(makeShape_(std::forward<ShapeDesc>(edgeDesc)), edge_mark);
   }
 
-  /// @brief Find or emplace a new face with a shape @p faceShape
+  /// @brief Find or emplace a new face_shape with a shape @p faceShape
   ///   and node indices @p nodes.
   ///
   /// Insertion would implicitly insert the missing edges and
-  ///   update the face-edge and face-face topologies. The
+  ///   update the face_shape-edge and face_shape-face_shape topologies. The
   ///   implicitly inserted edges would inherit the mark from
-  ///   explicitly inserted face.
+  ///   explicitly inserted face_shape.
   ///
-  /// @param faceMark Mark that would be assigned to a face if
+  /// @param face_mark Mark that would be assigned to a face_shape if
   ///   the insertion took place, otherwise ignored.
-  /// @returns A pair of an index of the found or inserted face
+  /// @returns A pair of an index of the found or inserted face_shape
   ///   and a boolean value denoting whether the insertion took place.
   //std::pair<FaceIndex, bool>
   //  findOrInsertFace(std::shared_ptr<Shape> faceShape,
-  //                   FaceMark faceMark = {});
-  FaceIndex insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark = {});
-  FaceIndex EmplaceFace(ShapeDesc&& faceDesc, FaceMark faceMark = {}) {
-    return insertFace(makeShape_(std::forward<ShapeDesc>(faceDesc)), faceMark);
+  //                   FaceMark face_mark = {});
+  FaceIndex insert_face(std::unique_ptr<Element>&& face_shape, FaceMark face_mark = {});
+  FaceIndex insert_face(ShapeDesc&& faceDesc, FaceMark faceMark = {}) {
+    return insert_face(makeShape_(std::forward<ShapeDesc>(faceDesc)), faceMark);
   }
 
   /// @brief Find or emplace a new cell with a shape @p cellShape
@@ -586,20 +586,20 @@ public:
   ///   implicitly inserted face would inherit the mark from
   ///   explicitly inserted cell.
   ///
-  /// @param cellMark Mark that would be assigned to a cell if
+  /// @param cell_mark Mark that would be assigned to a cell if
   ///   the insertion took place, otherwise ignored.
   /// @returns A pair of an index of the found or inserted cell
   ///   and a boolean value denoting whether the insertion took place.
   //std::pair<CellIndex, bool>
   //  findOrInsertCell(std::shared_ptr<Shape> cellShape,
-  //                   CellMark cellMark = {});
-  CellIndex insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark = {}, bool ghost = false);
-  CellIndex EmplaceCell(ShapeDesc&& cellDesc, CellMark cellMark = {}, bool ghost = false) {
-    return insertCell(makeShape_(std::forward<ShapeDesc>(cellDesc)), cellMark, ghost);
+  //                   CellMark cell_mark = {});
+  CellIndex insert_cell(std::unique_ptr<Element>&& cell, CellMark cell_mark = {}, bool ghost = false);
+  CellIndex insert_cell(ShapeDesc&& cellDesc, CellMark cellMark = {}, bool ghost = false) {
+    return insert_cell(makeShape_(std::forward<ShapeDesc>(cellDesc)), cellMark, ghost);
   }
 
   /// @brief Generate boundary cells to complete face connectivity.
-  void generate_boundary_cells();
+  void generate_boundary_cells(FaceIndex ff = FaceIndex{npos});
 
   /// @}
 

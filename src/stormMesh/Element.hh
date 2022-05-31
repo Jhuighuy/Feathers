@@ -122,19 +122,19 @@ public:
 
   /// @brief Number of edges in the element.
   virtual size_t NumEdges() const {
-    return MakeEdgesDesc().size();
+    return make_edges_desc().size();
   }
 
   /// @brief Make element edges description array.
-  virtual ShapeDescArray MakeEdgesDesc() const = 0;
+  virtual ShapeDescArray make_edges_desc() const = 0;
 
   /// @brief Number of faces in the element.
   size_t NumFaces() const {
-    return MakeFacesDesc().size();
+    return make_faces_desc().size();
   }
 
   /// @brief Make element faces description.
-  virtual ShapeDescArray MakeFacesDesc() const = 0;
+  virtual ShapeDescArray make_faces_desc() const = 0;
 
 }; // class Element
 
@@ -188,8 +188,8 @@ class Node final :
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
 }; // class Node
 
 /// ----------------------------------------------------------------- ///
@@ -212,8 +212,8 @@ public:
   real_t Volume() const final;
   vec3_t Normal() const final;
   vec3_t Dir() const final;
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
 }; // class tSegmentShape
 
 /// ----------------------------------------------------------------- ///
@@ -235,8 +235,8 @@ class Triangle final :
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
 }; // class Triangle
 
 /// ----------------------------------------------------------------- ///
@@ -254,8 +254,8 @@ public:
 class Quadrangle final :
   public ElementHelper_<ShapeType::Quadrangle, 4, ComplexElement> {
 public:
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
   ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Quadrangle
 
@@ -288,8 +288,8 @@ class Tetrahedron final :
   public ElementHelper_<ShapeType::Tetrahedron, 4, SimplexElement> {
 public:
   real_t Volume() const final;
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
 }; // class Tetrahedron
 
 /// ----------------------------------------------------------------- ///
@@ -320,8 +320,8 @@ public:
 class Pyramid final :
   public ElementHelper_<ShapeType::Pyramid, 5, ComplexElement> {
 public:
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
   ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Pyramid
 
@@ -357,8 +357,8 @@ public:
 class Pentahedron final :
   public ElementHelper_<ShapeType::Pentahedron, 6, ComplexElement> {
 public:
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
   ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Pyramid
 
@@ -393,8 +393,8 @@ public:
 class Hexahedron final :
   public ElementHelper_<ShapeType::Hexahedron, 8, ComplexElement> {
 public:
-  ShapeDescArray MakeEdgesDesc() const final;
-  ShapeDescArray MakeFacesDesc() const final;
+  ShapeDescArray make_edges_desc() const final;
+  ShapeDescArray make_faces_desc() const final;
   ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Hexahedron
 
