@@ -333,37 +333,37 @@ public:
     return cell_barycenters_[cell_index];
   }
 
-  /// @brief Get minimal edge length.
+  /// @brief Get the minimal edge length.
   real_t min_edge_len() const noexcept {
     storm_assert(std::isfinite(min_cell_volume_));
     return min_edge_len_;
   }
 
-  /// @brief Get maximal edge length.
+  /// @brief Get the maximal edge length.
   real_t max_edge_len() const noexcept {
     storm_assert(std::isfinite(min_cell_volume_));
     return max_edge_len_;
   }
 
-  /// @brief Get minimal face area.
+  /// @brief Get the minimal face area.
   real_t min_face_area() const noexcept {
     storm_assert(std::isfinite(min_cell_volume_));
     return min_face_area_;
   }
 
-  /// @brief Get maximal face area.
+  /// @brief Get the maximal face area.
   real_t max_face_area() const noexcept {
     storm_assert(std::isfinite(min_cell_volume_));
     return max_face_area_;
   }
 
-  /// @brief Get minimal cell volume.
+  /// @brief Get the minimal cell volume.
   real_t min_cell_volume() const noexcept {
     storm_assert(std::isfinite(min_cell_volume_));
     return min_cell_volume_;
   }
 
-  /// @brief Get maximal cell volume.
+  /// @brief Get the maximal cell volume.
   real_t max_cell_volume() const noexcept {
     storm_assert(std::isfinite(max_cell_volume_));
     return max_cell_volume_;
@@ -598,17 +598,20 @@ public:
     return insertCell(makeShape_(std::forward<ShapeDesc>(cellDesc)), cellMark, ghost);
   }
 
+  /// @brief Generate boundary cells to complete face connectivity.
+  void generate_boundary_cells();
+
   /// @}
 
   /// ---------------------------------------------------------------- ///
+  /// @name Permutations.
   /// ---------------------------------------------------------------- ///
+  /// @{
 
-private:
-
-  template<class Tag>
-  void FixPermutationAndAdjacency_(std::vector<size_t>& cell_index);
-
-public:
+  /// @brief Flip the face @p face_index.
+  /// A face can be flipped only if it is not adjacent to any cells
+  /// or it is adjacent to the exactly two interior cells.
+  void flip_face(FaceIndex face_index) noexcept;
 
   /// @brief Change order of all nodes.
   void PermuteNodes(std::vector<size_t>&& nodePermutation = {});
@@ -622,15 +625,16 @@ public:
   /// @brief Change order of all cells.
   void PermuteCells(std::vector<size_t>&& cellPermutation = {});
 
+private:
+
+  template<class Tag>
+  void FixPermutationAndAdjacency_(std::vector<size_t>& cell_index);
+
 protected:
 
   void reorder_faces();
 
-  // ---------------------------------------------------------------------- //
-  // ---------------------------------------------------------------------- //
-
-  /// @brief Generate boundary cells to complete face connectivity.
-  void generate_boundary_cells();
+  /// @}
 
 }; // class Mesh
 

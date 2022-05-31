@@ -156,7 +156,7 @@ FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
   face_edges_.insert_row();
 
   // This should be filled later.
-  face_cells_.insert_row(2); // @todo here should be no 2!
+  face_cells_.insert_row(2); /// @todo here should be no 2!
 
   /// @todo Fill me!
   face_faces_.insert_row();
@@ -230,6 +230,23 @@ CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, b
 
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
+
+void Mesh::flip_face(FaceIndex face_index) noexcept {
+  storm_assert(face_index < num_faces_ && "face_index is out of range");
+  storm_assert([&]() {
+    auto face_cells{face_cells_[face_index]};
+    return face_cells.size() != 1 &&
+      ranges::all_of(face_cells, [this](CellIndex cell_index) {
+        return mark(cell_index) == CellMark{0};
+      });
+    }() && "face at face_index can not be flipped");
+
+  ranges::reverse(face_nodes_[face_index]);
+  ranges::reverse(face_edges_[face_index]);
+  ranges::reverse(face_cells_[face_index]);
+  face_normals_[face_index] = -face_normals_[face_index];
+
+} // Mesh::flip_face
 
 template<class Tag>
 void Mesh::FixPermutationAndAdjacency_(std::vector<size_t>& permutation) {
