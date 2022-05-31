@@ -185,13 +185,13 @@ public:
   }
 
   /// @brief Get node position.
-  vec3_t pos() const noexcept {
-    return this->mesh_->nodePos(this->index_);
+  vec3_t coords() const noexcept {
+    return this->mesh_->node_coords(this->index_);
   }
 
-  /// @brief Set node position @p pos.
-  void setPos(vec3_t const& pos) const noexcept requires (!std::is_const_v<Mesh>) {
-    this->mesh_->setNodePos(this->index_, pos);
+  /// @brief Set node position @p coords.
+  void set_coords(vec3_t const& coords) const noexcept requires (!std::is_const_v<Mesh>) {
+    this->mesh_->set_node_coords(this->index_, coords);
   }
 
 }; // class BaseNodeView<...>
@@ -279,8 +279,8 @@ public:
   }
 
   /// @brief Get face center position.
-  vec3_t centerPos() const noexcept {
-    return this->mesh_->faceCenterPos(this->index_);
+  vec3_t barycenter() const noexcept {
+    return this->mesh_->face_barycenter(this->index_);
   }
 
 }; // class BaseFaceView<...>
@@ -315,8 +315,8 @@ public:
   }
 
   /// @brief Get cell center position.
-  vec3_t centerPos() const noexcept {
-    return this->mesh_->cellCenterPos(this->index_);
+  vec3_t barycenter() const noexcept {
+    return this->mesh_->cell_barycenter(this->index_);
   }
 
 }; // class BaseCellView<...>

@@ -210,7 +210,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
     lim_u[cell].fill(1.0);
     cell.for_each_face([&](FaceView face) {
       const vec3_t dr =
-        face.centerPos() - cell.centerPos();
+        face.barycenter() - cell.barycenter();
       for (size_t i = 0; i < num_vars; ++i) {
         const real_t du_face = glm::dot(grad_u[cell][i], dr);
         const real_t limiter =

@@ -70,14 +70,14 @@ private:
   Vector<ShapeType, CellIndex> CellShapeTypes_;
   // TODO: edge length + direction -> 4D oriented direction.
   // TODO: face area + normal -> 4D oriented area.
-  Vector<vec3_t, NodeIndex> NodePos_;
+  Vector<vec3_t, NodeIndex> node_coords_;
   Vector<real_t, EdgeIndex> edge_lens_;
   Vector<vec3_t, EdgeIndex> edge_dirs_;
   Vector<real_t, FaceIndex> face_areas_;
   Vector<vec3_t, FaceIndex> face_normals_;
-  Vector<vec3_t, FaceIndex> FaceCenterPos_;
+  Vector<vec3_t, FaceIndex> face_barycenters_;
   Vector<real_t, CellIndex> cell_volumes_;
-  Vector<vec3_t, CellIndex> CellCenterPos_;
+  Vector<vec3_t, CellIndex> cell_barycenters_;
   real_t min_edge_len_{qnan}, max_edge_len_{qnan};
   real_t min_face_area_{qnan}, max_face_area_{qnan};
   real_t min_cell_volume_{qnan}, max_cell_volume_{qnan};
@@ -267,7 +267,7 @@ public:
 private:
 
   auto makeShape_(ShapeDesc&& desc) const {
-    return Element::Make(std::forward<ShapeDesc>(desc), NodePos_);
+    return Element::Make(std::forward<ShapeDesc>(desc), node_coords_);
   }
 
 public:
@@ -275,24 +275,20 @@ public:
   /// @brief Get element object.
   template<class Tag>
   auto shape(Index<Tag> index) const {
-    auto const nodeIndices = adjacent_nodes(index) |
-      views::transform([](NodeIndex node_index) {
-        return static_cast<size_t>(node_index);
-      });
-    return makeShape_({shapeType(index),
-                        std::vector(nodeIndices.begin(), nodeIndices.end())});
+    auto const node_indices = adjacent_nodes(index);
+    return makeShape_({shapeType(index), std::vector(node_indices.begin(), node_indices.end())});
   }
 
-  /// @brief Get node @p node_index position.
-  vec3_t nodePos(NodeIndex node_index) const noexcept {
+  /// @brief Get node @p node_index coordinates.
+  vec3_t node_coords(NodeIndex node_index) const noexcept {
     storm_assert(node_index < num_nodes_ && "node_index is out of range");
-    return NodePos_[node_index];
+    return node_coords_[node_index];
   }
 
-  /// @brief Set node @p node_index position @p pos.
-  void setNodePos(NodeIndex node_index, vec3_t const& pos) noexcept {
+  /// @brief Set node @p node_index position @p coords.
+  void set_node_coords(NodeIndex node_index, vec3_t const& coords) noexcept {
     storm_assert(node_index < num_nodes_ && "node_index is out of range");
-    NodePos_[node_index] = pos;
+    node_coords_[node_index] = coords;
   }
 
   /// @brief Get edge @p edge_index length.
@@ -320,9 +316,9 @@ public:
   }
 
   /// @brief Get face @p face_index barycenter.
-  vec3_t faceCenterPos(FaceIndex face_index) const noexcept {
+  vec3_t face_barycenter(FaceIndex face_index) const noexcept {
     storm_assert(face_index < num_faces_ && "face_index is out of range");
-    return FaceCenterPos_[face_index];
+    return face_barycenters_[face_index];
   }
 
   /// @brief Get cell @p cell_index volume/area/length.
@@ -331,10 +327,10 @@ public:
     return cell_volumes_[cell_index];
   }
 
-  /// @brief Get cell @p cell_index center position.
-  vec3_t cellCenterPos(CellIndex cell_index) const noexcept {
+  /// @brief Get cell @p cell_index barycenter.
+  vec3_t cell_barycenter(CellIndex cell_index) const noexcept {
     storm_assert(cell_index < num_cells_ && "cell_index is out of range");
-    return CellCenterPos_[cell_index];
+    return cell_barycenters_[cell_index];
   }
 
   /// @brief Get minimal edge length.
@@ -538,11 +534,11 @@ public:
   /// ---------------------------------------------------------------- ///
   /// @{
 
-  /// @brief Insert a new node with a position @p pos
-  ///   and a mark @p nodeMark into the mesh.
+  /// @brief Insert a new node with a position @p coords
+  ///   and a mark @p node_mark into the mesh.
   /// @returns Index of the inserted node.
-  NodeIndex insertNode(vec3_t const& nodePos,
-                       NodeMark nodeMark = {});
+  NodeIndex insert_node(vec3_t const& coords,
+                        NodeMark node_mark = {});
 
   /// @brief Find or emplace a new edge with a shape @p edgeShape
   ///   and node indices @p nodes.
@@ -550,13 +546,17 @@ public:
   /// Insertion would update the edge-node, edge-edge and
   ///   node-node topologies.
   ///
-  /// @param edgeMark Mark that would be assigned to an edge if
+  /// @param edge_mark Mark that would be assigned to an edge if
   ///   the insertion took place, otherwise ignored.
   /// @returns A pair of an index of the found or inserted edge
   ///   and a boolean value denoting whether the insertion took place.
   //std::pair<EdgeIndex, bool>
   //  findOrInsertEdge(std::shared_ptr<Shape> edgeShape,
-  //                   EdgeMark edgeMark = {});
+  //                   EdgeMark edge_mark = {});
+  EdgeIndex insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark = {});
+  EdgeIndex insertEdge(ShapeDesc&& edgeDesc, EdgeMark edge_mark = {}) {
+    return insertEdge(makeShape_(std::forward<ShapeDesc>(edgeDesc)), edge_mark);
+  }
 
   /// @brief Find or emplace a new face with a shape @p faceShape
   ///   and node indices @p nodes.
@@ -573,6 +573,10 @@ public:
   //std::pair<FaceIndex, bool>
   //  findOrInsertFace(std::shared_ptr<Shape> faceShape,
   //                   FaceMark faceMark = {});
+  FaceIndex insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark = {});
+  FaceIndex EmplaceFace(ShapeDesc&& faceDesc, FaceMark faceMark = {}) {
+    return insertFace(makeShape_(std::forward<ShapeDesc>(faceDesc)), faceMark);
+  }
 
   /// @brief Find or emplace a new cell with a shape @p cellShape
   ///   and node indices @p nodes.
@@ -599,24 +603,6 @@ public:
   /// ---------------------------------------------------------------- ///
   /// ---------------------------------------------------------------- ///
 
-  /// @brief Emplace a new edge into the mesh.
-  /// @returns Index of the inserted edge.
-  /// @{
-  EdgeIndex insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark = {});
-  EdgeIndex insertEdge(ShapeDesc&& edgeDesc, EdgeMark edgeMark = {}) {
-    return insertEdge(makeShape_(std::forward<ShapeDesc>(edgeDesc)), edgeMark);
-  }
-  /// @}
-
-  /// @brief Emplace a new face into the mesh.
-  /// @returns Index of the inserted face.
-  /// @{
-  FaceIndex insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark = {});
-  FaceIndex EmplaceFace(ShapeDesc&& faceDesc, FaceMark faceMark = {}) {
-    return insertFace(makeShape_(std::forward<ShapeDesc>(faceDesc)), faceMark);
-  }
-  /// @}
-
 private:
 
   template<class Tag>
@@ -642,14 +628,6 @@ protected:
 
   // ---------------------------------------------------------------------- //
   // ---------------------------------------------------------------------- //
-
-  /// @brief Generate edges using the face to Node connectivity.
-  /// @warning This function may be slow and memory-consuming.
-  void FinalizeEdges_();
-
-  /// @brief Generate faces using the cell to Node connectivity.
-  /// @warning This function may be slow and memory-consuming.
-  void FinalizeFaces_();
 
   /// @brief Generate boundary cells to complete face connectivity.
   void generate_boundary_cells();

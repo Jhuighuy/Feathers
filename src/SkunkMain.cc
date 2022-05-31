@@ -46,15 +46,15 @@ int main(int argc, char** argv) {
     MhdFvSolverT<tGasPhysics> solver(mesh);
     for (uint_t cell_ind = 0; cell_ind < mesh->cells().size(); ++cell_ind) {
         /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
-        double x = mesh->get_cell(cell_ind).centerPos().x;
-        double y = mesh->Cell(cell_ind).centerPos().y;
+        double x = mesh->get_cell(cell_ind).barycenter().x;
+        double y = mesh->Cell(cell_ind).barycenter().y;
         d += 0.2*std::sin(M_PI*(x+y));
         std::array<real_t, 5> q{ d, p, u, v, 0.0 };
         tGasPhysics::tFluidState qq({}, nullptr, q.data());
         uc[cell_ind] = qq.cons;*/
 
         /*double d, p;
-        if (mesh->Cell(cell_ind).centerPos().x < 1.0) {
+        if (mesh->Cell(cell_ind).barycenter().x < 1.0) {
             d = 1.0, p = 1.0;
         } else {
             d = 0.125, p = 0.1;
@@ -64,10 +64,10 @@ int main(int argc, char** argv) {
         uc[cell_ind] = v.cons;*/
 
         /*double d, p, w;
-        if (mesh->get_cell(cell_ind).centerPos().x < 1.0) {
+        if (mesh->get_cell(cell_ind).barycenter().x < 1.0) {
             d = 3.857134, p = 10.33333, w = 2.629369;
         } else {
-            auto x = mesh->Cell(cell_ind).centerPos().x;
+            auto x = mesh->Cell(cell_ind).barycenter().x;
             d = 1.0 + 0.2*std::sin(5.0*x);
             p = 1, w = 0;
         }
@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
         uc[cell_ind] = v.cons;*/
 
         /*double d, p, u, v;
-        double X = mesh->get_cell(cell_ind).centerPos().x;
-        double Y = mesh->Cell(cell_ind).centerPos().y;
+        double X = mesh->get_cell(cell_ind).barycenter().x;
+        double Y = mesh->Cell(cell_ind).barycenter().y;
         if (X < 0.5) {
             if (Y < 0.5) {
                 //LB

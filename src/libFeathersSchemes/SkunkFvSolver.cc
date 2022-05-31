@@ -40,8 +40,8 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(Storm::tScalarField& u,
       const auto& bc = m_bcs.at(mark);
     for_each(face_views(*m_mesh, FaceMark(mark)), [&](FaceView face) {
       bc->get_ghost_state(face.normal(),
-                          face.inner_cell().centerPos(),
-                          face.outer_cell().centerPos(),
+                          face.inner_cell().barycenter(),
+                          face.outer_cell().barycenter(),
                           u[face.inner_cell()].data(),
                           u[face.outer_cell()].data());
     });

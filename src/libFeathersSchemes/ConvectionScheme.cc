@@ -93,9 +93,9 @@ void cUpwind2ConvectionScheme::get_cell_convection(size_t num_vars,
     const CellView cell_outer = face.outer_cell();
     const CellView cell_inner = face.inner_cell();
     const vec3_t dr_outer =
-      face.centerPos() - cell_outer.centerPos();
+      face.barycenter() - cell_outer.barycenter();
     const vec3_t dr_inner =
-      face.centerPos() - cell_inner.centerPos();
+      face.barycenter() - cell_inner.barycenter();
     FEATHERS_TMP_SCALAR_FIELD(u_outer, num_vars);
     FEATHERS_TMP_SCALAR_FIELD(u_inner, num_vars);
     for (size_t i = 0; i < num_vars; ++i) {

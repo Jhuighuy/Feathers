@@ -35,13 +35,13 @@ namespace Storm {
 enum class ShapeType : byte_t {
   Null,
   Node,
-  Segment2,
-  Triangle3,
-  Quadrangle4,
-  Tetrahedron4,
-  Pyramid5,
-  Pentahedron6,
-  Hexahedron8,
+  Segment,
+  Triangle,
+  Quadrangle,
+  Tetrahedron,
+  Pyramid,
+  Pentahedron,
+  Hexahedron,
 }; // enum class ShapeType
 
 /// @brief Shape description.
@@ -74,7 +74,7 @@ public:
   virtual ~Element() = default;
 
   /// @brief Construct a new element object \
-  ///   with a description @p desc and a node position array @p nodePos.
+  ///   with a description @p desc and a node position array @p node_coords.
   static std::unique_ptr<Element> Make(ShapeDesc&& desc,
                                        std::span<vec3_t const> nodePos);
 
@@ -207,7 +207,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Segment final :
-  public ElementHelper_<ShapeType::Segment2, 2, SimplexElement> {
+  public ElementHelper_<ShapeType::Segment, 2, SimplexElement> {
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
@@ -231,7 +231,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Triangle final :
-  public ElementHelper_<ShapeType::Triangle3, 3, SimplexElement> {
+  public ElementHelper_<ShapeType::Triangle, 3, SimplexElement> {
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
@@ -252,7 +252,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Quadrangle final :
-  public ElementHelper_<ShapeType::Quadrangle4, 4, ComplexElement> {
+  public ElementHelper_<ShapeType::Quadrangle, 4, ComplexElement> {
 public:
   ShapeDescArray MakeEdgesDesc() const final;
   ShapeDescArray MakeFacesDesc() const final;
@@ -285,7 +285,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Tetrahedron final :
-  public ElementHelper_<ShapeType::Tetrahedron4, 4, SimplexElement> {
+  public ElementHelper_<ShapeType::Tetrahedron, 4, SimplexElement> {
 public:
   real_t Volume() const final;
   ShapeDescArray MakeEdgesDesc() const final;
@@ -318,7 +318,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Pyramid final :
-  public ElementHelper_<ShapeType::Pyramid5, 5, ComplexElement> {
+  public ElementHelper_<ShapeType::Pyramid, 5, ComplexElement> {
 public:
   ShapeDescArray MakeEdgesDesc() const final;
   ShapeDescArray MakeFacesDesc() const final;
@@ -355,7 +355,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Pentahedron final :
-  public ElementHelper_<ShapeType::Pentahedron6, 6, ComplexElement> {
+  public ElementHelper_<ShapeType::Pentahedron, 6, ComplexElement> {
 public:
   ShapeDescArray MakeEdgesDesc() const final;
   ShapeDescArray MakeFacesDesc() const final;
@@ -391,7 +391,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Hexahedron final :
-  public ElementHelper_<ShapeType::Hexahedron8, 8, ComplexElement> {
+  public ElementHelper_<ShapeType::Hexahedron, 8, ComplexElement> {
 public:
   ShapeDescArray MakeEdgesDesc() const final;
   ShapeDescArray MakeFacesDesc() const final;

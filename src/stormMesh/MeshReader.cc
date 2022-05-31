@@ -34,46 +34,46 @@ bool Mesh::read_from_triangle(std::string const& path) {
 
   std::string line;
 
-  std::ifstream nodeFile(path + std::string("node"));
-  StormEnsure(nodeFile.is_open());
-  size_t numNodes{0}, dim{0};
-  nodeFile >> numNodes >> dim;
-  std::getline(nodeFile, line);
-  for (size_t i{0}; i < numNodes; ++i) {
-    NodeIndex nodeIndex{0};
+  std::ifstream node_stream(path + std::string("node"));
+  storm_ensure(node_stream.is_open());
+  size_t num_nodes{0}, dim{0};
+  node_stream >> num_nodes >> dim;
+  std::getline(node_stream, line);
+  for (size_t i{0}; i < num_nodes; ++i) {
+    NodeIndex node_index{0};
     vec3_t nodePos(0.0);
-    nodeFile >> nodeIndex >> nodePos.x >> nodePos.y;
-    std::getline(nodeFile, line);
-    StormEnsure(nodeIndex == insertNode(nodePos));
+    node_stream >> node_index >> nodePos.x >> nodePos.y;
+    std::getline(node_stream, line);
+    storm_ensure(node_index == insert_node(nodePos));
   }
 
-  std::ifstream faceFile(path + std::string("edge"));
-  StormEnsure(faceFile.is_open());
-  size_t numFaces{0};
-  faceFile >> numFaces;
-  std::getline(faceFile, line);
-  for (size_t i{0}; i < numFaces; ++i) {
-    FaceIndex faceIndex{0};
-    std::vector<NodeIndex> faceNodes(2);
+  std::ifstream face_stream(path + std::string("edge"));
+  storm_ensure(face_stream.is_open());
+  size_t num_faces{0};
+  face_stream >> num_faces;
+  std::getline(face_stream, line);
+  for (size_t i{0}; i < num_faces; ++i) {
+    FaceIndex face_index{0};
+    std::vector<NodeIndex> face_nodes(2);
     size_t faceMark{0};
-    faceFile >> faceIndex >> faceNodes[0] >> faceNodes[1] >> faceMark;
-    StormEnsure(
-      faceIndex == EmplaceFace({ShapeType::Segment2, faceNodes}, FaceMark(faceMark)));
-    std::getline(faceFile, line);
+    face_stream >> face_index >> face_nodes[0] >> face_nodes[1] >> faceMark;
+    storm_ensure(
+      face_index == EmplaceFace({ShapeType::Segment, face_nodes}, FaceMark(faceMark)));
+    std::getline(face_stream, line);
   }
 
-  std::ifstream cellFile(path + std::string("ele"));
-  FEATHERS_ENSURE(cellFile.is_open());
-  size_t numCells{0};
-  cellFile >> numCells;
-  std::getline(cellFile, line);
-  for (size_t i{0}; i < numCells; ++i) {
-    CellIndex cellIndex{0};
-    std::vector<NodeIndex> cellNodes(3);
-    cellFile >> cellIndex >> cellNodes[0] >> cellNodes[1] >> cellNodes[2];
-    StormEnsure(
-      cellIndex == EmplaceCell({ShapeType::Triangle3, cellNodes}));
-    std::getline(cellFile, line);
+  std::ifstream cell_stream(path + std::string("ele"));
+  storm_ensure(cell_stream.is_open());
+  size_t num_cells{0};
+  cell_stream >> num_cells;
+  std::getline(cell_stream, line);
+  for (size_t i{0}; i < num_cells; ++i) {
+    CellIndex cell_index{0};
+    std::vector<NodeIndex> cell_nodes(3);
+    cell_stream >> cell_index >> cell_nodes[0] >> cell_nodes[1] >> cell_nodes[2];
+    storm_ensure(
+      cell_index == EmplaceCell({ShapeType::Triangle, cell_nodes}));
+    std::getline(cell_stream, line);
   }
 
   finalize();
@@ -81,27 +81,28 @@ bool Mesh::read_from_triangle(std::string const& path) {
 
 } // сMesh::read_from_triangle
 
+#if 0
 bool Mesh::read_from_tetgen(std::string const& path) {
 
   std::string line;
 
   std::ifstream nodeFile(path + std::string("node"));
-  StormEnsure(nodeFile.is_open());
+  storm_ensure(nodeFile.is_open());
   size_t numNodes{0}, dim{0};
   nodeFile >> numNodes >> dim;
-  StormEnsure(dim == 2);
+  storm_ensure(dim == 2);
   std::getline(nodeFile, line);
   for (size_t i{0}; i < numNodes; ++i) {
     size_t nodeIndex{0};
     vec3_t nodePos(0.0);
     nodeFile >> nodeIndex >> nodePos.x >> nodePos.y >> nodePos.z;
-    StormEnsure(
+    storm_ensure(
       nodeIndex == insertNode(nodePos));
     std::getline(nodeFile, line);
   }
 
   std::ifstream faceFile(path + std::string("face"));
-  StormEnsure(faceFile.is_open());
+  storm_ensure(faceFile.is_open());
   size_t numFaces{0};
   faceFile >> numFaces;
   std::getline(faceFile, line);
@@ -110,13 +111,13 @@ bool Mesh::read_from_tetgen(std::string const& path) {
     std::vector<size_t> faceNodes(3, npos);
     size_t faceMark{0};
     faceFile >> faceIndex >> faceNodes[0] >> faceNodes[1] >> faceNodes[2] >> faceMark;
-    StormEnsure(
-      faceIndex == EmplaceFace({ShapeType::Triangle3, faceNodes}, FaceMark{faceMark}));
+    storm_ensure(
+      faceIndex == EmplaceFace({ShapeType::Triangle, faceNodes}, FaceMark{faceMark}));
     std::getline(faceFile, line);
   }
 
   std::ifstream cellFile(path + std::string("ele"));
-  StormEnsure(cellFile.is_open());
+  storm_ensure(cellFile.is_open());
   size_t numCells{0};
   cellFile >> numCells;
   std::getline(cellFile, line);
@@ -124,8 +125,8 @@ bool Mesh::read_from_tetgen(std::string const& path) {
     size_t cellIndex{0};
     std::vector<size_t> cellNodes(4, npos);
     cellFile >> cellIndex >> cellNodes[0] >> cellNodes[1] >> cellNodes[2] >> cellNodes[3];
-    StormEnsure(
-      cellIndex == EmplaceCell({ShapeType::Tetrahedron4, cellNodes}));
+    storm_ensure(
+      cellIndex == EmplaceCell({ShapeType::Tetrahedron, cellNodes}));
     std::getline(cellFile, line);
   }
 
@@ -159,47 +160,47 @@ bool Mesh::read_from_image(const char *path,
       if (swNodeIndex == 0) {
         swNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(-0.5, -0.5), 0.0);
-        StormEnsure(swNodeIndex == insertNode(nodePos));
+        storm_ensure(swNodeIndex == insertNode(nodePos));
       }
       size_t& seNodeIndex = nodesImage(x + 1, y + 0).rgba;
       if (seNodeIndex == 0) {
         seNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(+0.5, -0.5), 0.0);
-        StormEnsure(seNodeIndex == insertNode(nodePos));
+        storm_ensure(seNodeIndex == insertNode(nodePos));
       }
       size_t& neNodeIndex = nodesImage(x + 1, y + 1).rgba;
       if (neNodeIndex == 0) {
         neNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(+0.5, +0.5), 0.0);
-        StormEnsure(neNodeIndex == insertNode(nodePos));
+        storm_ensure(neNodeIndex == insertNode(nodePos));
       }
       size_t& nwNodeIndex = nodesImage(x + 0, y + 1).rgba;
       if (nwNodeIndex == 0) {
         nwNodeIndex = nodeIndex++;
         vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(-0.5, +0.5), 0.0);
-        StormEnsure(nwNodeIndex == insertNode(nodePos));
+        storm_ensure(nwNodeIndex == insertNode(nodePos));
       }
 
       // Insert the cell.
-      EmplaceCell({ShapeType::Quadrangle4,
+      EmplaceCell({ShapeType::Quadrangle,
                     {swNodeIndex, seNodeIndex, neNodeIndex, nwNodeIndex}});
 
       // Insert the boundary faces.
       if (Pixel const sPixel = image(x, y - 1); sPixel.rgba != fluid_color.rgba) {
         FaceMark const faceMark{mark_colors.at(sPixel)};
-        EmplaceFace({ShapeType::Segment2, {swNodeIndex, seNodeIndex}}, faceMark);
+        EmplaceFace({ShapeType::Segment, {swNodeIndex, seNodeIndex}}, faceMark);
       }
       if (Pixel const ePixel = image(x + 1, y); ePixel.rgba != fluid_color.rgba) {
         FaceMark const faceMark{mark_colors.at(ePixel)};
-        EmplaceFace({ShapeType::Segment2, {seNodeIndex, neNodeIndex}}, faceMark);
+        EmplaceFace({ShapeType::Segment, {seNodeIndex, neNodeIndex}}, faceMark);
       }
       if (Pixel const nPixel = image(x, y + 1); nPixel.rgba != fluid_color.rgba) {
         FaceMark const faceMark{mark_colors.at(nPixel)};
-        EmplaceFace({ShapeType::Segment2, {neNodeIndex, nwNodeIndex}}, faceMark);
+        EmplaceFace({ShapeType::Segment, {neNodeIndex, nwNodeIndex}}, faceMark);
       }
       if (Pixel const wPixel = image(x - 1, y); wPixel.rgba != fluid_color.rgba) {
         FaceMark const faceMark{mark_colors.at(wPixel)};
-        EmplaceFace({ShapeType::Segment2, {nwNodeIndex, swNodeIndex}}, faceMark);
+        EmplaceFace({ShapeType::Segment, {nwNodeIndex, swNodeIndex}}, faceMark);
       }
     }
   }
@@ -208,6 +209,7 @@ bool Mesh::read_from_image(const char *path,
   return true;
 
 } // Mesh::read_from_image
+#endif
 
 void Mesh::save_vtk(const char* path,
                     const std::vector<sFieldDesc>& fields) const {
@@ -220,7 +222,7 @@ void Mesh::save_vtk(const char* path,
 
   file << "POINTS " << nodes().size() << " double" << std::endl;
   ranges::for_each(node_views(*this), [&](NodeView node) {
-    const vec3_t& pos = node.pos();
+    const vec3_t& pos = node.coords();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
   });
   file << std::endl;
@@ -242,10 +244,10 @@ void Mesh::save_vtk(const char* path,
   file << "CELL_TYPES " << cells({}).size() << std::endl;
   ranges::for_each(intr_cell_views(*this), [&](CellView cell) {
     static const std::map<ShapeType, const char*> shapes = {
-      { ShapeType::Node, "1" }, { ShapeType::Segment2, "2" },
-      { ShapeType::Triangle3, "5" }, { ShapeType::Quadrangle4, "9" },
-      { ShapeType::Tetrahedron4, "10" }, { ShapeType::Pyramid5, "14" },
-      { ShapeType::Pentahedron6, "13" }, { ShapeType::Hexahedron8, "12" }
+      { ShapeType::Node, "1" }, { ShapeType::Segment, "2" },
+      { ShapeType::Triangle, "5" }, { ShapeType::Quadrangle, "9" },
+      { ShapeType::Tetrahedron, "10" }, { ShapeType::Pyramid, "14" },
+      { ShapeType::Pentahedron, "13" }, { ShapeType::Hexahedron, "12" }
     };
     file << shapes.at(cell.shapeType()) << std::endl;
   });

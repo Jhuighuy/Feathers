@@ -35,40 +35,40 @@ void Mesh::UpdateElementsGeometry() {
   // Compute edge lengths and directions.
   std::tie(min_edge_len_, max_edge_len_) =
     for_each_min_max(edges(), +huge, -huge, [this](EdgeIndex edge_index) {
-      std::unique_ptr<Shape> const edgeShape = shape(edge_index);
-      edge_lens_[edge_index] = edgeShape->Volume();
-      edge_dirs_[edge_index] = edgeShape->Dir();
+      std::unique_ptr<Shape> const edge_shape = shape(edge_index);
+      edge_lens_[edge_index] = edge_shape->Volume();
+      edge_dirs_[edge_index] = edge_shape->Dir();
       return edge_lens_[edge_index];
     });
 
   // Compute face areas, normals and center positions.
   std::tie(min_face_area_, max_face_area_) =
     for_each_min_max(faces(), +huge, -huge, [&](FaceIndex face_index) {
-      std::unique_ptr<Shape> faceShape = shape(face_index);
-      face_areas_[face_index] = faceShape->Volume();
-      face_normals_[face_index] = faceShape->Normal();
-      FaceCenterPos_[face_index] = faceShape->CenterPos();
+      std::unique_ptr<Shape> const face_shape = shape(face_index);
+      face_areas_[face_index] = face_shape->Volume();
+      face_normals_[face_index] = face_shape->Normal();
+      face_barycenters_[face_index] = face_shape->CenterPos();
       return face_areas_[face_index];
     });
 
   // Compute cell volumes and center positions.
   std::tie(min_cell_volume_, max_cell_volume_) =
     for_each_min_max(cells(), +huge, -huge, [&](CellIndex cell_index) {
-      std::unique_ptr<Shape> const cellShape = shape(cell_index);
-      cell_volumes_[cell_index] = cellShape->Volume();
-      CellCenterPos_[cell_index] = cellShape->CenterPos();
+      std::unique_ptr<Shape> const cell_shape = shape(cell_index);
+      cell_volumes_[cell_index] = cell_shape->Volume();
+      cell_barycenters_[cell_index] = cell_shape->CenterPos();
       return cell_volumes_[cell_index];
     });
 
 } // Mesh::UpdateElementsGeometry
 
-NodeIndex Mesh::insertNode(vec3_t const& nodePos, NodeMark nodeMark) {
+NodeIndex Mesh::insert_node(vec3_t const& coords, NodeMark node_mark) {
 
-  NodeIndex const node_index(num_nodes_++);
+  NodeIndex const node_index{num_nodes_++};
 
   // Emplace node properties.
-  node_marks_.emplace_back(nodeMark);
-  NodePos_.emplace_back(nodePos);
+  node_marks_.emplace_back(node_mark);
+  node_coords_.emplace_back(coords);
 
   // These should be filled later.
   node_nodes_.emplaceRow();
@@ -78,30 +78,29 @@ NodeIndex Mesh::insertNode(vec3_t const& nodePos, NodeMark nodeMark) {
 
   return node_index;
 
-} // Mesh::insertNode
+} // Mesh::insert_node
 
-EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark) {
+EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark) {
 
   // Try to find an edge first.
-  std::set<size_t> const edgeKey(
+  std::set<NodeIndex> const edge_key(
     edge->NodeIndices().begin(), edge->NodeIndices().end());
-  if (edge_lookup_.contains(edgeKey)) {
-    return edge_lookup_.at(edgeKey);
+  if (edge_lookup_.contains(edge_key)) {
+    return edge_lookup_.at(edge_key);
   }
 
-  EdgeIndex const edge_index(num_edges_++);
-  edge_lookup_[edgeKey] = edge_index;
+  EdgeIndex const edge_index{num_edges_++};
+  edge_lookup_[edge_key] = edge_index;
 
   // Emplace edge properties.
-  edge_marks_.emplace_back(edgeMark);
+  edge_marks_.emplace_back(edge_mark);
   EdgeShapeTypes_.emplace_back(edge->Shape());
   edge_lens_.emplace_back(edge->Volume());
   edge_dirs_.emplace_back(edge->Dir());
 
   // Fill the edge nodes and node edges.
   edge_nodes_.emplaceRow(edge->NodeIndices() |
-    views::transform([&](size_t node_index_) {
-      NodeIndex const node_index{node_index_};
+    views::transform([&](NodeIndex node_index) {
       node_edges_.insert(node_index, edge_index);
       return node_index;
     }));
@@ -122,26 +121,25 @@ EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark) {
 FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
 
   // Try to find an edge first.
-  std::set<size_t> const faceKey(
+  std::set<NodeIndex> const face_key(
     face->NodeIndices().begin(), face->NodeIndices().end());
-  if (face_lookup_.contains(faceKey)) {
-    return face_lookup_.at(faceKey);
+  if (face_lookup_.contains(face_key)) {
+    return face_lookup_.at(face_key);
   }
 
-  FaceIndex const face_index(num_faces_++);
-  face_lookup_[faceKey] = face_index;
+  FaceIndex const face_index{num_faces_++};
+  face_lookup_[face_key] = face_index;
 
   // Emplace face properties.
   face_marks_.emplace_back(faceMark);
   FaceShapeTypes_.emplace_back(face->Shape());
   face_areas_.emplace_back(face->Volume());
   face_normals_.emplace_back(face->Normal());
-  FaceCenterPos_.emplace_back(face->CenterPos());
+  face_barycenters_.emplace_back(face->CenterPos());
 
   // Fill the face nodes and node faces.
   face_nodes_.emplaceRow(face->NodeIndices() |
-    views::transform([&](size_t node_index_) {
-      NodeIndex const node_index{node_index_};
+    views::transform([&](NodeIndex node_index) {
       node_faces_.insert(node_index, face_index);
       return node_index;
     }));
@@ -169,18 +167,17 @@ FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
 
 CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, bool ghost) {
 
-  CellIndex const cell_index(num_cells_++);
+  CellIndex const cell_index{num_cells_++};
 
   // Emplace cell properties.
   cell_marks_.emplace_back(cellMark);
   CellShapeTypes_.emplace_back(cell->Shape());
   cell_volumes_.emplace_back(cell->Volume());
-  CellCenterPos_.emplace_back(cell->CenterPos());
+  cell_barycenters_.emplace_back(cell->CenterPos());
 
   // Fill the cell nodes and node cells.
   cell_nodes_.emplaceRow(cell->NodeIndices() |
-    views::transform([&](size_t node_index_) {
-      NodeIndex const node_index{node_index_};
+    views::transform([&](NodeIndex node_index) {
       node_cells_.insert(node_index, cell_index);
       return node_index;
     }));
@@ -208,7 +205,9 @@ CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, b
   ranges::transform(cell->MakeFacesDesc(),
     std::back_inserter(cellFaces), [&](ShapeDesc faceDesc) {
       FaceIndex const face_index = EmplaceFace(std::move(ShapeDesc(faceDesc)));
-      if (std::equal(adjacent_nodes(face_index).begin(), adjacent_nodes(face_index).end(), faceDesc.NodeIndices.begin())) {
+      if (std::equal(adjacent_nodes(face_index).begin(),
+                     adjacent_nodes(face_index).end(),
+                     faceDesc.NodeIndices.begin())) {
         face_cells_[face_index][face_inner_cell_] = cell_index;
       } else {
         face_cells_[face_index][face_outer_cell_] = cell_index;
@@ -279,7 +278,7 @@ void Mesh::PermuteNodes(std::vector<size_t>&& nodePermutation) {
   permute_rows(nodePermutation.begin(), nodePermutation.end(),
                node_nodes_, node_edges_, node_faces_, node_cells_);
   permute_inplace(nodePermutation.begin(), nodePermutation.end(),
-                  node_marks_.begin(), NodePos_.begin());
+                  node_marks_.begin(), node_coords_.begin());
 
   /* Generate the Node ranges. */
   node_ranges_.clear();
@@ -325,7 +324,7 @@ void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
   permute_inplace(
     facePermutation.begin(), facePermutation.end(),
     face_marks_.begin(), FaceShapeTypes_.begin(),
-    face_areas_.begin(), face_normals_.begin(), FaceCenterPos_.begin());
+    face_areas_.begin(), face_normals_.begin(), face_barycenters_.begin());
 
   /* Generate mark ranges. */
   face_ranges_.clear();
@@ -349,7 +348,7 @@ void Mesh::PermuteCells(std::vector<size_t>&& cellPermutation) {
   permute_inplace(
     cellPermutation.begin(), cellPermutation.end(),
     cell_marks_.begin(), CellShapeTypes_.begin(),
-    cell_volumes_.begin(), CellCenterPos_.begin());
+    cell_volumes_.begin(), cell_barycenters_.begin());
 
   /* Generate mark ranges. */
   cell_ranges_.clear();
@@ -401,10 +400,10 @@ static const std::map<ShapeType, std::pair<std::vector<size_t>, std::vector<size
   /* 1D faces. */
   { ShapeType::Node, { {0}, {0} } },
   /* 2D faces. */
-  { ShapeType::Segment2, { {1, 0}, {1, 0} } },
+  { ShapeType::Segment, { {1, 0}, {1, 0} } },
   /* 3D faces. */
-  { ShapeType::Triangle3, { {0, 2, 1}, {0, 2, 1} } },
-  { ShapeType::Quadrangle4, { {0, 3, 2, 1}, {0, 3, 2, 1} } },
+  { ShapeType::Triangle, { {0, 2, 1}, {0, 2, 1} } },
+  { ShapeType::Quadrangle, { {0, 3, 2, 1}, {0, 3, 2, 1} } },
 };
 
 /**
@@ -436,7 +435,7 @@ void Mesh::generate_boundary_cells() {
     CellView cell = face.inner_cell();
 
     /* Generate the boundary cell: reflect a connected interior cell. */
-    std::vector<size_t> ghost_cell_nodes;
+    std::vector<NodeIndex> ghost_cell_nodes;
 #if 0
     ghost_cell_nodes.assign(face.begin_node(), face.end_node());
 #endif
@@ -446,14 +445,14 @@ void Mesh::generate_boundary_cells() {
         /* Reflect an interior cell Node. */
         // TODO: face normals are not computed here!
         // TODO: https://glm.g-truc.net/0.9.5/api/a00157.html#gab63646fc36b81cf69d3ce123a72f76f2
-        vec3_t node_coords = node.pos();
-        const vec3_t delta = node_coords - face.centerPos();
+        vec3_t node_coords = node.coords();
+        const vec3_t delta = node_coords - face.barycenter();
         node_coords -= 2.0 * glm::dot(delta, face.normal()) * face.normal();
         ghost_cell_nodes.push_back(
-          (size_t) insertNode(node_coords, (NodeMark) face.mark()));
+          insert_node(node_coords, (NodeMark) face.mark()));
       } else {
         /* Insert a boundary face Node. */
-        ghost_cell_nodes.push_back((size_t) node);
+        ghost_cell_nodes.push_back(node);
       }
     });
 #endif

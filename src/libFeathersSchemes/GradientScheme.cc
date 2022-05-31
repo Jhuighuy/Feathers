@@ -41,7 +41,7 @@ void cLeastSquaresGradientScheme::init_gradients_() {
     mat3_t& mat = (m_inverse_matrices[cell][0] = mat3_t(0.0));
     cell.for_each_face_cells([&](CellView cell_inner, CellView cell_outer) {
       const vec3_t dr =
-        cell_outer.centerPos() - cell_inner.centerPos();
+        cell_outer.barycenter() - cell_inner.barycenter();
       mat += glm::outerProduct(dr, dr);
     });
   });
@@ -52,7 +52,7 @@ void cLeastSquaresGradientScheme::init_gradients_() {
   for_each_bndr_face_cells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
     mat3_t& mat = (m_inverse_matrices[cell_outer][0] = mat3_t(0.0));
     const vec3_t dr =
-      cell_outer.centerPos() - cell_inner.centerPos();
+      cell_outer.barycenter() - cell_inner.barycenter();
     mat += glm::outerProduct(dr, dr);
     cell_inner.for_each_face_cells([&](CellView cell_inner_inner,
                                        CellView cell_inner_outer) {
@@ -60,7 +60,7 @@ void cLeastSquaresGradientScheme::init_gradients_() {
         std::swap(cell_inner_inner, cell_inner_outer);
       }
       const vec3_t dr_inner =
-        cell_inner_outer.centerPos() - cell_inner.centerPos();
+        cell_inner_outer.barycenter() - cell_inner.barycenter();
       mat += glm::outerProduct(dr_inner, dr_inner);
     });
   });
@@ -87,7 +87,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
     grad_u[cell].fill(vec3_t(0.0));
     cell.for_each_face_cells([&](CellView cell_inner, CellView cell_outer) {
       const vec3_t dr =
-        cell_outer.centerPos() - cell_inner.centerPos();
+        cell_outer.barycenter() - cell_inner.barycenter();
       for (size_t i = 0; i < num_vars; ++i) {
         grad_u[cell][i] += (u[cell_outer][i] - u[cell_inner][i]) * dr;
       }
@@ -100,7 +100,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
   for_each_bndr_face_cells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
     grad_u[cell_outer].fill(vec3_t(0.0));
     const vec3_t dr =
-      cell_outer.centerPos() - cell_inner.centerPos();
+      cell_outer.barycenter() - cell_inner.barycenter();
     for (ptrdiff_t i = 0; i < num_vars; ++i) {
       grad_u[cell_outer][i] += (u[cell_outer][i] - u[cell_inner][i]) * dr;
     }
@@ -110,7 +110,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
         std::swap(cell_inner_inner, cell_inner_outer);
       }
       const vec3_t dr_inner =
-        cell_inner_outer.centerPos() - cell_inner.centerPos();
+        cell_inner_outer.barycenter() - cell_inner.barycenter();
       for (size_t i = 0; i < num_vars; ++i) {
         grad_u[cell_outer][i] += (u[cell_inner_outer][i] - u[cell_inner][i]) * dr_inner;
       }
