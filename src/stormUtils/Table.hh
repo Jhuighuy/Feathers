@@ -31,9 +31,9 @@
 #define TABLE_HH_
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Index.hxx"
+#include "stormUtils/Index.hxx"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Compressed sparse row (CSR) table class.

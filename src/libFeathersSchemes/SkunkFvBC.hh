@@ -30,7 +30,7 @@
 #define MHD_FV_BC_HH
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Mesh.hxx"
+#include <stormMesh/Mesh.hxx>
 #include "SkunkHydro.hh"
 #include <functional>
 
@@ -69,8 +69,8 @@ public:
 
 public:
     /** @brief Compute the ghost states. */
-    void get_ghost_state(const feathers::vec3_t& n,
-                         const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
+    void get_ghost_state(const Storm::vec3_t& n,
+                         const Storm::vec3_t& r, const Storm::vec3_t& r_ghost,
                          const real_t* u, real_t* u_ghost) const {
         MhdFluidStateT u_state(n, u), u_ghost_state;
         get_ghost_state_(n, r, r_ghost, u_state, u_ghost_state);
@@ -79,9 +79,9 @@ public:
 
 private:
     /** @brief Compute the ghost state. */
-    virtual void get_ghost_state_(const feathers::vec3_t& n,
-                                  const feathers::vec3_t& r,
-                                  const feathers::vec3_t& r_ghost,
+    virtual void get_ghost_state_(const Storm::vec3_t& n,
+                                  const Storm::vec3_t& r,
+                                  const Storm::vec3_t& r_ghost,
                                   const MhdFluidStateT& u,
                                   MhdFluidStateT& u_ghost) const = 0;
 };  // MhdFvBcT
@@ -102,7 +102,7 @@ public:
 
 private:
     /** @brief Compute the ghost state. */
-    void get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
+    void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r, const Storm::vec3_t& r_ghost,
                           const MhdFluidStateT& u,
                           MhdFluidStateT& u_ghost) const override;
 };  // class MhdFvBcFarFieldT
@@ -119,13 +119,13 @@ class MhdFvBcNoSlipT : public MhdFvBcPT<MhdPhysicsT> {
 public:
     using typename MhdFvBcPT<MhdPhysicsT>::MhdFluidStateT;
     using MhdFvBcPT<MhdPhysicsT>::num_vars;
-    std::function<feathers::vec3_t(feathers::vec3_t)> vfunc;
+    std::function<Storm::vec3_t(Storm::vec3_t)> vfunc;
 
-    MhdFvBcNoSlipT(std::function<feathers::vec3_t(feathers::vec3_t)> vfunc = nullptr) : vfunc(std::move(vfunc)) {}
+    MhdFvBcNoSlipT(std::function<Storm::vec3_t(Storm::vec3_t)> vfunc = nullptr) : vfunc(std::move(vfunc)) {}
 
 private:
     /** @brief Compute the ghost state. */
-    void get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
+    void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r, const Storm::vec3_t& r_ghost,
                           const MhdFluidStateT& u,
                           MhdFluidStateT& u_ghost) const override;
 };  // class MhdFvBcNoSlipT
@@ -142,7 +142,7 @@ public:
 
 private:
     /** @brief Compute the ghost state. */
-    void get_ghost_state_(const feathers::vec3_t& n, const feathers::vec3_t& r, const feathers::vec3_t& r_ghost,
+    void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r, const Storm::vec3_t& r_ghost,
                           const MhdFluidStateT& u,
                           MhdFluidStateT& u_ghost) const override;
 };  // class MhdFluidBcSlipTMhdFluidBcSlipT

@@ -32,14 +32,14 @@
 
 #include "SkunkBase.hh"
 #include "SkunkHydro.hh"
-#include "libFeathersMesh/Field.hh"
+#include <stormMesh/Field.hh>
 //#include "SkunkFluidPhysics.hh"
 
 // ************************************************************************************ //
 // ************************************************************************************ //
 // ************************************************************************************ //
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Abstract numerical flux.

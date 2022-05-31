@@ -29,18 +29,18 @@ public:
 
 private:
     std::shared_ptr<const cMesh> m_mesh;
-    std::shared_ptr<feathers::iConvectionScheme> m_conv;
+    std::shared_ptr<Storm::iConvectionScheme> m_conv;
     std::map<int_t, std::shared_ptr<MhdFvBcPT<MhdPhysicsT>>> m_bcs;
 
 public:
     explicit MhdFvSolverT(std::shared_ptr<const cMesh> mesh);
 
 public:
-    void calc_func(feathers::tScalarField& u,
-                   feathers::tScalarField& u_out) const;
+    void calc_func(Storm::tScalarField& u,
+                   Storm::tScalarField& u_out) const;
     void calc_step(real_t& dt,
-                   feathers::tScalarField& u,
-                   feathers::tScalarField& u_hat) const;
+                   Storm::tScalarField& u,
+                   Storm::tScalarField& u_hat) const;
 };  // class MhdFvSolverT
 
 // ************************************************************************************ //

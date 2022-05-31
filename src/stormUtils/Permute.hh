@@ -32,7 +32,7 @@
 
 #include <SkunkBase.hh>
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Inverse the permutation. Complexity is linear.

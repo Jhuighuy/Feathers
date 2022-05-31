@@ -1,37 +1,34 @@
-/*
- *  ______  ______   ______   ______  __  __   ______   ______   ______
- * /\  ___\/\  ___\ /\  __ \ /\__  _\/\ \_\ \ /\  ___\ /\  __ \ /\  ___\
- * \ \  __\\ \  _\  \ \  __ \\/_/\ \/\ \  __ \\ \  __\ \ \  __/ \ \___  \
- *  \ \_\   \ \_____\\ \_\ \_\  \ \_\ \ \_\ \_\\ \_____\\ \_\ \_\\/\_____\
- *   \/_/    \/_____/ \/_/\/_/   \/_/  \/_/\/_/ \/_____/ \/_/ /_/ \/_____/
- *
- * Copyright (c) 2021 Oleg Butakov
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-#include <libFeathersMesh/Mesh.hxx>
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// Copyright (C) 2022 Oleg Butakov
+///
+/// Permission is hereby granted, free of charge, to any person
+/// obtaining a copy of this software and associated documentation
+/// files (the "Software"), to deal in the Software without
+/// restriction, including without limitation the rights  to use,
+/// copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the
+/// Software is furnished to do so, subject to the following
+/// conditions:
+///
+/// The above copyright notice and this permission notice shall be
+/// included in all copies or substantial portions of the Software.
+///
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+/// OTHER DEALINGS IN THE SOFTWARE.
+/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
 #include <fstream>
 #include <iomanip>
 
-namespace feathers {
+#include <stormMesh/Mesh.hxx>
+
+namespace Storm {
 
 bool Mesh::read_from_triangle(std::string const& path) {
 
@@ -43,7 +40,7 @@ bool Mesh::read_from_triangle(std::string const& path) {
   nodeFile >> numNodes >> dim;
   std::getline(nodeFile, line);
   for (size_t i{0}; i < numNodes; ++i) {
-    size_t nodeIndex{0};
+    NodeIndex nodeIndex{0};
     vec3_t nodePos(0.0);
     nodeFile >> nodeIndex >> nodePos.x >> nodePos.y;
     std::getline(nodeFile, line);
@@ -56,8 +53,8 @@ bool Mesh::read_from_triangle(std::string const& path) {
   faceFile >> numFaces;
   std::getline(faceFile, line);
   for (size_t i{0}; i < numFaces; ++i) {
-    size_t faceIndex{0};
-    std::vector<size_t> faceNodes(2, npos);
+    FaceIndex faceIndex{0};
+    std::vector<NodeIndex> faceNodes(2);
     size_t faceMark{0};
     faceFile >> faceIndex >> faceNodes[0] >> faceNodes[1] >> faceMark;
     StormEnsure(
@@ -71,8 +68,8 @@ bool Mesh::read_from_triangle(std::string const& path) {
   cellFile >> numCells;
   std::getline(cellFile, line);
   for (size_t i{0}; i < numCells; ++i) {
-    size_t cellIndex{0};
-    std::vector<size_t> cellNodes(3, npos);
+    CellIndex cellIndex{0};
+    std::vector<NodeIndex> cellNodes(3);
     cellFile >> cellIndex >> cellNodes[0] >> cellNodes[1] >> cellNodes[2];
     StormEnsure(
       cellIndex == EmplaceCell({ShapeType::Triangle3, cellNodes}));

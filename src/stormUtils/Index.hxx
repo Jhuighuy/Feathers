@@ -25,9 +25,11 @@
 
 #pragma once
 
-#include "SkunkBase.hh"
+#include <concepts>
 
-namespace feathers {
+#include <stormBase.hxx>
+
+namespace Storm {
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Strict index.
@@ -35,7 +37,7 @@ namespace feathers {
 template<class Tag>
 class Index {
 private:
-  size_t Value_{};
+  size_t value_{};
 
 public:
 
@@ -43,38 +45,39 @@ public:
   constexpr Index() noexcept = default;
 
   /// @brief Construct index with a value.
-  constexpr explicit Index(size_t value) noexcept : Value_(value) {}
+  constexpr explicit Index(size_t value) noexcept : value_(value) {}
 
   /// @brief Cast to the underlying value operator.
-  constexpr explicit operator size_t() const noexcept {
-    return Value_;
+  template<std::integral Integer = size_t>
+  constexpr explicit operator Integer() const noexcept {
+    return value_;
   }
 
   /// @brief Cast to the other index operator.
   template<class OtherTag>
   constexpr explicit operator Index<OtherTag>() const noexcept {
-    return Index<OtherTag>(Value_);
+    return Index<OtherTag>(value_);
   }
 
   /// @brief Index comparison operator.
   /// @{
 #if 0 /// @todo Why the spaceship fails in ranges?
   constexpr auto operator<=>(Index other) const noexcept {
-    return Value_ <=> other.Value_;
+    return value_ <=> other.value_;
   }
   constexpr auto operator<=>(size_t value) const noexcept {
-    return Value_ <=> value;
+    return value_ <=> value;
   }
 #else
 #define Operator_(OP) \
   constexpr bool operator OP(Index other) const noexcept { \
-    return Value_ OP other.Value_; \
+    return value_ OP other.value_; \
   } \
   friend constexpr bool operator OP(Index first, size_t second) noexcept { \
-    return first.Value_ OP second; \
+    return first.value_ OP second; \
   } \
   friend constexpr bool operator OP(size_t first, Index second) noexcept { \
-    return first OP second.Value_; \
+    return first OP second.value_; \
   }
   Operator_(==) Operator_(!=)
   Operator_(<) Operator_(<=) Operator_(>) Operator_(>=)
@@ -85,7 +88,7 @@ public:
   /// @brief Increment operator.
   /// @{
   constexpr Index& operator++() noexcept {
-    ++Value_;
+    ++value_;
     return *this;
   }
   constexpr Index operator++(int) noexcept {
@@ -97,7 +100,7 @@ public:
   /// @brief Decrement operator.
   /// @{
   constexpr Index& operator--() noexcept {
-    --Value_;
+    --value_;
     return *this;
   }
   constexpr Index operator--(int) noexcept {
@@ -109,39 +112,49 @@ public:
   /// @brief Index addition operator.
   /// @{
   constexpr Index& operator+=(size_t value) noexcept {
-    Value_ += value;
+    value_ += value;
     return *this;
   }
   friend constexpr Index operator+(Index first, size_t second) noexcept {
-    return Index(first.Value_ + second);
+    return Index(first.value_ + second);
   }
   friend constexpr Index operator+(size_t first, Index second) noexcept {
-    return Index(first + second.Value_);
+    return Index(first + second.value_);
   }
   /// @}
 
   /// @brief Index subtraction operator.
   /// @{
   constexpr Index& operator-=(size_t value) noexcept {
-    Value_ -= value;
+    value_ -= value;
     return *this;
   }
   friend constexpr Index operator-(Index first, size_t second) noexcept {
-    return Index(first.Value_ - second);
+    return Index(first.value_ - second);
   }
   friend constexpr Index operator-(size_t first, Index second) noexcept {
-    return Index(first - second.Value_);
+    return Index(first - second.value_);
   }
   /// @}
 
   /// @brief Index difference operator.
   constexpr ptrdiff_t operator-(Index other) const noexcept {
-    return Value_ - other.Value_;
+    return value_ - other.value_;
+  }
+
+  /// @brief Read @p index from the input @p stream.
+  friend std::istream& operator>>(std::istream& stream, Index& index) {
+    return stream >> index.value_;
+  }
+
+  /// @brief Write @p index to the output @p stream.
+  friend std::ostream& operator<<(std::ostream& stream, Index index) {
+    return stream << index.value_;
   }
 
 }; // class Index<...>
 
-/// @todo
+/// @todo Move me to the better place!
 template<class Value, class Index>
 class Vector : public std::vector<Value> {
 public:
@@ -158,4 +171,4 @@ public:
 
 };
 
-} // namespace feathers
+} // namespace Storm

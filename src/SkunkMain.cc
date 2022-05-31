@@ -3,15 +3,15 @@
 #include <string>
 
 #include "SkunkBase.hh"
-#include "libFeathersUtils/ChickenThoughts.hh"
-#include "libFeathersUtils/Image.hh"
+#include "stormUtils/ChickenThoughts.hh"
+#include "stormUtils/Image.hh"
 #include "libFeathersSchemes/SkunkFvSolver.hh"
 
 #include <chrono>
 #include <fstream>
 #include <iomanip>
 
-inline std::string my_to_string(feathers::size_t i) {
+inline std::string my_to_string(Storm::size_t i) {
     std::string s = std::to_string(i);
     std::string z(5-s.size(), '0');
     return z + s;
@@ -35,7 +35,11 @@ int main(int argc, char** argv) {
     //mesh->save_strm("mesh/img/Domain-318.strm");
     //return 1;
 
-  mesh->read_from_triangle("mesh/step_.1.");
+  mesh->read_from_triangle(
+#if _WIN32
+      "../../../"
+#endif
+      "mesh/step_.1.");
 
     tScalarField uc(5, mesh->cells().size());
     tScalarField up(5, mesh->cells().size());
@@ -108,7 +112,11 @@ int main(int argc, char** argv) {
 
     system("rm out/*");
     const uint_t freq = 200;
-    mesh->save_vtk(("out/fields-" + my_to_string(0) + ".vtk").c_str(),
+    mesh->save_vtk((
+#if _WIN32
+        "../../../"
+#endif
+        "out/fields-" + my_to_string(0) + ".vtk").c_str(),
                    { { "rho", 1, &uc } });
     //print_vtk<5>(0, *mesh, (std::array<real_t, 5>*)uc[0].data());
     real_t tt = 0.0;
@@ -123,7 +131,11 @@ int main(int argc, char** argv) {
             if (l%freq == 0) {
                 std::cout << l/freq << "\t" << tt << "\t" << std::endl;
                 //print_vtk<5>(l/freq, *mesh, (std::array<real_t, 5>*)up[0].data());
-                mesh->save_vtk(("out/fields-" + my_to_string(l/freq) + ".vtk").c_str(),
+                mesh->save_vtk((
+#if _WIN32
+                    "../../../"
+#endif
+                    "out/fields-" + my_to_string(l/freq) + ".vtk").c_str(),
                                { { "rho", 1, &uc } });
                 tt = 0.0;
             }

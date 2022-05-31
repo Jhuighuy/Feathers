@@ -31,9 +31,9 @@
 #define GRADIENT_SCHEME_HH_
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Mesh.hxx"
+#include <stormMesh/Mesh.hxx>
 
-namespace feathers {
+namespace Storm {
 
 /** Abstract cell-centered gradient scheme. */
 class iGradientScheme : public tObject<iGradientScheme> {

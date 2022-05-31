@@ -35,7 +35,7 @@
 #define STB_IMAGE_WRITE_STATIC 1
 #include <stb/stb_image_write.h>
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Unload an image.

@@ -28,7 +28,7 @@
 
 #include "GradientLimiterScheme.hh"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Compute local slope coefficient.

@@ -31,9 +31,9 @@
 #define GRADIENT_LIMITER_SCHEME_HH_
 
 #include "SkunkBase.hh"
-#include "libFeathersMesh/Mesh.hxx"
+#include <stormMesh/Mesh.hxx>
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Barth-Jespersen (minmod)

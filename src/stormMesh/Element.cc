@@ -25,7 +25,7 @@
 
 #include "Element.hh"
 
-namespace feathers {
+namespace Storm {
 
 std::unique_ptr<Element> Element::Make(ShapeDesc&& desc,
                                        std::span<vec3_t const> nodePos) {

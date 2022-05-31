@@ -28,7 +28,7 @@
 
 #include "FluxScheme.hh"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Calculate the Local Lax-Friedrichs (Rusanov) numerical flux.

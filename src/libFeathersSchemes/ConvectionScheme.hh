@@ -35,7 +35,7 @@
 #include "GradientLimiterScheme.hh"
 #include "GradientScheme.hh"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Abstract convection scheme.

@@ -13,7 +13,7 @@
 static const real_t Gamma = 1.4;
 static const real_t Gamma1 = Gamma - 1.0;
 
-using namespace feathers;
+using namespace Storm;
 
 class MhdHydroVars {
 public:

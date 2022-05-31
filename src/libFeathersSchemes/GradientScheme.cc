@@ -28,7 +28,7 @@
 
 #include "GradientScheme.hh"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Init the gradient scheme.

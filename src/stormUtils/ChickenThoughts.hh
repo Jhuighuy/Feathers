@@ -28,7 +28,7 @@
 
 #include <iostream>
 
-namespace feathers {
+namespace Storm {
 
 /** Print a cockatiel picture. */
 inline void print_cockatiel() {

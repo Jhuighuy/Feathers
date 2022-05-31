@@ -61,9 +61,9 @@ namespace views = ranges::views;
 #endif
 
 // Check for C++20 support.
-#if __cplusplus <= 202002L
-#error Storm requires at least C++20
-#endif
+//#if __cplusplus <= 202002L
+//#error Storm requires at least C++20
+//#endif
 
 /// @todo This should be moved to stormConfig.hxx
 #ifndef FEATHERS_CONFIG_FORCE_DISABLE_OPENMP
@@ -195,7 +195,7 @@ namespace views = ranges::views;
 // ------------------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------------------ //
 
-namespace feathers {
+namespace Storm {
 
 /** Unsigned byte type. */
 using byte_t = std::uint8_t;
@@ -305,6 +305,6 @@ auto shared_from_this(const obj_ptr_t& obj) {
 } // namespace feathers
 
 /* TODO: Remove me. */
-using int_t = feathers::ptrdiff_t;
-using uint_t = feathers::size_t;
-using real_t = feathers::real_t;
+using int_t = Storm::ptrdiff_t;
+using uint_t = Storm::size_t;
+using real_t = Storm::real_t;

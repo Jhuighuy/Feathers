@@ -12,7 +12,7 @@
 template<typename MhdPhysicsT>
 MhdFvSolverT<MhdPhysicsT>::MhdFvSolverT(std::shared_ptr<const cMesh> mesh)
     : m_mesh(mesh),
-      m_conv(new feathers::cUpwind2ConvectionScheme(mesh)) {
+      m_conv(new Storm::cUpwind2ConvectionScheme(mesh)) {
     m_bcs[1] = std::make_shared<MhdFvBcFarFieldT<MhdPhysicsT>>();
     m_bcs[2] = std::make_shared<MhdFvBcSlipT<MhdPhysicsT>>();
 }
@@ -24,10 +24,10 @@ MhdFvSolverT<MhdPhysicsT>::MhdFvSolverT(std::shared_ptr<const cMesh> mesh)
  * @brief Compute spacial discretization.
  */
 template<typename MhdPhysicsT>
-void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
-                                          feathers::tScalarField& u_out) const {
+void MhdFvSolverT<MhdPhysicsT>::calc_func(Storm::tScalarField& u,
+                                          Storm::tScalarField& u_out) const {
 
-  using namespace feathers;
+  using namespace Storm;
 
   /*
    * Clear fields and apply boundary conditions.
@@ -53,8 +53,8 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
 
 template<typename MhdPhysicsT>
 void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
-                                          feathers::tScalarField& u,
-                                          feathers::tScalarField& u_hat) const {
+                                          Storm::tScalarField& u,
+                                          Storm::tScalarField& u_hat) const {
   /*
    * Compute.
    */

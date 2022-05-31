@@ -23,16 +23,12 @@
 /// OTHER DEALINGS IN THE SOFTWARE.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 
-#include <libFeathersMesh/Mesh.hxx>
-#include <libFeathersMesh/Element.hh>
-#include <libFeathersUtils/Parallel.hh>
-#include <libFeathersUtils/Permute.hh>
+#include <stormMesh/Mesh.hxx>
+#include <stormMesh/Element.hh>
+#include <stormUtils/Parallel.hh>
+#include <stormUtils/Permute.hh>
 
-#include <set>
-#include <map>
-#include <ranges>
-
-namespace feathers {
+namespace Storm {
 
 void Mesh::UpdateElementsGeometry() {
 
@@ -89,12 +85,12 @@ EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edgeMark) {
   // Try to find an edge first.
   std::set<size_t> const edgeKey(
     edge->NodeIndices().begin(), edge->NodeIndices().end());
-  if (EdgeLookup_.contains(edgeKey)) {
-    return EdgeLookup_.at(edgeKey);
+  if (edge_lookup_.contains(edgeKey)) {
+    return edge_lookup_.at(edgeKey);
   }
 
   EdgeIndex const edge_index(num_edges_++);
-  EdgeLookup_[edgeKey] = edge_index;
+  edge_lookup_[edgeKey] = edge_index;
 
   // Emplace edge properties.
   edge_marks_.emplace_back(edgeMark);
@@ -128,12 +124,12 @@ FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
   // Try to find an edge first.
   std::set<size_t> const faceKey(
     face->NodeIndices().begin(), face->NodeIndices().end());
-  if (FaceLookup_.contains(faceKey)) {
-    return FaceLookup_.at(faceKey);
+  if (face_lookup_.contains(faceKey)) {
+    return face_lookup_.at(faceKey);
   }
 
   FaceIndex const face_index(num_faces_++);
-  FaceLookup_[faceKey] = face_index;
+  face_lookup_[faceKey] = face_index;
 
   // Emplace face properties.
   face_marks_.emplace_back(faceMark);
@@ -446,7 +442,7 @@ void Mesh::generate_boundary_cells() {
 #endif
 #if 1
     cell.for_each_node([&](NodeView node) {
-      if (ranges::find(adjacent_nodes(face), (NodeIndex) node) == std::end(adjacent_nodes(face))) {
+      if (std::find(face.adjacent_nodes().begin(), face.adjacent_nodes().end(), node) == face.adjacent_nodes().end()) {
         /* Reflect an interior cell Node. */
         // TODO: face normals are not computed here!
         // TODO: https://glm.g-truc.net/0.9.5/api/a00157.html#gab63646fc36b81cf69d3ce123a72f76f2
@@ -461,7 +457,7 @@ void Mesh::generate_boundary_cells() {
       }
     });
 #endif
-    /* Insert the boundary cell. */
+    /* Insert the boundary cell3. */
     // TODO:
     const CellIndex boundaryCellIndex =
       EmplaceCell({cell.shapeType(), ghost_cell_nodes}, (CellMark) face.mark(), true);

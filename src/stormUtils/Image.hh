@@ -32,7 +32,7 @@
 
 #include "SkunkBase.hh"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * RGBA

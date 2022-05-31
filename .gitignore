@@ -52,4 +52,5 @@ _deps
 cmake-build-*
 
 # VS Code files
+.vs
 .vscode

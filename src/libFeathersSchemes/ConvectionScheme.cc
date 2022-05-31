@@ -28,7 +28,7 @@
 
 #include "ConvectionScheme.hh"
 
-namespace feathers {
+namespace Storm {
 
 /**
  * Compute the first-order upwind convection.
