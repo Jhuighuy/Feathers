@@ -110,19 +110,19 @@ public:
 
   /** Insert a row into the table. */
   /** @{ */
-  void emplaceRow(size_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
+  void insert_row(size_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
     m_column_indices.insert(
       m_column_indices.end(), num_column_indices, column_index);
     m_row_offsets.push_back(m_column_indices.size());
   }
   template<typename tColumnIndexIter>
-  void emplaceRow(tColumnIndexIter first_index_iter, tColumnIndexIter last_index_iter) {
+  void insert_row(tColumnIndexIter first_index_iter, tColumnIndexIter last_index_iter) {
     m_column_indices.insert(
       m_column_indices.end(), first_index_iter, last_index_iter);
     m_row_offsets.push_back(m_column_indices.size());
   }
-  void emplaceRow(ranges::range auto range) {
-    emplaceRow(range.begin(), range.end());
+  void insert_row(ranges::range auto range) {
+    insert_row(range.begin(), range.end());
   }
   /** @} */
 };  // class CsrTable
@@ -136,7 +136,7 @@ void permute_rows(tIter first_permutation_iter,
   tTable permuted_table;
   for (tIter permutation_iter = first_permutation_iter;
        permutation_iter != last_permutation_iter; ++permutation_iter) {
-    permuted_table.emplaceRow(
+    permuted_table.insert_row(
       table.begin_row(*permutation_iter), table.end_row(*permutation_iter));
   }
   table = std::move(permuted_table);

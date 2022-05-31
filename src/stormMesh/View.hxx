@@ -61,7 +61,7 @@ protected:
   // "NOLINT(...)" should not be here, this is due to a bug in clangd.
   BaseElementView( // NOLINT(cppcoreguidelines-pro-type-member-init)
     Mesh& mesh, Index<Tag> index) noexcept :
-    mesh_{&mesh}, index_{index} {
+      mesh_{&mesh}, index_{index} {
     storm_assert(index_ != npos);
   }
 
@@ -86,7 +86,8 @@ public:
 
   /// @brief Comparison operator.
   auto operator<=>(BaseElementView const& other) const noexcept {
-    storm_assert(mesh_ == other.mesh_);
+    storm_assert(mesh_ == other.mesh_ &&
+      "can not compare element views associated with the different meshes");
     return index_ <=> other.index_;
   }
 
@@ -185,12 +186,12 @@ public:
   }
 
   /// @brief Get node position.
-  vec3_t coords() const noexcept {
+  auto coords() const noexcept {
     return this->mesh_->node_coords(this->index_);
   }
 
   /// @brief Set node position @p coords.
-  void set_coords(vec3_t const& coords) const noexcept requires (!std::is_const_v<Mesh>) {
+  void set_coords(auto const& coords) const noexcept requires (!std::is_const_v<Mesh>) {
     this->mesh_->set_node_coords(this->index_, coords);
   }
 
@@ -221,12 +222,12 @@ public:
   }
 
   /// @brief Get edge length. 
-  real_t len() const noexcept {
+  auto len() const noexcept {
     return this->mesh_->edge_len(this->index_);
   }
 
   /// @brief Get edge direction. 
-  vec3_t dir() const noexcept {
+  auto dir() const noexcept {
     return this->mesh_->edge_dir(this->index_);
   }
 
@@ -258,7 +259,7 @@ public:
 
   /// @brief Get connected inner cell. 
   auto inner_cell() const noexcept {
-    storm_assert(this->adjacent_cells().size() == 2);
+    storm_assert(this->adjacent_cells().size() >= 1);
     return this->adjacent_cells()[face_inner_cell_];
   }
 
@@ -269,17 +270,17 @@ public:
   }
 
   /// @brief Get face area/length. 
-  real_t area() const noexcept {
+  auto area() const noexcept {
     return this->mesh_->face_area(this->index_);
   }
 
   /// @brief Get face normal. 
-  vec3_t normal() const noexcept {
+  auto normal() const noexcept {
     return this->mesh_->face_normal(this->index_);
   }
 
   /// @brief Get face center position.
-  vec3_t barycenter() const noexcept {
+  auto barycenter() const noexcept {
     return this->mesh_->face_barycenter(this->index_);
   }
 
@@ -310,12 +311,12 @@ public:
   }
 
   /// @brief Get cell volume/area/length.
-  real_t volume() const noexcept {
+  auto volume() const noexcept {
     return this->mesh_->cell_volume(this->index_);
   }
 
   /// @brief Get cell center position.
-  vec3_t barycenter() const noexcept {
+  auto barycenter() const noexcept {
     return this->mesh_->cell_barycenter(this->index_);
   }
 
@@ -403,9 +404,8 @@ auto bndr_face_views(auto& mesh) noexcept {
 }
 
 auto bndr_face_cell_views(auto& mesh) noexcept {
-  return face_views(mesh) |
-         views::drop(mesh.faces(FaceMark{0}).size()) |
-         views::transform([](BaseFaceView<Mesh> face) {
+  return bndr_face_views(mesh) |
+    views::transform([](BaseFaceView<Mesh> face) {
       return std::pair(face.inner_cell(), face.outer_cell());
     });
 }

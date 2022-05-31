@@ -71,10 +71,10 @@ NodeIndex Mesh::insert_node(vec3_t const& coords, NodeMark node_mark) {
   node_coords_.emplace_back(coords);
 
   // These should be filled later.
-  node_nodes_.emplaceRow();
-  node_edges_.emplaceRow();
-  node_faces_.emplaceRow();
-  node_cells_.emplaceRow();
+  node_nodes_.insert_row();
+  node_edges_.insert_row();
+  node_faces_.insert_row();
+  node_cells_.insert_row();
 
   return node_index;
 
@@ -99,20 +99,20 @@ EdgeIndex Mesh::insertEdge(std::unique_ptr<Element>&& edge, EdgeMark edge_mark) 
   edge_dirs_.emplace_back(edge->Dir());
 
   // Fill the edge nodes and node edges.
-  edge_nodes_.emplaceRow(edge->NodeIndices() |
+  edge_nodes_.insert_row(edge->NodeIndices() |
     views::transform([&](NodeIndex node_index) {
       node_edges_.insert(node_index, edge_index);
       return node_index;
     }));
 
   // These should be filled later.
-  edge_edges_.emplaceRow();
-  edge_faces_.emplaceRow();
-  edge_cells_.emplaceRow();
+  edge_edges_.insert_row();
+  edge_faces_.insert_row();
+  edge_cells_.insert_row();
 
   /// @todo Fill me!
-  edge_edges_.emplaceRow();
-  node_nodes_.emplaceRow();
+  edge_edges_.insert_row();
+  node_nodes_.insert_row();
 
   return edge_index;
 
@@ -138,7 +138,7 @@ FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
   face_barycenters_.emplace_back(face->CenterPos());
 
   // Fill the face nodes and node faces.
-  face_nodes_.emplaceRow(face->NodeIndices() |
+  face_nodes_.insert_row(face->NodeIndices() |
     views::transform([&](NodeIndex node_index) {
       node_faces_.insert(node_index, face_index);
       return node_index;
@@ -152,14 +152,14 @@ FaceIndex Mesh::insertFace(std::unique_ptr<Element>&& face, FaceMark faceMark) {
   //    edge_faces_.insert(edge_index, face_index);
   //    return edge_index;
   //  });
-  //face_edges_.emplaceRow(faceEdges.begin(), faceEdges.end());
-  face_edges_.emplaceRow();
+  //face_edges_.insert_row(faceEdges.begin(), faceEdges.end());
+  face_edges_.insert_row();
 
   // This should be filled later.
-  face_cells_.emplaceRow(2); // @todo here should be no 2!
+  face_cells_.insert_row(2); // @todo here should be no 2!
 
   /// @todo Fill me!
-  face_faces_.emplaceRow();
+  face_faces_.insert_row();
 
   return face_index;
 
@@ -176,16 +176,16 @@ CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, b
   cell_barycenters_.emplace_back(cell->CenterPos());
 
   // Fill the cell nodes and node cells.
-  cell_nodes_.emplaceRow(cell->NodeIndices() |
+  cell_nodes_.insert_row(cell->NodeIndices() |
     views::transform([&](NodeIndex node_index) {
       node_cells_.insert(node_index, cell_index);
       return node_index;
     }));
 
   if (ghost) {
-    cell_edges_.emplaceRow();
-    cell_faces_.emplaceRow();
-    cell_edges_.emplaceRow();
+    cell_edges_.insert_row();
+    cell_faces_.insert_row();
+    cell_edges_.insert_row();
     return cell_index;
   }
 
@@ -197,14 +197,19 @@ CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, b
   //    edge_cells_.insert(edge_index, cell_index);
   //    return edge_index;
   //  });
-  //cell_edges_.emplaceRow(cellEdges.begin(), cellEdges.end());
-  cell_edges_.emplaceRow();
+  //cell_edges_.insert_row(cellEdges.begin(), cellEdges.end());
+  cell_edges_.insert_row();
 
   // Fill the cell faces and face cells.
   std::vector<FaceIndex> cellFaces;
   ranges::transform(cell->MakeFacesDesc(),
     std::back_inserter(cellFaces), [&](ShapeDesc faceDesc) {
       FaceIndex const face_index = EmplaceFace(std::move(ShapeDesc(faceDesc)));
+      // How to:
+      // 1. Face does not have any connected faces: flip it to make the cell inner.
+      //    Generate a ghost if a mark is outer.
+      // 2. Face has one connected cell: assert and assign on an outer cell.
+      // 3. Face already has two adjacent faces: error.
       if (std::equal(adjacent_nodes(face_index).begin(),
                      adjacent_nodes(face_index).end(),
                      faceDesc.NodeIndices.begin())) {
@@ -214,10 +219,10 @@ CellIndex Mesh::insertCell(std::unique_ptr<Element>&& cell, CellMark cellMark, b
       }
       return face_index;
     });
-  cell_faces_.emplaceRow(cellFaces.begin(), cellFaces.end());
+  cell_faces_.insert_row(cellFaces.begin(), cellFaces.end());
 
   /// @todo Fill me!
-  cell_cells_.emplaceRow();
+  cell_cells_.insert_row();
 
   return cell_index;
 
