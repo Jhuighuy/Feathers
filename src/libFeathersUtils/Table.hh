@@ -41,8 +41,8 @@ namespace feathers {
 template<class RowIndex, class ColumnIndex>
 class CsrTable {
 private:
-  IndexedVector<size_t, RowIndex> m_row_offsets{0};
-  IndexedVector<ColumnIndex, size_t> m_column_indices;
+  Vector<size_t, RowIndex> m_row_offsets{0};
+  Vector<ColumnIndex, size_t> m_column_indices;
 
 public:
 
@@ -60,7 +60,7 @@ public:
   }
 
   void insert(RowIndex rowIndex, ColumnIndex columnIndex) {
-    StormAssert(rowIndex < num_rows());
+    storm_assert(rowIndex < num_rows());
     m_column_indices.insert(
       m_column_indices.begin() + m_row_offsets[rowIndex + 1], columnIndex);
     std::for_each(m_row_offsets.begin() + (size_t)rowIndex + 1, m_row_offsets.end(),

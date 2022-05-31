@@ -88,7 +88,7 @@ public:
 
   /// @brief Get node @p position.
   vec3_t NodePos(size_t nodeLocal) const {
-    StormAssert(nodeLocal < NodeIndices_.size());
+    storm_assert(nodeLocal < NodeIndices_.size());
     return NodePos_[NodeIndices_[nodeLocal]];
   }
 

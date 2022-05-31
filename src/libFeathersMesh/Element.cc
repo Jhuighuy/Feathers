@@ -55,7 +55,7 @@ std::unique_ptr<Element> Element::Make(ShapeDesc&& desc,
   // Verify and assign nodes:
   element->NodePos_ = nodePos;
   element->NodeIndices_ = std::move(desc.NodeIndices);
-  StormAssert(
+  storm_assert(
     // we have the same number of node indices and nodes,
     element->NodeIndices_.size() == element->NumNodes() &&
     // nodes span has enough elements,

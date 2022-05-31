@@ -29,13 +29,13 @@ int main(int argc, char** argv) {
     //image.store("mesh/img/Domain-318.jpg");
 
 #if 1
-    //mesh->ReadFromImage("mesh/img/Domain-100-Tube.ppm",
+    //mesh->read_from_image("mesh/img/Domain-100-Tube.ppm",
     //                   {{eWhitePixel, 1}, {eRedPixel, 2}, {eGreenPixel, 3}, {eBluePixel, 4}});
     //mesh->save_vtk("mesh/img/Domain-318.vtk", {});
     //mesh->save_strm("mesh/img/Domain-318.strm");
     //return 1;
 
-  mesh->ReadFromTriangle("mesh/step_.1.");
+  mesh->read_from_triangle("mesh/step_.1.");
 
     tScalarField uc(5, mesh->cells().size());
     tScalarField up(5, mesh->cells().size());

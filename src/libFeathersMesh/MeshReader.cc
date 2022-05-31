@@ -33,7 +33,7 @@
 
 namespace feathers {
 
-bool Mesh::ReadFromTriangle(std::string const& path) {
+bool Mesh::read_from_triangle(std::string const& path) {
 
   std::string line;
 
@@ -82,9 +82,9 @@ bool Mesh::ReadFromTriangle(std::string const& path) {
   finalize();
   return true;
 
-} // сMesh::ReadFromTriangle
+} // сMesh::read_from_triangle
 
-bool Mesh::ReadFromTetgen(std::string const& path) {
+bool Mesh::read_from_tetgen(std::string const& path) {
 
   std::string line;
 
@@ -135,12 +135,12 @@ bool Mesh::ReadFromTetgen(std::string const& path) {
   finalize();
   return true;
 
-} // сMesh::ReadFromTetgen
+} // сMesh::read_from_tetgen
 
-bool Mesh::ReadFromImage(const char *path,
-                         const std::map<Pixel, size_t>& markColors,
-                         Pixel fluidColor,
-                         vec2_t pixelSize) {
+bool Mesh::read_from_image(const char *path,
+                           const std::map<Pixel, size_t>& mark_colors,
+                           Pixel fluid_color,
+                           vec2_t pixel_size) {
 
   Image2D image;
   image.load(path);
@@ -151,35 +151,35 @@ bool Mesh::ReadFromImage(const char *path,
   size_t nodeIndex = 0;
   for (size_t y = 1; y < image.height() - 1; ++y) {
     for (size_t x = 1; x < image.width() - 1; ++x) {
-      if (image(x, y).rgba != fluidColor.rgba) {
+      if (image(x, y).rgba != fluid_color.rgba) {
         continue;
       }
 
-      vec2_t const cellCenterPos = pixelSize * vec2_t(real_t(x) - 0.5, real_t(y) - 0.5);
+      vec2_t const cellCenterPos = pixel_size * vec2_t(real_t(x) - 0.5, real_t(y) - 0.5);
 
       // Insert or query the cell nodes.
       size_t& swNodeIndex = nodesImage(x + 0, y + 0).rgba;
       if (swNodeIndex == 0) {
         swNodeIndex = nodeIndex++;
-        vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(-0.5, -0.5), 0.0);
+        vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(-0.5, -0.5), 0.0);
         StormEnsure(swNodeIndex == insertNode(nodePos));
       }
       size_t& seNodeIndex = nodesImage(x + 1, y + 0).rgba;
       if (seNodeIndex == 0) {
         seNodeIndex = nodeIndex++;
-        vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(+0.5, -0.5), 0.0);
+        vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(+0.5, -0.5), 0.0);
         StormEnsure(seNodeIndex == insertNode(nodePos));
       }
       size_t& neNodeIndex = nodesImage(x + 1, y + 1).rgba;
       if (neNodeIndex == 0) {
         neNodeIndex = nodeIndex++;
-        vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(+0.5, +0.5), 0.0);
+        vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(+0.5, +0.5), 0.0);
         StormEnsure(neNodeIndex == insertNode(nodePos));
       }
       size_t& nwNodeIndex = nodesImage(x + 0, y + 1).rgba;
       if (nwNodeIndex == 0) {
         nwNodeIndex = nodeIndex++;
-        vec3_t const nodePos(cellCenterPos + pixelSize * vec2_t(-0.5, +0.5), 0.0);
+        vec3_t const nodePos(cellCenterPos + pixel_size * vec2_t(-0.5, +0.5), 0.0);
         StormEnsure(nwNodeIndex == insertNode(nodePos));
       }
 
@@ -188,20 +188,20 @@ bool Mesh::ReadFromImage(const char *path,
                     {swNodeIndex, seNodeIndex, neNodeIndex, nwNodeIndex}});
 
       // Insert the boundary faces.
-      if (Pixel const sPixel = image(x, y - 1); sPixel.rgba != fluidColor.rgba) {
-        FaceMark const faceMark{markColors.at(sPixel)};
+      if (Pixel const sPixel = image(x, y - 1); sPixel.rgba != fluid_color.rgba) {
+        FaceMark const faceMark{mark_colors.at(sPixel)};
         EmplaceFace({ShapeType::Segment2, {swNodeIndex, seNodeIndex}}, faceMark);
       }
-      if (Pixel const ePixel = image(x + 1, y); ePixel.rgba != fluidColor.rgba) {
-        FaceMark const faceMark{markColors.at(ePixel)};
+      if (Pixel const ePixel = image(x + 1, y); ePixel.rgba != fluid_color.rgba) {
+        FaceMark const faceMark{mark_colors.at(ePixel)};
         EmplaceFace({ShapeType::Segment2, {seNodeIndex, neNodeIndex}}, faceMark);
       }
-      if (Pixel const nPixel = image(x, y + 1); nPixel.rgba != fluidColor.rgba) {
-        FaceMark const faceMark{markColors.at(nPixel)};
+      if (Pixel const nPixel = image(x, y + 1); nPixel.rgba != fluid_color.rgba) {
+        FaceMark const faceMark{mark_colors.at(nPixel)};
         EmplaceFace({ShapeType::Segment2, {neNodeIndex, nwNodeIndex}}, faceMark);
       }
-      if (Pixel const wPixel = image(x - 1, y); wPixel.rgba != fluidColor.rgba) {
-        FaceMark const faceMark{markColors.at(wPixel)};
+      if (Pixel const wPixel = image(x - 1, y); wPixel.rgba != fluid_color.rgba) {
+        FaceMark const faceMark{mark_colors.at(wPixel)};
         EmplaceFace({ShapeType::Segment2, {nwNodeIndex, swNodeIndex}}, faceMark);
       }
     }
@@ -210,7 +210,7 @@ bool Mesh::ReadFromImage(const char *path,
   finalize();
   return true;
 
-} // Mesh::ReadFromImage
+} // Mesh::read_from_image
 
 void Mesh::save_vtk(const char* path,
                     const std::vector<sFieldDesc>& fields) const {
@@ -222,20 +222,20 @@ void Mesh::save_vtk(const char* path,
   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
   file << "POINTS " << nodes().size() << " double" << std::endl;
-  ranges::for_each(nodeViews(*this), [&](NodeView node) {
+  ranges::for_each(node_views(*this), [&](NodeView node) {
     const vec3_t& pos = node.pos();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
   });
   file << std::endl;
 
   size_t const sumNumCellAdjNodes =
-    ForEachSum(intCellViews(*this), size_t(0), [](CellView cell) {
-      return cell.adjNodes().size() + 1;
+    ForEachSum(intr_cell_views(*this), size_t(0), [](CellView cell) {
+      return cell.adjacent_nodes().size() + 1;
     });
   file << "CELLS " << cells({}).size() << " " << sumNumCellAdjNodes << std::endl;
-  ranges::for_each(intCellViews(*this), [&](CellView cell) {
-    file << cell.adjNodes().size() << " ";
-    cell.forEachNode([&](size_t node_index) {
+  ranges::for_each(intr_cell_views(*this), [&](CellView cell) {
+    file << cell.adjacent_nodes().size() << " ";
+    cell.for_each_node([&](size_t node_index) {
       file << node_index << " ";
     });
     file << std::endl;
@@ -243,7 +243,7 @@ void Mesh::save_vtk(const char* path,
   file << std::endl;
 
   file << "CELL_TYPES " << cells({}).size() << std::endl;
-  ranges::for_each(intCellViews(*this), [&](CellView cell) {
+  ranges::for_each(intr_cell_views(*this), [&](CellView cell) {
     static const std::map<ShapeType, const char*> shapes = {
       { ShapeType::Node, "1" }, { ShapeType::Segment2, "2" },
       { ShapeType::Triangle3, "5" }, { ShapeType::Quadrangle4, "9" },
@@ -258,7 +258,7 @@ void Mesh::save_vtk(const char* path,
   for (const sFieldDesc& field : fields) {
     file << "SCALARS " << field.name << " double 1" << std::endl;
     file << "LOOKUP_TABLE default" << std::endl;
-    ranges::for_each(intCellViews(*this), [&](CellView cell) {
+    ranges::for_each(intr_cell_views(*this), [&](CellView cell) {
       file << (*field.scalar)[cell][field.var_index] << std::endl;
     });
   }

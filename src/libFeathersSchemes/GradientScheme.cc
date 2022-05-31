@@ -37,9 +37,9 @@ void cLeastSquaresGradientScheme::init_gradients_() {
 
   /* Compute the least-squares
    * problem matrices for the interior cells. */
-  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
+  for_each(intr_cell_views(*m_mesh), [&](CellView cell) {
     mat3_t& mat = (m_inverse_matrices[cell][0] = mat3_t(0.0));
-    cell.forEachFaceCells([&](CellView cell_inner, CellView cell_outer) {
+    cell.for_each_face_cells([&](CellView cell_inner, CellView cell_outer) {
       const vec3_t dr =
         cell_outer.centerPos() - cell_inner.centerPos();
       mat += glm::outerProduct(dr, dr);
@@ -49,13 +49,13 @@ void cLeastSquaresGradientScheme::init_gradients_() {
   /* Compute the least squares problem
    * right-hand statements for the boundary cells.
    * Use the same stencil as for the interior cell, but centered to a boundary cell. */
-  forEachBndFaceCells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
+  for_each_bndr_face_cells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
     mat3_t& mat = (m_inverse_matrices[cell_outer][0] = mat3_t(0.0));
     const vec3_t dr =
       cell_outer.centerPos() - cell_inner.centerPos();
     mat += glm::outerProduct(dr, dr);
-    cell_inner.forEachFaceCells([&](CellView cell_inner_inner,
-                                    CellView cell_inner_outer) {
+    cell_inner.for_each_face_cells([&](CellView cell_inner_inner,
+                                       CellView cell_inner_outer) {
       if (cell_inner_outer == cell_inner) {
         std::swap(cell_inner_inner, cell_inner_outer);
       }
@@ -67,7 +67,7 @@ void cLeastSquaresGradientScheme::init_gradients_() {
 
   /* Compute the inverse of the least squares problem matrices.
    * ( Matrix is stabilized by a small number, added to the diagonal. ) */
-  ForEach(cellViews(*m_mesh), [&](CellView cell) {
+  for_each(cell_views(*m_mesh), [&](CellView cell) {
     static const mat3_t eps(1e-14);
     mat3_t& mat = m_inverse_matrices[cell][0];
     mat = glm::inverse(mat + eps);
@@ -83,9 +83,9 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
                                                 const tScalarField& u) const {
   /* Compute the least-squares
    * problem right-hand statements for the interior cells. */
-  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
+  for_each(intr_cell_views(*m_mesh), [&](CellView cell) {
     grad_u[cell].fill(vec3_t(0.0));
-    cell.forEachFaceCells([&](CellView cell_inner, CellView cell_outer) {
+    cell.for_each_face_cells([&](CellView cell_inner, CellView cell_outer) {
       const vec3_t dr =
         cell_outer.centerPos() - cell_inner.centerPos();
       for (size_t i = 0; i < num_vars; ++i) {
@@ -97,15 +97,15 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
     /* Compute the least squares problem
      * right-hand statements for the boundary cells.
      * Use the same stencil as for the interior cell, but centered to a boundary cell. */
-  forEachBndFaceCells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
+  for_each_bndr_face_cells(*m_mesh, [&](CellView cell_inner, CellView cell_outer) {
     grad_u[cell_outer].fill(vec3_t(0.0));
     const vec3_t dr =
       cell_outer.centerPos() - cell_inner.centerPos();
     for (ptrdiff_t i = 0; i < num_vars; ++i) {
       grad_u[cell_outer][i] += (u[cell_outer][i] - u[cell_inner][i]) * dr;
     }
-    cell_inner.forEachFaceCells([&](CellView cell_inner_inner,
-                                    CellView cell_inner_outer) {
+    cell_inner.for_each_face_cells([&](CellView cell_inner_inner,
+                                       CellView cell_inner_outer) {
       if (cell_inner_outer == cell_inner) {
         std::swap(cell_inner_inner, cell_inner_outer);
       }
@@ -118,7 +118,7 @@ void cLeastSquaresGradientScheme::get_gradients(size_t num_vars,
   });
 
     /* Solve the least-squares problem. */
-  ForEach(cellViews(*m_mesh), [&](CellView cell) {
+  for_each(cell_views(*m_mesh), [&](CellView cell) {
     for (size_t i = 0; i < num_vars; ++i) {
       const mat3_t& mat = m_inverse_matrices[cell][0];
       grad_u[cell][i] = mat * grad_u[cell][i];

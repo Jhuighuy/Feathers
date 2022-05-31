@@ -33,17 +33,17 @@ void MhdFvSolverT<MhdPhysicsT>::calc_func(feathers::tScalarField& u,
    * Clear fields and apply boundary conditions.
    */
 
-  ForEach(cellViews(*m_mesh), [&](CellView cell) {
+  for_each(cell_views(*m_mesh), [&](CellView cell) {
     u_out[cell].fill(0.0);
   });
-  for (size_t mark = 1; mark < m_mesh->numFaceMarks(); ++mark) {
+  for (size_t mark = 1; mark < m_mesh->num_face_marks(); ++mark) {
       const auto& bc = m_bcs.at(mark);
-    ForEach(faceViews(*m_mesh, FaceMark(mark)), [&](FaceView face) {
+    for_each(face_views(*m_mesh, FaceMark(mark)), [&](FaceView face) {
       bc->get_ghost_state(face.normal(),
-                          face.innerCell().centerPos(),
-                          face.outerCell().centerPos(),
-                          u[face.innerCell()].data(),
-                          u[face.outerCell()].data());
+                          face.inner_cell().centerPos(),
+                          face.outer_cell().centerPos(),
+                          u[face.inner_cell()].data(),
+                          u[face.outer_cell()].data());
     });
   }
 
@@ -59,7 +59,7 @@ void MhdFvSolverT<MhdPhysicsT>::calc_step(real_t& dt,
    * Compute.
    */
   calc_func(u, u_hat);
-  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
+  for_each(intr_cell_views(*m_mesh), [&](CellView cell) {
     for (uint_t i = 0; i < num_vars; ++i) {
       u_hat[cell][i] = u[cell][i] - dt * u_hat[cell][i];
     }

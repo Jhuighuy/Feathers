@@ -174,7 +174,7 @@ namespace views = ranges::views;
 #endif
 /** @} */
 
-#define StormAssert FEATHERS_ASSERT
+#define storm_assert FEATHERS_ASSERT
 #define StormEnsure FEATHERS_ENSURE
 
 /** Fatal assertion macro. */

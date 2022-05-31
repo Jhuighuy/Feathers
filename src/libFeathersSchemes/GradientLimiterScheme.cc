@@ -183,7 +183,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
   size_t num_vars, tScalarField& lim_u, const tScalarField& u, const tVectorField& grad_u) const {
     /* Compute the cell-centered
      * limiting coefficients and averages. */
-  ForEach(intCellViews(*m_mesh), [&](CellView cell) {
+  for_each(intr_cell_views(*m_mesh), [&](CellView cell) {
     static const real_t k = 0.1;
     const real_t eps_sqr = std::pow(k * cell.volume(), 3);
     /* Find the largest negative and positive differences
@@ -192,7 +192,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
     du_min = u[cell];
     FEATHERS_TMP_SCALAR_FIELD(du_max, num_vars);
     du_max = u[cell];
-    cell.forEachFaceCells([&](CellView cell_inner, CellView cell_outer) {
+    cell.for_each_face_cells([&](CellView cell_inner, CellView cell_outer) {
       for (size_t i = 0; i < num_vars; ++i) {
         du_min[i] = std::min(du_min[i],
                              std::min(u[cell_outer][i], u[cell_inner][i]));
@@ -208,7 +208,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
     /* Compute slope limiting coefficients:
      * clamp the Node delta with computed local delta extrema. */
     lim_u[cell].fill(1.0);
-    cell.forEachFace([&](FaceView face) {
+    cell.for_each_face([&](FaceView face) {
       const vec3_t dr =
         face.centerPos() - cell.centerPos();
       for (size_t i = 0; i < num_vars; ++i) {

@@ -143,11 +143,11 @@ public:
 
 /// @todo
 template<class Value, class Index>
-class IndexedVector : public std::vector<Value> {
+class Vector : public std::vector<Value> {
 public:
 
-  IndexedVector() = default;
-  IndexedVector(std::initializer_list<Value> list) : std::vector<Value>(list) {}
+  Vector() = default;
+  Vector(std::initializer_list<Value> list) : std::vector<Value>(list) {}
 
   Value& operator[](Index index) noexcept {
     return std::vector<Value>::operator[]((size_t)index);
