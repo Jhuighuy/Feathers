@@ -69,12 +69,11 @@ protected:
   Element() = default;
 
 public:
-
   /// @brief Virtual destructor.
   virtual ~Element() = default;
 
   /// @brief Construct a new element object \
-  ///   with a description @p desc and a node position array @p node_coords.
+  ///   with a description @p desc and a node position array @p NodeCoords.
   static std::unique_ptr<Element> Make(ShapeDesc&& desc,
                                        std::span<vec3_t const> nodePos);
 
@@ -88,7 +87,7 @@ public:
 
   /// @brief Get node @p position.
   vec3_t NodePos(size_t nodeLocal) const {
-    storm_assert(nodeLocal < NodeIndices_.size());
+    StormAssert(nodeLocal < NodeIndices_.size());
     return NodePos_[(size_t) NodeIndices_[nodeLocal]];
   }
 
@@ -97,12 +96,12 @@ public:
     return qnan;
   }
 
-  /// @brief Compute the element volume (area or length).
+  /// @brief Compute the element Volume (Area or length).
   virtual real_t Volume() const {
     return qnan;
   }
 
-  /// @brief Compute the normal to element.
+  /// @brief Compute the Normal to element.
   virtual vec3_t Normal() const {
     return vec3_t(qnan);
   }
@@ -117,23 +116,23 @@ public:
     return vec3_t(qnan);
   }
 
-  /// @brief Number of nodes in the element.
+  /// @brief Number of Nodes in the element.
   virtual size_t NumNodes() const noexcept = 0;
 
-  /// @brief Number of edges in the element.
+  /// @brief Number of Edges in the element.
   virtual size_t NumEdges() const {
     return make_edges_desc().size();
   }
 
-  /// @brief Make element edges description array.
+  /// @brief Make element Edges description array.
   virtual ShapeDescArray make_edges_desc() const = 0;
 
-  /// @brief Number of faces in the element.
+  /// @brief Number of Faces in the element.
   size_t NumFaces() const {
     return make_faces_desc().size();
   }
 
-  /// @brief Make element faces description.
+  /// @brief Make element Faces description.
   virtual ShapeDescArray make_faces_desc() const = 0;
 
 }; // class Element
@@ -174,7 +173,6 @@ public:
   virtual ShapeDescArray MakeSimplicesDesc() const = 0;
 
 private:
-
   template<class Func>
   void ForEachSimplex_(Func&& func) const;
 
@@ -183,8 +181,7 @@ private:
 /// ----------------------------------------------------------------- ///
 /// @brief Dummy nodal element.
 /// ----------------------------------------------------------------- ///
-class Node final :
-  public ElementHelper_<ShapeType::Node, 1, SimplexElement> {
+class Node final : public ElementHelper_<ShapeType::Node, 1, SimplexElement> {
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
@@ -207,7 +204,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Segment final :
-  public ElementHelper_<ShapeType::Segment, 2, SimplexElement> {
+    public ElementHelper_<ShapeType::Segment, 2, SimplexElement> {
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
@@ -231,7 +228,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Triangle final :
-  public ElementHelper_<ShapeType::Triangle, 3, SimplexElement> {
+    public ElementHelper_<ShapeType::Triangle, 3, SimplexElement> {
 public:
   real_t Volume() const final;
   vec3_t Normal() const final;
@@ -252,7 +249,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Quadrangle final :
-  public ElementHelper_<ShapeType::Quadrangle, 4, ComplexElement> {
+    public ElementHelper_<ShapeType::Quadrangle, 4, ComplexElement> {
 public:
   ShapeDescArray make_edges_desc() const final;
   ShapeDescArray make_faces_desc() const final;
@@ -285,7 +282,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Tetrahedron final :
-  public ElementHelper_<ShapeType::Tetrahedron, 4, SimplexElement> {
+    public ElementHelper_<ShapeType::Tetrahedron, 4, SimplexElement> {
 public:
   real_t Volume() const final;
   ShapeDescArray make_edges_desc() const final;
@@ -318,7 +315,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Pyramid final :
-  public ElementHelper_<ShapeType::Pyramid, 5, ComplexElement> {
+    public ElementHelper_<ShapeType::Pyramid, 5, ComplexElement> {
 public:
   ShapeDescArray make_edges_desc() const final;
   ShapeDescArray make_faces_desc() const final;
@@ -355,7 +352,7 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Pentahedron final :
-  public ElementHelper_<ShapeType::Pentahedron, 6, ComplexElement> {
+    public ElementHelper_<ShapeType::Pentahedron, 6, ComplexElement> {
 public:
   ShapeDescArray make_edges_desc() const final;
   ShapeDescArray make_faces_desc() const final;
@@ -367,7 +364,7 @@ public:
 /// @verbatim
 ///                      f5
 ///                      ^       f2
-///                      |       ^  
+///                      |       ^
 ///                   e9 |      /
 ///            n6 O---<--|----------O n5         e0 = (n0,n1)
 ///              /|      |    /    /|            e1 = (n1,n2)
@@ -391,11 +388,11 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Hexahedron final :
-  public ElementHelper_<ShapeType::Hexahedron, 8, ComplexElement> {
+    public ElementHelper_<ShapeType::Hexahedron, 8, ComplexElement> {
 public:
   ShapeDescArray make_edges_desc() const final;
   ShapeDescArray make_faces_desc() const final;
   ShapeDescArray MakeSimplicesDesc() const final;
 }; // class Hexahedron
 
-} // namespace feathers
+} // namespace Storm

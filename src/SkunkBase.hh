@@ -32,20 +32,20 @@
 #define NOMINMAX 1
 #endif
 
-#include <cmath>
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
 #include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 
+#include <algorithm>
 #include <array>
-#include <vector>
-#include <string>
+#include <iostream>
 #include <memory>
 #include <numeric>
-#include <iostream>
-#include <algorithm>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include <glm/glm.hpp>
 
@@ -89,8 +89,10 @@ namespace views = ranges::views;
 #define FEATHERS_CONCAT(x, y) FEATHERS_CONCAT_(x, y)
 /** @} */
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------
+// //
+// ------------------------------------------------------------------------------------
+// //
 
 #define FEATHERS_NOT_USED(x)
 
@@ -108,7 +110,10 @@ namespace views = ranges::views;
 #ifdef _MSC_VER
 #define FEATHERS_ASSUME(x) __assume(x)
 #else
-#define FEATHERS_ASSUME(x) do { if (!(x)) { __builtin_unreachable(); } } while (false)
+#define FEATHERS_ASSUME(x)                                                     \
+  do {                                                                         \
+    if (!(x)) { __builtin_unreachable(); }                                     \
+  } while (false)
 #endif
 /** @} */
 
@@ -123,31 +128,37 @@ namespace views = ranges::views;
 #endif
 /** @} */
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------
+// //
+// ------------------------------------------------------------------------------------
+// //
 
 #define FEATHERS_DEPRECATED //[[deprecated("")]]
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------
+// //
+// ------------------------------------------------------------------------------------
+// //
 
 #define FEATHERS_PASS(...) __VA_ARGS__
 
 /** @{ */
-#define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name, arguments, ...) \
-    /** @{ */ \
-    T type method_name arguments __VA_ARGS__ \
-    T const_type method_name arguments const __VA_ARGS__ \
+#define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name,          \
+                                    arguments, ...)                            \
+  /** @{ */                                                                    \
+  T type method_name arguments __VA_ARGS__ T const_type method_name            \
+    arguments const __VA_ARGS__                                                \
     /** @} */
-#define FEATHERS_CONST_OVERLOAD_R(type, const_type, method_name, arguments, ...) \
-    FEATHERS_CONST_OVERLOAD_R_T( \
-        /*empty*/, type, const_type, method_name, arguments, __VA_ARGS__)
-#define FEATHERS_CONST_OVERLOAD_T(T, type, method_name, arguments, ...) \
-    FEATHERS_CONST_OVERLOAD_R_T( \
-        T, type, const type, method_name, arguments, __VA_ARGS__)
-#define ConstOverload(type, method_name, arguments, ...) \
-    FEATHERS_CONST_OVERLOAD_T( \
-        /*empty*/, type, method_name, arguments, __VA_ARGS__)
+#define FEATHERS_CONST_OVERLOAD_R(type, const_type, method_name, arguments,    \
+                                  ...)                                         \
+  FEATHERS_CONST_OVERLOAD_R_T(/*empty*/, type, const_type, method_name,        \
+                              arguments, __VA_ARGS__)
+#define FEATHERS_CONST_OVERLOAD_T(T, type, method_name, arguments, ...)        \
+  FEATHERS_CONST_OVERLOAD_R_T(T, type, const type, method_name, arguments,     \
+                              __VA_ARGS__)
+#define ConstOverload(type, method_name, arguments, ...)                       \
+  FEATHERS_CONST_OVERLOAD_T(/*empty*/, type, method_name, arguments,           \
+                            __VA_ARGS__)
 /** @} */
 
 #define StormPass2_(...) __VA_ARGS__
@@ -158,12 +169,15 @@ namespace views = ranges::views;
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-#define FEATHERS_ENSURE(x) do { if(!(x)) { \
-        std::fprintf( \
-            stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
-            __FILE__, __LINE__, __PRETTY_FUNCTION__, FEATHERS_TO_STRING(x)); \
-        std::abort(); \
-    } } while (false)
+#define FEATHERS_ENSURE(x)                                                     \
+  do {                                                                         \
+    if (!(x)) {                                                                \
+      std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n",         \
+                   __FILE__, __LINE__, __PRETTY_FUNCTION__,                    \
+                   FEATHERS_TO_STRING(x));                                     \
+      std::abort();                                                            \
+    }                                                                          \
+  } while (false)
 
 /** Assertion macro. */
 /** @{ */
@@ -174,26 +188,28 @@ namespace views = ranges::views;
 #endif
 /** @} */
 
-#define storm_assert FEATHERS_ASSERT
-#define storm_ensure FEATHERS_ENSURE
+#define StormAssert FEATHERS_ASSERT
+#define StormEnsure FEATHERS_ENSURE
 
 /** Fatal assertion macro. */
-#define FEATHERS_ERROR_STOP(message) do { \
-        std::fprintf( \
-            stderr, "\nFatal assertion failed:\n%s:%d %s: %s", \
-            __FILE__, __LINE__, __PRETTY_FUNCTION__, message); \
-        std::abort(); \
-    } while (false)
+#define FEATHERS_ERROR_STOP(message)                                           \
+  do {                                                                         \
+    std::fprintf(stderr, "\nFatal assertion failed:\n%s:%d %s: %s", __FILE__,  \
+                 __LINE__, __PRETTY_FUNCTION__, message);                      \
+    std::abort();                                                              \
+  } while (false)
 
 /** Not implemented macro. */
-#define FEATHERS_NOT_IMPLEMENTED(...) \
-    FEATHERS_ERROR_STOP("not implemented. " __VA_ARGS__)
+#define FEATHERS_NOT_IMPLEMENTED(...)                                          \
+  FEATHERS_ERROR_STOP("not implemented. " __VA_ARGS__)
 /** Not implemented macro. */
-#define FEATHERS_NOT_REACHABLE(...) \
-    FEATHERS_ERROR_STOP("not reachable. " __VA_ARGS__)
+#define FEATHERS_NOT_REACHABLE(...)                                            \
+  FEATHERS_ERROR_STOP("not reachable. " __VA_ARGS__)
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------
+// //
+// ------------------------------------------------------------------------------------
+// //
 
 namespace Storm {
 
@@ -261,8 +277,10 @@ public:
   }
 }; // class tMinMaxFunc
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------
+// //
+// ------------------------------------------------------------------------------------
+// //
 
 #ifndef SKUNK_CONFIG_REAL_IS_DOUBLE
 #define SKUNK_CONFIG_REAL_IS_DOUBLE 1
@@ -272,12 +290,20 @@ public:
 /** @{ */
 #if SKUNK_CONFIG_REAL_IS_DOUBLE
 using real_t = double;
-using vec2_t = glm::dvec2; using vec3_t = glm::dvec3; using vec4_t = glm::dvec4;
-using mat2_t = glm::dmat2; using mat3_t = glm::dmat3; using mat4_t = glm::dmat4;
+using vec2_t = glm::dvec2;
+using vec3_t = glm::dvec3;
+using vec4_t = glm::dvec4;
+using mat2_t = glm::dmat2;
+using mat3_t = glm::dmat3;
+using mat4_t = glm::dmat4;
 #else
 using real_t = float;
-using vec2_t = glm::vec2; using vec3_t = glm::vec3; using vec4_t = glm::vec4;
-using mat2_t = glm::mat2; using mat3_t = glm::mat3; using mat4_t = glm::mat4;
+using vec2_t = glm::vec2;
+using vec3_t = glm::vec3;
+using vec4_t = glm::vec4;
+using mat2_t = glm::mat2;
+using mat3_t = glm::mat3;
+using mat4_t = glm::mat4;
 #endif
 /** @} */
 
@@ -290,7 +316,7 @@ static constexpr real_t qnan = std::numeric_limits<real_t>::quiet_NaN();
 /** Compute pseudo-inverse value. */
 template<typename tValue>
 constexpr tValue safe_inverse(tValue x) {
-  return x == tValue(0.0) ? tValue(0.0) : (tValue(1.0)/x);
+  return x == tValue(0.0) ? tValue(0.0) : (tValue(1.0) / x);
 } // safe_inverse
 
 /** Simple shortcut for @c std::enable_shared_from_this. */
@@ -302,7 +328,7 @@ auto shared_from_this(const obj_ptr_t& obj) {
   return std::static_pointer_cast<obj_t>(obj->shared_from_this());
 } // shared_from_this
 
-} // namespace feathers
+} // namespace Storm
 
 /* TODO: Remove me. */
 using int_t = Storm::ptrdiff_t;

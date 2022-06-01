@@ -29,36 +29,27 @@ namespace Storm {
 
 std::unique_ptr<Element> Element::Make(ShapeDesc&& desc,
                                        std::span<vec3_t const> nodePos) {
-
   // Construct an element by shape.
   auto element = [shape = desc.Shape]() -> std::unique_ptr<Element> {
     switch (shape) {
-      case ShapeType::Segment:
-        return std::make_unique<Segment>();
-      case ShapeType::Triangle:
-        return std::make_unique<Triangle>();
-      case ShapeType::Quadrangle:
-        return std::make_unique<Quadrangle>();
-      case ShapeType::Tetrahedron:
-        return std::make_unique<Tetrahedron>();
-      case ShapeType::Pyramid:
-        return std::make_unique<Pyramid>();
-      case ShapeType::Pentahedron:
-        return std::make_unique<Pentahedron>();
-      case ShapeType::Hexahedron:
-        return std::make_unique<Hexahedron>();
-      default:
-        FEATHERS_NOT_REACHABLE();
+      case ShapeType::Segment: return std::make_unique<Segment>();
+      case ShapeType::Triangle: return std::make_unique<Triangle>();
+      case ShapeType::Quadrangle: return std::make_unique<Quadrangle>();
+      case ShapeType::Tetrahedron: return std::make_unique<Tetrahedron>();
+      case ShapeType::Pyramid: return std::make_unique<Pyramid>();
+      case ShapeType::Pentahedron: return std::make_unique<Pentahedron>();
+      case ShapeType::Hexahedron: return std::make_unique<Hexahedron>();
+      default: FEATHERS_NOT_REACHABLE();
     }
   }();
 
-  // Verify and assign nodes:
+  // Verify and assign Nodes:
   element->NodePos_ = nodePos;
   element->NodeIndices_ = std::move(desc.NodeIndices);
-  storm_assert(
-    // we have the same number of node indices and nodes,
+  StormAssert(
+    // we have the same number of node indices and Nodes,
     element->NodeIndices_.size() == element->NumNodes() &&
-    // nodes span has enough elements,
+    // Nodes span has enough elements,
     element->NodeIndices_.size() <= element->NodePos_.size() &&
     // and all node indices are inside the range.
     ranges::all_of(element->NodeIndices_, [&](NodeIndex nodeIndex) {
@@ -70,9 +61,7 @@ std::unique_ptr<Element> Element::Make(ShapeDesc&& desc,
 } // Element::Make
 
 real_t SimplexElement::Diam() const {
-  if (NumNodes() == 1) {
-    return 0.0;
-  }
+  if (NumNodes() == 1) { return 0.0; }
   real_t diam{glm::length(NodePos(0) - NodePos(1))};
   for (size_t i{2}; i < NumNodes(); ++i) {
     for (size_t j{0}; j < i; ++j) {
@@ -84,10 +73,8 @@ real_t SimplexElement::Diam() const {
 
 vec3_t SimplexElement::CenterPos() const {
   vec3_t sumOfNodePos{NodePos(0)};
-  for (size_t i{1}; i < NumNodes(); ++i) {
-    sumOfNodePos += NodePos(i);
-  }
-  return sumOfNodePos/real_t(NumNodes());
+  for (size_t i{1}; i < NumNodes(); ++i) { sumOfNodePos += NodePos(i); }
+  return sumOfNodePos / real_t(NumNodes());
 } // SimplexElement::barycenter
 
 template<class Func>
@@ -101,17 +88,13 @@ void ComplexElement::ForEachSimplex_(Func&& func) const {
 
 real_t ComplexElement::Diam() const {
   real_t diam{0.0};
-  ForEachSimplex_([&](Element& shape) {
-    diam = std::max(diam, shape.Diam());
-  });
+  ForEachSimplex_([&](Element& shape) { diam = std::max(diam, shape.Diam()); });
   return diam;
 } // ComplexElement::Diam
 
 real_t ComplexElement::Volume() const {
   real_t volume{0.0};
-  ForEachSimplex_([&](Element& shape) {
-    volume += shape.Volume();
-  });
+  ForEachSimplex_([&](Element& shape) { volume += shape.Volume(); });
   return volume;
 } // ComplexElement::volume
 
@@ -170,7 +153,7 @@ ShapeDescArray Segment::make_faces_desc() const {
 real_t Triangle::Volume() const {
   vec3_t const delta1 = NodePos(1) - NodePos(0);
   vec3_t const delta2 = NodePos(2) - NodePos(0);
-  return 0.5*glm::length(glm::cross(delta1, delta2));
+  return 0.5 * glm::length(glm::cross(delta1, delta2));
 }
 vec3_t Triangle::Normal() const {
   vec3_t const delta1 = NodePos(1) - NodePos(0);
@@ -178,10 +161,9 @@ vec3_t Triangle::Normal() const {
   return glm::normalize(glm::cross(delta1, delta2));
 }
 ShapeDescArray Triangle::make_edges_desc() const {
-  return {
-    PartDesc_(ShapeType::Segment, 0, 1),
-    PartDesc_(ShapeType::Segment, 1, 2),
-    PartDesc_(ShapeType::Segment, 2, 0)};
+  return {PartDesc_(ShapeType::Segment, 0, 1),
+          PartDesc_(ShapeType::Segment, 1, 2),
+          PartDesc_(ShapeType::Segment, 2, 0)};
 }
 ShapeDescArray Triangle::make_faces_desc() const {
   return make_edges_desc();
@@ -189,135 +171,108 @@ ShapeDescArray Triangle::make_faces_desc() const {
 
 ShapeDescArray Quadrangle::make_edges_desc() const {
   return {
-    PartDesc_(ShapeType::Segment, 0, 1),
-    PartDesc_(ShapeType::Segment, 1, 2),
-    PartDesc_(ShapeType::Segment, 2, 3),
-    PartDesc_(ShapeType::Segment, 3, 0)};
+    PartDesc_(ShapeType::Segment, 0, 1), PartDesc_(ShapeType::Segment, 1, 2),
+    PartDesc_(ShapeType::Segment, 2, 3), PartDesc_(ShapeType::Segment, 3, 0)};
 }
 ShapeDescArray Quadrangle::make_faces_desc() const {
   return make_edges_desc();
 }
 ShapeDescArray Quadrangle::MakeSimplicesDesc() const {
-  return {
-    PartDesc_(ShapeType::Triangle, 0, 1, 2),
-    PartDesc_(ShapeType::Triangle, 2, 3, 0)};
-//return {
-//  PartDesc_(ShapeType::Triangle, 0, 1, 3),
-//  PartDesc_(ShapeType::Triangle, 1, 2, 3)};
+  return {PartDesc_(ShapeType::Triangle, 0, 1, 2),
+          PartDesc_(ShapeType::Triangle, 2, 3, 0)};
+  // return {
+  //   PartDesc_(ShapeType::Triangle, 0, 1, 3),
+  //   PartDesc_(ShapeType::Triangle, 1, 2, 3)};
 }
 
 real_t Tetrahedron::Volume() const {
   vec3_t const delta1 = NodePos(1) - NodePos(0);
   vec3_t const delta2 = NodePos(2) - NodePos(0);
   vec3_t const delta3 = NodePos(3) - NodePos(0);
-  return std::abs(glm::dot(delta1, glm::cross(delta2, delta3)))/6.0;
+  return std::abs(glm::dot(delta1, glm::cross(delta2, delta3))) / 6.0;
 }
 ShapeDescArray Tetrahedron::make_edges_desc() const {
   return {
-    PartDesc_(ShapeType::Segment, 0, 1),
-    PartDesc_(ShapeType::Segment, 1, 2),
-    PartDesc_(ShapeType::Segment, 2, 0),
-    PartDesc_(ShapeType::Segment, 0, 3),
-    PartDesc_(ShapeType::Segment, 1, 3),
-    PartDesc_(ShapeType::Segment, 2, 3) };
+    PartDesc_(ShapeType::Segment, 0, 1), PartDesc_(ShapeType::Segment, 1, 2),
+    PartDesc_(ShapeType::Segment, 2, 0), PartDesc_(ShapeType::Segment, 0, 3),
+    PartDesc_(ShapeType::Segment, 1, 3), PartDesc_(ShapeType::Segment, 2, 3)};
 }
 ShapeDescArray Tetrahedron::make_faces_desc() const {
-  return {
-    PartDesc_(ShapeType::Triangle, 0, 2, 1),
-    PartDesc_(ShapeType::Triangle, 0, 1, 3),
-    PartDesc_(ShapeType::Triangle, 1, 2, 3),
-    PartDesc_(ShapeType::Triangle, 2, 0, 3) };
+  return {PartDesc_(ShapeType::Triangle, 0, 2, 1),
+          PartDesc_(ShapeType::Triangle, 0, 1, 3),
+          PartDesc_(ShapeType::Triangle, 1, 2, 3),
+          PartDesc_(ShapeType::Triangle, 2, 0, 3)};
 }
 
 ShapeDescArray Pyramid::make_edges_desc() const {
   return {
-    PartDesc_(ShapeType::Segment, 0, 1),
-    PartDesc_(ShapeType::Segment, 1, 2),
-    PartDesc_(ShapeType::Segment, 2, 3),
-    PartDesc_(ShapeType::Segment, 3, 0),
-    PartDesc_(ShapeType::Segment, 0, 4),
-    PartDesc_(ShapeType::Segment, 1, 4),
-    PartDesc_(ShapeType::Segment, 2, 4),
-    PartDesc_(ShapeType::Segment, 3, 4)};
+    PartDesc_(ShapeType::Segment, 0, 1), PartDesc_(ShapeType::Segment, 1, 2),
+    PartDesc_(ShapeType::Segment, 2, 3), PartDesc_(ShapeType::Segment, 3, 0),
+    PartDesc_(ShapeType::Segment, 0, 4), PartDesc_(ShapeType::Segment, 1, 4),
+    PartDesc_(ShapeType::Segment, 2, 4), PartDesc_(ShapeType::Segment, 3, 4)};
 }
 ShapeDescArray Pyramid::make_faces_desc() const {
-  return {
-    PartDesc_(ShapeType::Quadrangle, 0, 3, 2, 1),
-    PartDesc_(ShapeType::Triangle, 0, 1, 4),
-    PartDesc_(ShapeType::Triangle, 1, 2, 4),
-    PartDesc_(ShapeType::Triangle, 2, 3, 4),
-    PartDesc_(ShapeType::Triangle, 3, 0, 4)};
+  return {PartDesc_(ShapeType::Quadrangle, 0, 3, 2, 1),
+          PartDesc_(ShapeType::Triangle, 0, 1, 4),
+          PartDesc_(ShapeType::Triangle, 1, 2, 4),
+          PartDesc_(ShapeType::Triangle, 2, 3, 4),
+          PartDesc_(ShapeType::Triangle, 3, 0, 4)};
 }
 ShapeDescArray Pyramid::MakeSimplicesDesc() const {
-  return {
-    PartDesc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
-    PartDesc_(ShapeType::Tetrahedron, 2, 3, 0, 4)};
-//return {
-//  PartDesc_(ShapeType::Tetrahedron, 0, 1, 3, 4),
-//  PartDesc_(ShapeType::Tetrahedron, 1, 2, 3, 4)};
+  return {PartDesc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
+          PartDesc_(ShapeType::Tetrahedron, 2, 3, 0, 4)};
+  // return {
+  //   PartDesc_(ShapeType::Tetrahedron, 0, 1, 3, 4),
+  //   PartDesc_(ShapeType::Tetrahedron, 1, 2, 3, 4)};
 }
 
 ShapeDescArray Pentahedron::make_edges_desc() const {
   return {
-    PartDesc_(ShapeType::Segment, 0, 1),
-    PartDesc_(ShapeType::Segment, 1, 2),
-    PartDesc_(ShapeType::Segment, 2, 0),
-    PartDesc_(ShapeType::Segment, 0, 3),
-    PartDesc_(ShapeType::Segment, 1, 4),
-    PartDesc_(ShapeType::Segment, 2, 5),
-    PartDesc_(ShapeType::Segment, 3, 4),
-    PartDesc_(ShapeType::Segment, 4, 5),
+    PartDesc_(ShapeType::Segment, 0, 1), PartDesc_(ShapeType::Segment, 1, 2),
+    PartDesc_(ShapeType::Segment, 2, 0), PartDesc_(ShapeType::Segment, 0, 3),
+    PartDesc_(ShapeType::Segment, 1, 4), PartDesc_(ShapeType::Segment, 2, 5),
+    PartDesc_(ShapeType::Segment, 3, 4), PartDesc_(ShapeType::Segment, 4, 5),
     PartDesc_(ShapeType::Segment, 5, 3)};
 }
 ShapeDescArray Pentahedron::make_faces_desc() const {
-  return {
-    PartDesc_(ShapeType::Quadrangle, 0, 1, 4, 3),
-    PartDesc_(ShapeType::Quadrangle, 1, 2, 5, 4),
-    PartDesc_(ShapeType::Quadrangle, 2, 0, 3, 5),
-    PartDesc_(ShapeType::Triangle, 0, 2, 1),
-    PartDesc_(ShapeType::Triangle, 3, 4, 5)};
+  return {PartDesc_(ShapeType::Quadrangle, 0, 1, 4, 3),
+          PartDesc_(ShapeType::Quadrangle, 1, 2, 5, 4),
+          PartDesc_(ShapeType::Quadrangle, 2, 0, 3, 5),
+          PartDesc_(ShapeType::Triangle, 0, 2, 1),
+          PartDesc_(ShapeType::Triangle, 3, 4, 5)};
 }
 ShapeDescArray Pentahedron::MakeSimplicesDesc() const {
-  return {
-    PartDesc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
-    PartDesc_(ShapeType::Tetrahedron, 2, 0, 3, 4),
-    PartDesc_(ShapeType::Tetrahedron, 3, 5, 2, 4)};
+  return {PartDesc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
+          PartDesc_(ShapeType::Tetrahedron, 2, 0, 3, 4),
+          PartDesc_(ShapeType::Tetrahedron, 3, 5, 2, 4)};
 }
 
 ShapeDescArray Hexahedron::make_edges_desc() const {
   return {
-    PartDesc_(ShapeType::Segment, 0, 1),
-    PartDesc_(ShapeType::Segment, 1, 2),
-    PartDesc_(ShapeType::Segment, 2, 3),
-    PartDesc_(ShapeType::Segment, 3, 0),
-    PartDesc_(ShapeType::Segment, 0, 4),
-    PartDesc_(ShapeType::Segment, 1, 5),
-    PartDesc_(ShapeType::Segment, 2, 6),
-    PartDesc_(ShapeType::Segment, 3, 7),
-    PartDesc_(ShapeType::Segment, 4, 5),
-    PartDesc_(ShapeType::Segment, 5, 6),
-    PartDesc_(ShapeType::Segment, 6, 7),
-    PartDesc_(ShapeType::Segment, 7, 4)};
+    PartDesc_(ShapeType::Segment, 0, 1), PartDesc_(ShapeType::Segment, 1, 2),
+    PartDesc_(ShapeType::Segment, 2, 3), PartDesc_(ShapeType::Segment, 3, 0),
+    PartDesc_(ShapeType::Segment, 0, 4), PartDesc_(ShapeType::Segment, 1, 5),
+    PartDesc_(ShapeType::Segment, 2, 6), PartDesc_(ShapeType::Segment, 3, 7),
+    PartDesc_(ShapeType::Segment, 4, 5), PartDesc_(ShapeType::Segment, 5, 6),
+    PartDesc_(ShapeType::Segment, 6, 7), PartDesc_(ShapeType::Segment, 7, 4)};
 }
 ShapeDescArray Hexahedron::make_faces_desc() const {
-  return {
-    PartDesc_(ShapeType::Quadrangle, 0, 3, 2, 1),
-    PartDesc_(ShapeType::Quadrangle, 0, 1, 5, 4),
-    PartDesc_(ShapeType::Quadrangle, 1, 2, 6, 5),
-    PartDesc_(ShapeType::Quadrangle, 2, 3, 7, 6),
-    PartDesc_(ShapeType::Quadrangle, 0, 4, 7, 3),
-    PartDesc_(ShapeType::Quadrangle, 4, 5, 6, 7)};
+  return {PartDesc_(ShapeType::Quadrangle, 0, 3, 2, 1),
+          PartDesc_(ShapeType::Quadrangle, 0, 1, 5, 4),
+          PartDesc_(ShapeType::Quadrangle, 1, 2, 6, 5),
+          PartDesc_(ShapeType::Quadrangle, 2, 3, 7, 6),
+          PartDesc_(ShapeType::Quadrangle, 0, 4, 7, 3),
+          PartDesc_(ShapeType::Quadrangle, 4, 5, 6, 7)};
 }
 ShapeDescArray Hexahedron::MakeSimplicesDesc() const {
-  return {
-    PartDesc_(ShapeType::Tetrahedron, 0, 3, 1, 4),
-    PartDesc_(ShapeType::Tetrahedron, 3, 2, 1, 6),
-    PartDesc_(ShapeType::Tetrahedron, 4, 5, 6, 1),
-    PartDesc_(ShapeType::Tetrahedron, 4, 6, 7, 3),
-    PartDesc_(ShapeType::Tetrahedron, 4, 3, 1, 6)};
+  return {PartDesc_(ShapeType::Tetrahedron, 0, 3, 1, 4),
+          PartDesc_(ShapeType::Tetrahedron, 3, 2, 1, 6),
+          PartDesc_(ShapeType::Tetrahedron, 4, 5, 6, 1),
+          PartDesc_(ShapeType::Tetrahedron, 4, 6, 7, 3),
+          PartDesc_(ShapeType::Tetrahedron, 4, 3, 1, 6)};
 }
 
-} // namespace feathers
+} // namespace Storm
 
 #if !FEATHERS_DOXYGEN
 ///

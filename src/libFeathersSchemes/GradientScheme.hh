@@ -14,8 +14,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -38,10 +38,9 @@ namespace Storm {
 /** Abstract cell-centered gradient scheme. */
 class iGradientScheme : public tObject<iGradientScheme> {
 public:
-    /** Compute cell-centered gradients. */
-    virtual void get_gradients(size_t num_vars,
-                               tVectorField& grad_u,
-                               const tScalarField& u) const = 0;
+  /** Compute cell-centered gradients. */
+  virtual void get_gradients(size_t num_vars, tVectorField& grad_u,
+                             const tScalarField& u) const = 0;
 }; // class iGradientScheme
 
 /**
@@ -53,28 +52,25 @@ public:
  */
 class cLeastSquaresGradientScheme final : public iGradientScheme {
 private:
-    std::shared_ptr<const Mesh> m_mesh;
-    tMatrixField m_inverse_matrices;
+  std::shared_ptr<const Mesh> m_mesh;
+  tMatrixField m_inverse_matrices;
 
 public:
-    /** Initialize the gradient scheme. */
-    explicit cLeastSquaresGradientScheme(std::shared_ptr<const Mesh> mesh):
-        m_mesh(std::move(mesh)),
-        m_inverse_matrices(1, m_mesh->cells().size()) {
-        init_gradients_();
-    }
+  /** Initialize the gradient scheme. */
+  explicit cLeastSquaresGradientScheme(std::shared_ptr<const Mesh> mesh) :
+      m_mesh(std::move(mesh)), m_inverse_matrices(1, m_mesh->Cells().size()) {
+    init_gradients_();
+  }
 
 private:
-    void init_gradients_();
+  void init_gradients_();
 
 public:
-
-    /** Compute cell-centered gradients. */
-    void get_gradients(size_t num_vars,
-                       tVectorField& grad_u,
-                       const tScalarField& u) const final;
+  /** Compute cell-centered gradients. */
+  void get_gradients(size_t num_vars, tVectorField& grad_u,
+                     const tScalarField& u) const final;
 }; // class cLeastSquaresGradientScheme
 
-} // namespace feathers
+} // namespace Storm
 
 #endif // GRADIENT_SCHEME_HH_

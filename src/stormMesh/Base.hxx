@@ -38,7 +38,8 @@ class NodeTag;
 class EdgeTag;
 class FaceTag;
 class CellTag;
-template<class> class MarkTag;
+template<class>
+class MarkTag;
 
 /// @brief Node index.
 using NodeIndex = Index<NodeTag>;
@@ -52,16 +53,16 @@ using FaceIndex = Index<FaceTag>;
 /// @brief Cell index.
 using CellIndex = Index<CellTag>;
 
-/// @brief Node mark index.
+/// @brief Node Mark index.
 using NodeMark = Index<MarkTag<NodeTag>>;
 
-/// @brief Edge mark index.
+/// @brief Edge Mark index.
 using EdgeMark = Index<MarkTag<EdgeTag>>;
 
-/// @brief Face mark index.
+/// @brief Face Mark index.
 using FaceMark = Index<MarkTag<FaceTag>>;
 
-/// @brief Cell mark index.
+/// @brief Cell Mark index.
 using CellMark = Index<MarkTag<CellTag>>;
 
-} // namespace feathers
+} // namespace Storm

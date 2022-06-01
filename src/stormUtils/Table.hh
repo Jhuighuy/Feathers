@@ -14,8 +14,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -45,7 +45,6 @@ private:
   Vector<ColumnIndex, size_t> m_column_indices;
 
 public:
-
   // ---------------------------------------------------------------------- //
   // ---------------------------------------------------------------------- //
 
@@ -60,45 +59,52 @@ public:
   }
 
   void insert(RowIndex rowIndex, ColumnIndex columnIndex) {
-    storm_assert(rowIndex < num_rows());
+    StormAssert(rowIndex < num_rows());
     m_column_indices.insert(
       m_column_indices.begin() + m_row_offsets[rowIndex + 1], columnIndex);
-    std::for_each(m_row_offsets.begin() + (size_t)rowIndex + 1, m_row_offsets.end(),
-      [](size_t& offset) { offset += 1; });
+    std::for_each(m_row_offsets.begin() + (size_t) rowIndex + 1,
+                  m_row_offsets.end(), [](size_t& offset) { offset += 1; });
   }
   void insert(RowIndex, ranges::range auto&&) {}
 
   /** Pointer to the beginning of the row. */
-  ConstOverload(ColumnIndex*, begin_row, (RowIndex row_index), {
-    FEATHERS_ASSERT(row_index < num_rows());
-    return &m_column_indices[m_row_offsets[row_index]];
-  })
-  ConstOverload(ColumnIndex*, begin_row, (size_t row_index), requires(!std::is_same_v<RowIndex, size_t>) {
-    FEATHERS_ASSERT(row_index < num_rows());
-    return &m_column_indices[m_row_offsets[RowIndex(row_index)]];
-  })
+  ConstOverload(ColumnIndex*, begin_row, (RowIndex row_index),
+                {
+                  FEATHERS_ASSERT(row_index < num_rows());
+                  return &m_column_indices[m_row_offsets[row_index]];
+                })
+    ConstOverload(
+      ColumnIndex*, begin_row, (size_t row_index),
+      requires(!std::is_same_v<RowIndex, size_t>) {
+        FEATHERS_ASSERT(row_index < num_rows());
+        return &m_column_indices[m_row_offsets[RowIndex(row_index)]];
+      })
 
-  /** Pointer to the End of the row. */
-  ConstOverload(ColumnIndex*, end_row, (RowIndex row_index), {
-    FEATHERS_ASSERT(row_index < num_rows());
-    return &m_column_indices[m_row_offsets[row_index + 1]];
-  })
-  ConstOverload(ColumnIndex*, end_row, (size_t row_index), requires(!std::is_same_v<RowIndex, size_t>) {
-    FEATHERS_ASSERT(row_index < num_rows());
-    return &m_column_indices[m_row_offsets[RowIndex(row_index) + 1]];
-  })
+    /** Pointer to the End of the row. */
+    ConstOverload(ColumnIndex*, end_row, (RowIndex row_index),
+                  {
+                    FEATHERS_ASSERT(row_index < num_rows());
+                    return &m_column_indices[m_row_offsets[row_index + 1]];
+                  })
+      ConstOverload(
+        ColumnIndex*, end_row, (size_t row_index),
+        requires(!std::is_same_v<RowIndex, size_t>) {
+          FEATHERS_ASSERT(row_index < num_rows());
+          return &m_column_indices[m_row_offsets[RowIndex(row_index) + 1]];
+        })
 
-  auto operator[](RowIndex row_index) noexcept {
+        auto
+        operator[](RowIndex row_index) noexcept {
     FEATHERS_ASSERT(row_index < num_rows());
-    return ranges::subrange(
-      &m_column_indices[m_row_offsets[row_index]],
-      &m_column_indices[m_row_offsets[row_index + 1]]);
+    return ranges::subrange(&m_column_indices[m_row_offsets[row_index]],
+                            &m_column_indices[m_row_offsets[row_index + 1]]);
   }
-  auto operator[](RowIndex row_index) const noexcept requires(!std::is_same_v<RowIndex, size_t>) {
+  auto operator[](RowIndex row_index) const noexcept
+    requires(!std::is_same_v<RowIndex, size_t>)
+  {
     FEATHERS_ASSERT(row_index < num_rows());
-    return ranges::subrange(
-      &m_column_indices[m_row_offsets[row_index]],
-      &m_column_indices[m_row_offsets[row_index + 1]]);
+    return ranges::subrange(&m_column_indices[m_row_offsets[row_index]],
+                            &m_column_indices[m_row_offsets[row_index + 1]]);
   }
 
   // ---------------------------------------------------------------------- //
@@ -111,44 +117,48 @@ public:
 
   /** Insert a row into the table. */
   /** @{ */
-  void insert_row(size_t num_column_indices = 0, ColumnIndex column_index = ColumnIndex{npos}) {
-    m_column_indices.insert(
-      m_column_indices.end(), num_column_indices, column_index);
+  void insert_row(size_t num_column_indices = 0,
+                  ColumnIndex column_index = ColumnIndex{npos}) {
+    m_column_indices.insert(m_column_indices.end(), num_column_indices,
+                            column_index);
     m_row_offsets.push_back(m_column_indices.size());
   }
   template<typename tColumnIndexIter>
-  void insert_row(tColumnIndexIter first_index_iter, tColumnIndexIter last_index_iter) {
-    m_column_indices.insert(
-      m_column_indices.end(), first_index_iter, last_index_iter);
+  void insert_row(tColumnIndexIter first_index_iter,
+                  tColumnIndexIter last_index_iter) {
+    m_column_indices.insert(m_column_indices.end(), first_index_iter,
+                            last_index_iter);
     m_row_offsets.push_back(m_column_indices.size());
   }
   void insert_row(ranges::range auto range) {
     insert_row(range.begin(), range.end());
   }
   /** @} */
-};  // class CsrTable
+}; // class CsrTable
 
-// ------------------------------------------------------------------------------------ //
-// ------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------
+// //
+// ------------------------------------------------------------------------------------
+// //
 
 template<typename tIter, typename tTable>
-void permute_rows(tIter first_permutation_iter,
-                  tIter last_permutation_iter, tTable& table) {
+void permute_rows(tIter first_permutation_iter, tIter last_permutation_iter,
+                  tTable& table) {
   tTable permuted_table;
   for (tIter permutation_iter = first_permutation_iter;
        permutation_iter != last_permutation_iter; ++permutation_iter) {
-    permuted_table.insert_row(
-      table.begin_row(*permutation_iter), table.end_row(*permutation_iter));
+    permuted_table.insert_row(table.begin_row(*permutation_iter),
+                              table.end_row(*permutation_iter));
   }
   table = std::move(permuted_table);
 }
 template<typename tIter, typename tTable, typename... tTables>
-void permute_rows(tIter first_permutation_iter,
-                  tIter last_permutation_iter, tTable& table, tTables&... rest) {
+void permute_rows(tIter first_permutation_iter, tIter last_permutation_iter,
+                  tTable& table, tTables&... rest) {
   permute_rows(first_permutation_iter, last_permutation_iter, table);
   permute_rows(first_permutation_iter, last_permutation_iter, rest...);
 }
 
-} // namespace feathers
+} // namespace Storm
 
 #endif // TABLE_HH_
