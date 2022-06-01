@@ -56,6 +56,7 @@ BaseCellView(Mesh&, CellIndex) -> BaseCellView<Mesh>;
 template<class Mesh, class Tag>
 class BaseElementView {
 protected:
+
   Mesh* Mesh_;
   Index<Tag> Index_;
 
@@ -64,21 +65,20 @@ protected:
 
   // "NOLINT(...)" should not be here, this is due to a bug in clangd.
   BaseElementView( // NOLINT(cppcoreguidelines-pro-type-member-init)
-      Mesh& mesh, Index<Tag> index) noexcept :
-      Mesh_{&mesh},
-      Index_{index} {
+      Mesh& mesh, Index<Tag> index) noexcept
+      : Mesh_{&mesh}, Index_{index} {
     StormAssert(Index_ != npos);
   }
 
   template<class OtherMesh>
   BaseElementView( // NOLINT(google-explicit-constructor,cppcoreguidelines-pro-type-member-init)
-      BaseElementView<OtherMesh, Tag> const& other) noexcept :
-      Mesh_{other.Mesh_},
-      Index_{other.Index_} {
+      BaseElementView<OtherMesh, Tag> const& other) noexcept
+      : Mesh_{other.Mesh_}, Index_{other.Index_} {
     StormAssert(Index_ != npos);
   }
 
 public:
+
   /// @brief Cast to index operator.
   /// @{
   operator Index<Tag>() const noexcept {
@@ -178,14 +178,15 @@ public:
 template<class Mesh>
 class BaseNodeView final : public BaseElementView<Mesh, NodeTag> {
 public:
+
   /// @brief Construct base node view.
-  BaseNodeView(Mesh& mesh, NodeIndex index) noexcept :
-      BaseElementView<Mesh, NodeTag>(mesh, index) {}
+  BaseNodeView(Mesh& mesh, NodeIndex index) noexcept
+      : BaseElementView<Mesh, NodeTag>(mesh, index) {}
 
   /// @brief Copy constructor.
   BaseNodeView( // NOLINT(google-explicit-constructor)
-      BaseNodeView<std::remove_const_t<Mesh>> const& other) noexcept :
-      BaseElementView<Mesh, NodeTag>(other) {}
+      BaseNodeView<std::remove_const_t<Mesh>> const& other) noexcept
+      : BaseElementView<Mesh, NodeTag>(other) {}
 
   /// @brief Get node position.
   auto Coords() const noexcept {
@@ -213,14 +214,15 @@ using MutableNodeView = BaseNodeView<Mesh>;
 template<class Mesh>
 class BaseEdgeView final : public BaseElementView<Mesh, EdgeTag> {
 public:
+
   /// @brief Construct base edge view.
-  BaseEdgeView(Mesh& mesh, EdgeIndex index) noexcept :
-      BaseElementView<Mesh, EdgeTag>(mesh, index) {}
+  BaseEdgeView(Mesh& mesh, EdgeIndex index) noexcept
+      : BaseElementView<Mesh, EdgeTag>(mesh, index) {}
 
   /// @brief Copy constructor.
   BaseEdgeView( // NOLINT(google-explicit-constructor)
-      BaseEdgeView<std::remove_const_t<Mesh>> const& other) noexcept :
-      BaseElementView<Mesh, EdgeTag>(other) {}
+      BaseEdgeView<std::remove_const_t<Mesh>> const& other) noexcept
+      : BaseElementView<Mesh, EdgeTag>(other) {}
 
   /// @brief Get edge length.
   auto Len() const noexcept {
@@ -246,14 +248,15 @@ using MutableEdgeView = BaseEdgeView<Mesh>;
 template<class Mesh>
 class BaseFaceView final : public BaseElementView<Mesh, FaceTag> {
 public:
+
   /// @brief Construct base face view.
-  BaseFaceView(Mesh& mesh, FaceIndex index) noexcept :
-      BaseElementView<Mesh, FaceTag>(mesh, index) {}
+  BaseFaceView(Mesh& mesh, FaceIndex index) noexcept
+      : BaseElementView<Mesh, FaceTag>(mesh, index) {}
 
   /// @brief Copy constructor.
   BaseFaceView( // NOLINT(google-explicit-constructor)
-      BaseFaceView<std::remove_const_t<Mesh>> const& other) noexcept :
-      BaseElementView<Mesh, FaceTag>(other) {}
+      BaseFaceView<std::remove_const_t<Mesh>> const& other) noexcept
+      : BaseElementView<Mesh, FaceTag>(other) {}
 
   /// @brief Get the connected inner cell.
   auto InnerCell() const noexcept {
@@ -298,14 +301,15 @@ using MutableFaceView = BaseFaceView<Mesh>;
 template<class Mesh>
 class BaseCellView final : public BaseElementView<Mesh, CellTag> {
 public:
+
   /// @brief Construct base cell view.
-  BaseCellView(Mesh& mesh, CellIndex index) noexcept :
-      BaseElementView<Mesh, CellTag>(mesh, index) {}
+  BaseCellView(Mesh& mesh, CellIndex index) noexcept
+      : BaseElementView<Mesh, CellTag>(mesh, index) {}
 
   /// @brief Copy constructor.
   BaseCellView( // NOLINT(google-explicit-constructor)
-      BaseCellView<std::remove_const_t<Mesh>> const& other) noexcept :
-      BaseElementView<Mesh, CellTag>(other) {}
+      BaseCellView<std::remove_const_t<Mesh>> const& other) noexcept
+      : BaseElementView<Mesh, CellTag>(other) {}
 
   /// @brief Get cell volume/area/length.
   auto Volume() const noexcept {

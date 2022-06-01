@@ -53,6 +53,7 @@ inline constexpr size_t FaceOuterCell_{1};
 // template<size_t SDim, size_t TDim, template<class, class, class> class Table>
 class Mesh : public tObject<Mesh> {
 private:
+
   size_t NumNodes_{0}, NumEdges_{0};
   size_t NumFaces_{0}, NumCells_{0};
 
@@ -104,6 +105,7 @@ private:
   std::map<std::set<NodeIndex>, CellIndex> CellLookup_;
 
 public:
+
   /// ---------------------------------------------------------------- ///
   /// @name Constructors.
   /// ---------------------------------------------------------------- ///
@@ -261,11 +263,13 @@ public:
   }
 
 private:
+
   auto makeShape_(ShapeDesc&& desc) const {
     return Element::Make(std::forward<ShapeDesc>(desc), NodeCoords_);
   }
 
 public:
+
   /// @brief Get element object.
   template<class Tag>
   auto shape(Index<Tag> index) const {
@@ -504,6 +508,7 @@ public:
   /// @}
 
 private:
+
   template<class Tag>
   auto AdjacentElements_(auto elementIndex) const noexcept {
     if constexpr (std::same_as<Tag, NodeTag>) {
@@ -520,6 +525,7 @@ private:
   }
 
 public:
+
   /// @}
 
   /// ---------------------------------------------------------------- ///
@@ -623,10 +629,12 @@ public:
   void PermuteCells(std::vector<size_t>&& cellPermutation = {});
 
 private:
+
   template<class Tag>
   void FixPermutationAndAdjacency_(std::vector<size_t>& cellIndex);
 
 protected:
+
   void reorder_faces();
 
   /// @}
