@@ -41,10 +41,12 @@ namespace Storm {
 template<class RowIndex, class ColumnIndex>
 class CsrTable {
 private:
+
   Vector<size_t, RowIndex> m_row_offsets{0};
   Vector<ColumnIndex, size_t> m_column_indices;
 
 public:
+
   // ---------------------------------------------------------------------- //
   // ---------------------------------------------------------------------- //
 
@@ -59,9 +61,9 @@ public:
   }
 
   void insert(RowIndex rowIndex, ColumnIndex columnIndex) {
-    StormAssert(rowIndex < num_rows());
+    FEATHERS_ASSERT(rowIndex < num_rows());
     m_column_indices.insert(
-      m_column_indices.begin() + m_row_offsets[rowIndex + 1], columnIndex);
+        m_column_indices.begin() + m_row_offsets[rowIndex + 1], columnIndex);
     std::for_each(m_row_offsets.begin() + (size_t) rowIndex + 1,
                   m_row_offsets.end(), [](size_t& offset) { offset += 1; });
   }
@@ -73,28 +75,29 @@ public:
                   FEATHERS_ASSERT(row_index < num_rows());
                   return &m_column_indices[m_row_offsets[row_index]];
                 })
-    ConstOverload(
-      ColumnIndex*, begin_row, (size_t row_index),
-      requires(!std::is_same_v<RowIndex, size_t>) {
-        FEATHERS_ASSERT(row_index < num_rows());
-        return &m_column_indices[m_row_offsets[RowIndex(row_index)]];
-      })
-
-    /** Pointer to the End of the row. */
-    ConstOverload(ColumnIndex*, end_row, (RowIndex row_index),
-                  {
-                    FEATHERS_ASSERT(row_index < num_rows());
-                    return &m_column_indices[m_row_offsets[row_index + 1]];
-                  })
       ConstOverload(
-        ColumnIndex*, end_row, (size_t row_index),
-        requires(!std::is_same_v<RowIndex, size_t>) {
-          FEATHERS_ASSERT(row_index < num_rows());
-          return &m_column_indices[m_row_offsets[RowIndex(row_index) + 1]];
-        })
+          ColumnIndex*, begin_row, (size_t row_index),
+          requires(!std::is_same_v<RowIndex, size_t>) {
+            FEATHERS_ASSERT(row_index < num_rows());
+            return &m_column_indices[m_row_offsets[RowIndex(row_index)]];
+          })
 
-        auto
-        operator[](RowIndex row_index) noexcept {
+      /** Pointer to the End of the row. */
+      ConstOverload(ColumnIndex*, end_row, (RowIndex row_index),
+                    {
+                      FEATHERS_ASSERT(row_index < num_rows());
+                      return &m_column_indices[m_row_offsets[row_index + 1]];
+                    })
+          ConstOverload(
+              ColumnIndex*, end_row, (size_t row_index),
+              requires(!std::is_same_v<RowIndex, size_t>) {
+                FEATHERS_ASSERT(row_index < num_rows());
+                return &m_column_indices[m_row_offsets[RowIndex(row_index) +
+                                                       1]];
+              })
+
+              auto
+              operator[](RowIndex row_index) noexcept {
     FEATHERS_ASSERT(row_index < num_rows());
     return ranges::subrange(&m_column_indices[m_row_offsets[row_index]],
                             &m_column_indices[m_row_offsets[row_index + 1]]);

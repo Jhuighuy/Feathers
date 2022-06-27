@@ -110,9 +110,9 @@ namespace views = ranges::views;
 #ifdef _MSC_VER
 #define FEATHERS_ASSUME(x) __assume(x)
 #else
-#define FEATHERS_ASSUME(x)                                                     \
-  do {                                                                         \
-    if (!(x)) { __builtin_unreachable(); }                                     \
+#define FEATHERS_ASSUME(x)                 \
+  do {                                     \
+    if (!(x)) { __builtin_unreachable(); } \
   } while (false)
 #endif
 /** @} */
@@ -143,21 +143,20 @@ namespace views = ranges::views;
 #define FEATHERS_PASS(...) __VA_ARGS__
 
 /** @{ */
-#define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name,          \
-                                    arguments, ...)                            \
-  /** @{ */                                                                    \
-  T type method_name arguments __VA_ARGS__ T const_type method_name            \
-    arguments const __VA_ARGS__                                                \
-    /** @} */
-#define FEATHERS_CONST_OVERLOAD_R(type, const_type, method_name, arguments,    \
-                                  ...)                                         \
-  FEATHERS_CONST_OVERLOAD_R_T(/*empty*/, type, const_type, method_name,        \
+#define FEATHERS_CONST_OVERLOAD_R_T(T, type, const_type, method_name, \
+                                    arguments, ...)                   \
+  /** @{ */                                                           \
+  T type method_name arguments __VA_ARGS__ T const_type method_name   \
+      arguments const __VA_ARGS__ /** @} */
+#define FEATHERS_CONST_OVERLOAD_R(type, const_type, method_name, arguments, \
+                                  ...)                                      \
+  FEATHERS_CONST_OVERLOAD_R_T(/*empty*/, type, const_type, method_name,     \
                               arguments, __VA_ARGS__)
-#define FEATHERS_CONST_OVERLOAD_T(T, type, method_name, arguments, ...)        \
-  FEATHERS_CONST_OVERLOAD_R_T(T, type, const type, method_name, arguments,     \
+#define FEATHERS_CONST_OVERLOAD_T(T, type, method_name, arguments, ...)    \
+  FEATHERS_CONST_OVERLOAD_R_T(T, type, const type, method_name, arguments, \
                               __VA_ARGS__)
-#define ConstOverload(type, method_name, arguments, ...)                       \
-  FEATHERS_CONST_OVERLOAD_T(/*empty*/, type, method_name, arguments,           \
+#define ConstOverload(type, method_name, arguments, ...)             \
+  FEATHERS_CONST_OVERLOAD_T(/*empty*/, type, method_name, arguments, \
                             __VA_ARGS__)
 /** @} */
 
@@ -169,14 +168,14 @@ namespace views = ranges::views;
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-#define FEATHERS_ENSURE(x)                                                     \
-  do {                                                                         \
-    if (!(x)) {                                                                \
-      std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n",         \
-                   __FILE__, __LINE__, __PRETTY_FUNCTION__,                    \
-                   FEATHERS_TO_STRING(x));                                     \
-      std::abort();                                                            \
-    }                                                                          \
+#define FEATHERS_ENSURE(x)                                             \
+  do {                                                                 \
+    if (!(x)) {                                                        \
+      std::fprintf(stderr, "\nAssertion failed:\n%s:%d %s: \"%s\".\n", \
+                   __FILE__, __LINE__, __PRETTY_FUNCTION__,            \
+                   FEATHERS_TO_STRING(x));                             \
+      std::abort();                                                    \
+    }                                                                  \
   } while (false)
 
 /** Assertion macro. */
@@ -188,22 +187,22 @@ namespace views = ranges::views;
 #endif
 /** @} */
 
-#define StormAssert FEATHERS_ASSERT
+#define STORM_ASSERT_ FEATHERS_ASSERT
 #define StormEnsure FEATHERS_ENSURE
 
 /** Fatal assertion macro. */
-#define FEATHERS_ERROR_STOP(message)                                           \
-  do {                                                                         \
-    std::fprintf(stderr, "\nFatal assertion failed:\n%s:%d %s: %s", __FILE__,  \
-                 __LINE__, __PRETTY_FUNCTION__, message);                      \
-    std::abort();                                                              \
+#define FEATHERS_ERROR_STOP(message)                                          \
+  do {                                                                        \
+    std::fprintf(stderr, "\nFatal assertion failed:\n%s:%d %s: %s", __FILE__, \
+                 __LINE__, __PRETTY_FUNCTION__, message);                     \
+    std::abort();                                                             \
   } while (false)
 
 /** Not implemented macro. */
-#define FEATHERS_NOT_IMPLEMENTED(...)                                          \
+#define FEATHERS_NOT_IMPLEMENTED(...) \
   FEATHERS_ERROR_STOP("not implemented. " __VA_ARGS__)
 /** Not implemented macro. */
-#define FEATHERS_NOT_REACHABLE(...)                                            \
+#define FEATHERS_NOT_REACHABLE(...) \
   FEATHERS_ERROR_STOP("not reachable. " __VA_ARGS__)
 
 // ------------------------------------------------------------------------------------
@@ -239,6 +238,7 @@ static constexpr bool is_not_npos(Value ind) {
 template<typename tValue>
 class tMinFunc {
 public:
+
   constexpr tValue operator()(tValue value_1, tValue value_2) const {
     return std::min(value_1, value_2);
   }
@@ -248,6 +248,7 @@ public:
 template<typename tValue>
 class tMaxFunc {
 public:
+
   constexpr tValue operator()(tValue value_1, tValue value_2) const {
     return std::max(value_1, value_2);
   }
@@ -257,6 +258,7 @@ public:
 template<typename tValue>
 class tMinMaxFunc {
 public:
+
   constexpr auto operator()(tValue value_1, tValue value_2) const {
     return std::minmax(value_1, value_2);
   }

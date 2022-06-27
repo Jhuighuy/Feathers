@@ -31,9 +31,8 @@
 
 namespace Storm {
 
-/// @brief Shape type.
+/// @brief shape_type type.
 enum class ShapeType : byte_t {
-  Null,
   Node,
   Segment,
   Triangle,
@@ -44,153 +43,237 @@ enum class ShapeType : byte_t {
   Hexahedron,
 }; // enum class ShapeType
 
-/// @brief Shape description.
+/// @brief shape_type description.
 struct ShapeDesc {
-  ShapeType Shape;
-  std::vector<NodeIndex> NodeIndices;
-}; // ShapeDesc
-
-/// @brief Array of the shape descriptions.
-using ShapeDescArray = std::vector<ShapeDesc>;
+  ShapeType shape_type;
+  std::vector<NodeIndex> node_indices;
+}; // struct ShapeDesc
 
 /// ----------------------------------------------------------------- ///
-/// @brief Abstract element class.
+/// @brief Abstract shape.
 /// ----------------------------------------------------------------- ///
-class Element : public NonCopyable {
+class Shape : public NonCopyable {
 protected:
-  std::span<vec3_t const> NodePos_;
-  std::vector<NodeIndex> NodeIndices_;
+
+  std::vector<NodeIndex> node_indices_;
 
   template<class... Indices>
-  auto PartDesc_(ShapeType partShape, Indices... nodeLocals) const {
-    return ShapeDesc{partShape, {NodeIndices_[nodeLocals]...}};
+  constexpr auto part_desc_(ShapeType shape_type,
+                            Indices... node_locals) const {
+    return ShapeDesc{shape_type, {node_indices_[node_locals]...}};
   }
-
-  Element() = default;
 
 public:
-  /// @brief Virtual destructor.
-  virtual ~Element() = default;
 
-  /// @brief Construct a new element object \
-  ///   with a description @p desc and a node position array @p NodeCoords.
-  static std::unique_ptr<Element> Make(ShapeDesc&& desc,
-                                       std::span<vec3_t const> nodePos);
+  /// ---------------------------------------------------------------- ///
+  /// @name Construction.
+  /// ---------------------------------------------------------------- ///
+  /// @{
 
-  /** Get element node indices. */
-  std::vector<NodeIndex> const& NodeIndices() const {
-    return NodeIndices_;
-  }
+  /// @brief Construct a shape.
+  Shape() = default;
 
-  /// @brief Get element shape.
-  virtual ShapeType Shape() const noexcept = 0;
+  /// @brief Destruct a shape.
+  virtual ~Shape() = default;
 
-  /// @brief Get node @p position.
-  vec3_t NodePos(size_t nodeLocal) const {
-    StormAssert(nodeLocal < NodeIndices_.size());
-    return NodePos_[(size_t) NodeIndices_[nodeLocal]];
-  }
+  /// @brief Construct a new shape
+  ///   with a description @p desc and a node position array @p node_coords.
+  static std::unique_ptr<Shape> make(const ShapeDesc& shape_desc);
 
-  /// @brief Compute the element diameter
-  virtual real_t Diam() const {
+  /// @} // Construction.
+
+  /// ---------------------------------------------------------------- ///
+  /// @name Geometry.
+  /// ---------------------------------------------------------------- ///
+  /// @{
+
+  /// @brief Compute the shape diameter
+  virtual real_t
+  diam([[maybe_unused]] const NodeCoordsVector& node_coords) const {
     return qnan;
   }
 
-  /// @brief Compute the element Volume (Area or length).
-  virtual real_t Volume() const {
+  /// @brief Compute the shape volume (area or length).
+  virtual real_t
+  volume([[maybe_unused]] const NodeCoordsVector& node_coords) const {
     return qnan;
   }
 
-  /// @brief Compute the Normal to element.
-  virtual vec3_t Normal() const {
+  /// @brief Compute the shape to element.
+  virtual vec3_t
+  normal([[maybe_unused]] const NodeCoordsVector& node_coords) const {
     return vec3_t(qnan);
   }
 
   /// @brief Compute the element direction.
-  virtual vec3_t Dir() const {
+  virtual vec3_t
+  dir([[maybe_unused]] const NodeCoordsVector& node_coords) const {
     return vec3_t(qnan);
   }
 
-  /// @brief Compute the element center position.
-  virtual vec3_t CenterPos() const {
+  /// @brief Compute the shape center position.
+  virtual vec3_t
+  center_pos([[maybe_unused]] const NodeCoordsVector& node_coords) const {
     return vec3_t(qnan);
   }
 
-  /// @brief Number of Nodes in the element.
-  virtual size_t NumNodes() const noexcept = 0;
+  /// @} // Geometry.
 
-  /// @brief Number of Edges in the element.
-  virtual size_t NumEdges() const {
-    return make_edges_desc().size();
+  /// ---------------------------------------------------------------- ///
+  /// @name Topology.
+  /// ---------------------------------------------------------------- ///
+  /// @{
+
+  /// @brief Get the shape type.
+  constexpr virtual ShapeType shape_type() const noexcept = 0;
+
+  /** Get element node indices. */
+  constexpr const std::vector<NodeIndex>& node_indices() const {
+    return node_indices_;
   }
 
-  /// @brief Make element Edges description array.
-  virtual ShapeDescArray make_edges_desc() const = 0;
+  /// @brief Number of nodes in the shape.
+  constexpr virtual size_t num_nodes() const noexcept = 0;
 
-  /// @brief Number of Faces in the element.
-  size_t NumFaces() const {
-    return make_faces_desc().size();
-  }
+  /// @brief Make shape edges description array.
+  constexpr virtual std::vector<ShapeDesc> make_edges_desc() const = 0;
 
-  /// @brief Make element Faces description.
-  virtual ShapeDescArray make_faces_desc() const = 0;
+  /// @brief Make shape faces description array.
+  constexpr virtual std::vector<ShapeDesc> make_faces_desc() const = 0;
 
-}; // class Element
+  /// @} // Topology.
 
-using Shape = Element;
+}; // class Shape
 
-template<ShapeType Shape_, size_t NumNodes_, class Base>
-class ElementHelper_ : public Base {
+template<ShapeType ShapeType_, size_t NumNodes_, class Base>
+class ShapeHelper_ : public Base {
 public:
-  ShapeType Shape() const noexcept final {
-    return Shape_;
+
+  constexpr ShapeType shape_type() const noexcept final {
+    return ShapeType_;
   }
-  size_t NumNodes() const noexcept final {
+
+  constexpr size_t num_nodes() const noexcept final {
     return NumNodes_;
   }
-}; // class ElementHelper_<...>
+
+}; // class ShapeHelper_<...>
 
 /// ----------------------------------------------------------------- ///
 /// @brief Abstract simplex element class.
 /// ----------------------------------------------------------------- ///
-class SimplexElement : public Element {
+class SimplexShape : public Shape {
 public:
-  real_t Diam() const final;
-  vec3_t CenterPos() const final;
+
+  real_t diam(const NodeCoordsVector& node_coords) const final {
+    if (num_nodes() == 1) { return 0.0; }
+    real_t diam{glm::length(node_coords[node_indices()[0]] -
+                            node_coords[node_indices()[1]])};
+    for (size_t i{2}; i < num_nodes(); ++i) {
+      for (size_t j{0}; j < i; ++j) {
+        diam = std::max(diam, glm::length(node_coords[node_indices()[i]] -
+                                          node_coords[node_indices()[j]]));
+      }
+    }
+    return diam;
+  }
+
+  vec3_t center_pos(const NodeCoordsVector& node_coords) const final {
+    vec3_t sum_of_node_pos{node_coords[node_indices()[0]]};
+    for (size_t i{1}; i < num_nodes(); ++i) {
+      sum_of_node_pos += node_coords[node_indices()[i]];
+    }
+    return sum_of_node_pos / real_t(num_nodes());
+  }
+
 }; // SimplexElement
 
 /// ----------------------------------------------------------------- ///
-/// @brief Abstract complex (not simplex) element class.
+/// @brief Abstract complex (not simplex) shape.
 /// ----------------------------------------------------------------- ///
-class ComplexElement : public Element {
+class ComplexShape : public Shape {
 public:
-  real_t Diam() const final;
-  real_t Volume() const final;
-  vec3_t Normal() const final;
-  vec3_t CenterPos() const final;
+
+  real_t diam(const NodeCoordsVector& node_coords) const final {
+    real_t diam{0.0};
+    for_each_simplex_([&](const Shape& shape) {
+      diam = std::max(diam, shape.diam(node_coords));
+    });
+    return diam;
+  }
+
+  real_t volume(const NodeCoordsVector& node_coords) const final {
+    real_t volume{0.0};
+    for_each_simplex_([&](const Shape& shape) { //
+      volume += shape.volume(node_coords);
+    });
+    return volume;
+  }
+
+  vec3_t normal(const NodeCoordsVector& node_coords) const final {
+    vec3_t weighted_sum_of_normals(0.0);
+    for_each_simplex_([&](const Shape& shape) {
+      weighted_sum_of_normals +=
+          shape.volume(node_coords) * shape.normal(node_coords);
+    });
+    return glm::normalize(weighted_sum_of_normals);
+  }
+
+  vec3_t center_pos(const NodeCoordsVector& node_coords) const final {
+    vec3_t weighted_sum_of_center_pos(0.0);
+    real_t volume{0.0};
+    for_each_simplex_([&](const Shape& shape) {
+      real_t const part_volume{shape.volume(node_coords)};
+      weighted_sum_of_center_pos += part_volume * shape.center_pos(node_coords);
+      volume += part_volume;
+    });
+    return weighted_sum_of_center_pos / volume;
+  }
 
   /// @brief Make splitting into the simplex parts.
-  virtual ShapeDescArray MakeSimplicesDesc() const = 0;
+  constexpr virtual std::vector<ShapeDesc> make_simplices_desc() const = 0;
 
 private:
-  template<class Func>
-  void ForEachSimplex_(Func&& func) const;
+
+  void for_each_simplex_(auto&& func) const {
+    std::vector<ShapeDesc> simplices_desc{make_simplices_desc()};
+    for (const ShapeDesc& simplex_desc : simplices_desc) {
+      const auto simplex = Shape::make(simplex_desc);
+      func(*simplex);
+    }
+  }
 
 }; // class ComplexElement
 
 /// ----------------------------------------------------------------- ///
-/// @brief Dummy nodal element.
+/// @brief Nodal shape.
 /// ----------------------------------------------------------------- ///
-class Node final : public ElementHelper_<ShapeType::Node, 1, SimplexElement> {
+class Node final : public ShapeHelper_<ShapeType::Node, 1, SimplexShape> {
 public:
-  real_t Volume() const final;
-  vec3_t Normal() const final;
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
+
+  constexpr real_t
+  volume([[maybe_unused]] const NodeCoordsVector& node_coords) const final {
+    return 1.0;
+  }
+
+  constexpr vec3_t
+  normal([[maybe_unused]] const NodeCoordsVector& node_coords) const final {
+    constexpr vec3_t right(1.0, 0.0, 0.0);
+    return right;
+  }
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return {};
+  }
+
 }; // class Node
 
 /// ----------------------------------------------------------------- ///
-/// @brief Segmental element.
+/// @brief Segmental shape.
 /// @verbatim
 ///
 ///  n0 O f0
@@ -203,18 +286,38 @@ public:
 ///
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Segment final :
-    public ElementHelper_<ShapeType::Segment, 2, SimplexElement> {
+class Segment final : public ShapeHelper_<ShapeType::Segment, 2, SimplexShape> {
 public:
-  real_t Volume() const final;
-  vec3_t Normal() const final;
-  vec3_t Dir() const final;
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
-}; // class tSegmentShape
+
+  real_t volume(const NodeCoordsVector& node_coords) const final {
+    return diam(node_coords);
+  }
+
+  vec3_t normal(const NodeCoordsVector& node_coords) const final {
+    const vec3_t delta{node_coords[node_indices()[1]] -
+                       node_coords[node_indices()[0]]};
+    static constexpr vec3_t up(0.0, 0.0, 1.0);
+    return glm::normalize(glm::cross(delta, up));
+  }
+
+  vec3_t dir(const NodeCoordsVector& node_coords) const final {
+    const vec3_t delta{node_coords[node_indices()[1]] -
+                       node_coords[node_indices()[0]]};
+    return glm::normalize(delta);
+  }
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return {part_desc_(ShapeType::Node, 0), part_desc_(ShapeType::Node, 1)};
+  }
+
+}; // class Segment
 
 /// ----------------------------------------------------------------- ///
-/// Triangular element.
+/// Triangular shape.
 /// @verbatim
 ///           n2
 ///           O           e0 = f0 = (n0,n1)
@@ -228,16 +331,38 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Triangle final :
-    public ElementHelper_<ShapeType::Triangle, 3, SimplexElement> {
+    public ShapeHelper_<ShapeType::Triangle, 3, SimplexShape> {
 public:
-  real_t Volume() const final;
-  vec3_t Normal() const final;
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
+
+  real_t volume(const NodeCoordsVector& node_coords) const final {
+    const vec3_t delta1{node_coords[node_indices()[1]] -
+                        node_coords[node_indices()[0]]};
+    const vec3_t delta2{node_coords[node_indices()[2]] -
+                        node_coords[node_indices()[0]]};
+    return 0.5 * glm::length(glm::cross(delta1, delta2));
+  }
+
+  vec3_t normal(const NodeCoordsVector& node_coords) const final {
+    const vec3_t delta1{node_coords[node_indices()[1]] -
+                        node_coords[node_indices()[0]]};
+    const vec3_t delta2{node_coords[node_indices()[2]] -
+                        node_coords[node_indices()[0]]};
+    return glm::normalize(glm::cross(delta1, delta2));
+  }
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1),
+            part_desc_(ShapeType::Segment, 1, 2),
+            part_desc_(ShapeType::Segment, 2, 0)};
+  }
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return make_edges_desc();
+  }
+
 }; // class Triangle
 
 /// ----------------------------------------------------------------- ///
-/// @brief Quadrangular element.
+/// @brief Quadrangular shape.
 /// @verbatim
 ///               e2/f2
 ///       n3 O-----<-----O n2    e0 = f0 = (n0,n1)
@@ -249,15 +374,32 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Quadrangle final :
-    public ElementHelper_<ShapeType::Quadrangle, 4, ComplexElement> {
+    public ShapeHelper_<ShapeType::Quadrangle, 4, ComplexShape> {
 public:
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
-  ShapeDescArray MakeSimplicesDesc() const final;
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1),
+            part_desc_(ShapeType::Segment, 1, 2),
+            part_desc_(ShapeType::Segment, 2, 3),
+            part_desc_(ShapeType::Segment, 3, 0)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return make_edges_desc();
+  }
+
+  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+    return {part_desc_(ShapeType::Triangle, 0, 1, 2),
+            part_desc_(ShapeType::Triangle, 2, 3, 0)};
+    // return {
+    //   part_desc_(ShapeType::Triangle, 0, 1, 3),
+    //   part_desc_(ShapeType::Triangle, 1, 2, 3)};
+  }
+
 }; // class Quadrangle
 
 /// ----------------------------------------------------------------- ///
-/// @brief Tetrahedral element.
+/// @brief Tetrahedral shape.
 /// @verbatim
 ///                    f3
 ///               n3   ^
@@ -282,15 +424,39 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Tetrahedron final :
-    public ElementHelper_<ShapeType::Tetrahedron, 4, SimplexElement> {
+    public ShapeHelper_<ShapeType::Tetrahedron, 4, SimplexShape> {
 public:
-  real_t Volume() const final;
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
+
+  real_t volume(const NodeCoordsVector& node_coords) const final {
+    const vec3_t delta1{node_coords[node_indices()[1]] -
+                        node_coords[node_indices()[0]]};
+    const vec3_t delta2{node_coords[node_indices()[2]] -
+                        node_coords[node_indices()[0]]};
+    const vec3_t delta3{node_coords[node_indices()[3]] -
+                        node_coords[node_indices()[0]]};
+    return std::abs(glm::dot(delta1, glm::cross(delta2, delta3))) / 6.0;
+  }
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1),
+            part_desc_(ShapeType::Segment, 1, 2),
+            part_desc_(ShapeType::Segment, 2, 0),
+            part_desc_(ShapeType::Segment, 0, 3),
+            part_desc_(ShapeType::Segment, 1, 3),
+            part_desc_(ShapeType::Segment, 2, 3)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return {part_desc_(ShapeType::Triangle, 0, 2, 1),
+            part_desc_(ShapeType::Triangle, 0, 1, 3),
+            part_desc_(ShapeType::Triangle, 1, 2, 3),
+            part_desc_(ShapeType::Triangle, 2, 0, 3)};
+  }
+
 }; // class Tetrahedron
 
 /// ----------------------------------------------------------------- ///
-/// @brief Pyramidal element.
+/// @brief Pyramidal shape.
 /// @verbatim
 ///                                n4                      e0 = (n0,n1)
 ///                  f3           ,O                       e1 = (n1,n2)
@@ -314,16 +480,40 @@ public:
 ///                            f0
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
-class Pyramid final :
-    public ElementHelper_<ShapeType::Pyramid, 5, ComplexElement> {
+class Pyramid final : public ShapeHelper_<ShapeType::Pyramid, 5, ComplexShape> {
 public:
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
-  ShapeDescArray MakeSimplicesDesc() const final;
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1),
+            part_desc_(ShapeType::Segment, 1, 2),
+            part_desc_(ShapeType::Segment, 2, 3),
+            part_desc_(ShapeType::Segment, 3, 0),
+            part_desc_(ShapeType::Segment, 0, 4),
+            part_desc_(ShapeType::Segment, 1, 4),
+            part_desc_(ShapeType::Segment, 2, 4),
+            part_desc_(ShapeType::Segment, 3, 4)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return {part_desc_(ShapeType::Quadrangle, 0, 3, 2, 1),
+            part_desc_(ShapeType::Triangle, 0, 1, 4),
+            part_desc_(ShapeType::Triangle, 1, 2, 4),
+            part_desc_(ShapeType::Triangle, 2, 3, 4),
+            part_desc_(ShapeType::Triangle, 3, 0, 4)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+    return {part_desc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
+            part_desc_(ShapeType::Tetrahedron, 2, 3, 0, 4)};
+    // return {
+    //   part_desc_(ShapeType::Tetrahedron, 0, 1, 3, 4),
+    //   part_desc_(ShapeType::Tetrahedron, 1, 2, 3, 4)};
+  }
+
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
-/// @brief Pentahedral element (triangular prism).
+/// @brief Pentahedral shape (triangular prism).
 /// @verbatim
 ///                 f4
 ///                 ^  f2
@@ -352,15 +542,39 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Pentahedron final :
-    public ElementHelper_<ShapeType::Pentahedron, 6, ComplexElement> {
+    public ShapeHelper_<ShapeType::Pentahedron, 6, ComplexShape> {
 public:
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
-  ShapeDescArray MakeSimplicesDesc() const final;
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1),
+            part_desc_(ShapeType::Segment, 1, 2),
+            part_desc_(ShapeType::Segment, 2, 0),
+            part_desc_(ShapeType::Segment, 0, 3),
+            part_desc_(ShapeType::Segment, 1, 4),
+            part_desc_(ShapeType::Segment, 2, 5),
+            part_desc_(ShapeType::Segment, 3, 4),
+            part_desc_(ShapeType::Segment, 4, 5),
+            part_desc_(ShapeType::Segment, 5, 3)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return {part_desc_(ShapeType::Quadrangle, 0, 1, 4, 3),
+            part_desc_(ShapeType::Quadrangle, 1, 2, 5, 4),
+            part_desc_(ShapeType::Quadrangle, 2, 0, 3, 5),
+            part_desc_(ShapeType::Triangle, 0, 2, 1),
+            part_desc_(ShapeType::Triangle, 3, 4, 5)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+    return {part_desc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
+            part_desc_(ShapeType::Tetrahedron, 2, 0, 3, 4),
+            part_desc_(ShapeType::Tetrahedron, 3, 5, 2, 4)};
+  }
+
 }; // class Pyramid
 
 /// ----------------------------------------------------------------- ///
-/// @brief Hexahedral element.
+/// @brief Hexahedral shape.
 /// @verbatim
 ///                      f5
 ///                      ^       f2
@@ -388,11 +602,41 @@ public:
 /// @endverbatim
 /// ----------------------------------------------------------------- ///
 class Hexahedron final :
-    public ElementHelper_<ShapeType::Hexahedron, 8, ComplexElement> {
+    public ShapeHelper_<ShapeType::Hexahedron, 8, ComplexShape> {
 public:
-  ShapeDescArray make_edges_desc() const final;
-  ShapeDescArray make_faces_desc() const final;
-  ShapeDescArray MakeSimplicesDesc() const final;
+
+  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+    return {part_desc_(ShapeType::Segment, 0, 1),
+            part_desc_(ShapeType::Segment, 1, 2),
+            part_desc_(ShapeType::Segment, 2, 3),
+            part_desc_(ShapeType::Segment, 3, 0),
+            part_desc_(ShapeType::Segment, 0, 4),
+            part_desc_(ShapeType::Segment, 1, 5),
+            part_desc_(ShapeType::Segment, 2, 6),
+            part_desc_(ShapeType::Segment, 3, 7),
+            part_desc_(ShapeType::Segment, 4, 5),
+            part_desc_(ShapeType::Segment, 5, 6),
+            part_desc_(ShapeType::Segment, 6, 7),
+            part_desc_(ShapeType::Segment, 7, 4)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+    return {part_desc_(ShapeType::Quadrangle, 0, 3, 2, 1),
+            part_desc_(ShapeType::Quadrangle, 0, 1, 5, 4),
+            part_desc_(ShapeType::Quadrangle, 1, 2, 6, 5),
+            part_desc_(ShapeType::Quadrangle, 2, 3, 7, 6),
+            part_desc_(ShapeType::Quadrangle, 0, 4, 7, 3),
+            part_desc_(ShapeType::Quadrangle, 4, 5, 6, 7)};
+  }
+
+  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+    return {part_desc_(ShapeType::Tetrahedron, 0, 3, 1, 4),
+            part_desc_(ShapeType::Tetrahedron, 3, 2, 1, 6),
+            part_desc_(ShapeType::Tetrahedron, 4, 5, 6, 1),
+            part_desc_(ShapeType::Tetrahedron, 4, 6, 7, 3),
+            part_desc_(ShapeType::Tetrahedron, 4, 3, 1, 6)};
+  }
+
 }; // class Hexahedron
 
 } // namespace Storm

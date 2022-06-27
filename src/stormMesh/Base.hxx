@@ -53,16 +53,18 @@ using FaceIndex = Index<FaceTag>;
 /// @brief Cell index.
 using CellIndex = Index<CellTag>;
 
-/// @brief Node Mark index.
+/// @brief Node mark index.
 using NodeMark = Index<MarkTag<NodeTag>>;
 
-/// @brief Edge Mark index.
+/// @brief Edge mark index.
 using EdgeMark = Index<MarkTag<EdgeTag>>;
 
-/// @brief Face Mark index.
+/// @brief Face mark index.
 using FaceMark = Index<MarkTag<FaceTag>>;
 
-/// @brief Cell Mark index.
+/// @brief Cell mark index.
 using CellMark = Index<MarkTag<CellTag>>;
+
+using NodeCoordsVector = Vector<vec3_t, NodeIndex>;
 
 } // namespace Storm

@@ -38,14 +38,14 @@ int main(int argc, char** argv) {
 
   mesh->read_from_triangle(
 #if _WIN32
-    "../../../"
+      "../../../"
 #endif
-    "mesh/step_.1.");
+      "mesh/step_.1.");
 
-  tScalarField uc(5, mesh->Cells().size());
-  tScalarField up(5, mesh->Cells().size());
+  tScalarField uc(5, mesh->cells().size());
+  tScalarField up(5, mesh->cells().size());
   MhdFvSolverT<tGasPhysics> solver(mesh);
-  for (uint_t cell_ind = 0; cell_ind < mesh->Cells().size(); ++cell_ind) {
+  for (uint_t cell_ind = 0; cell_ind < mesh->cells().size(); ++cell_ind) {
     /*double d = 1.0, p = 1.0, u = 1.0, v = 1.0;
     double x = mesh->get_cell(cell_ind).barycenter().x;
     double y = mesh->Cell(cell_ind).barycenter().y;
@@ -115,11 +115,11 @@ int main(int argc, char** argv) {
   const uint_t freq = 200;
   mesh->save_vtk((
 #if _WIN32
-                   "../../../"
+                     "../../../"
 #endif
-                   "out/fields-" +
-                   my_to_string(0) + ".vtk")
-                   .c_str(),
+                     "out/fields-" +
+                     my_to_string(0) + ".vtk")
+                     .c_str(),
                  {{"rho", 1, &uc}});
   // print_vtk<5>(0, *mesh, (std::array<real_t, 5>*)uc[0].data());
   real_t tt = 0.0;
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
       solver.calc_step(dt, uc, up);
       t1 = std::chrono::high_resolution_clock::now();
       tt += real_t(std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0)
-                     .count()) *
+                       .count()) *
             1e-9;
 
       if (l % freq == 0) {
@@ -138,11 +138,11 @@ int main(int argc, char** argv) {
         // print_vtk<5>(l/freq, *mesh, (std::array<real_t, 5>*)up[0].data());
         mesh->save_vtk((
 #if _WIN32
-                         "../../../"
+                           "../../../"
 #endif
-                         "out/fields-" +
-                         my_to_string(l / freq) + ".vtk")
-                         .c_str(),
+                           "out/fields-" +
+                           my_to_string(l / freq) + ".vtk")
+                           .c_str(),
                        {{"rho", 1, &uc}});
         tt = 0.0;
       }

@@ -43,7 +43,7 @@ bool Mesh::read_from_triangle(std::string const& path) {
     vec3_t nodeCoords(0.0);
     nodeStream >> nodeIndex >> nodeCoords.x >> nodeCoords.y;
     std::getline(nodeStream, line);
-    StormEnsure(nodeIndex == InsertNode(nodeCoords));
+    StormEnsure(nodeIndex == insert_node(nodeCoords));
   }
 
   std::ifstream faceStream(path + std::string("edge"));
@@ -56,8 +56,8 @@ bool Mesh::read_from_triangle(std::string const& path) {
     std::vector<NodeIndex> faceNodes(2);
     size_t faceMark{0};
     faceStream >> faceIndex >> faceNodes[0] >> faceNodes[1] >> faceMark;
-    StormEnsure(faceIndex == InsertFace({ShapeType::Segment, faceNodes},
-                                        FaceMark(faceMark)));
+    StormEnsure(faceIndex == insert_face({ShapeType::Segment, faceNodes},
+                                         FaceMark(faceMark)));
     std::getline(faceStream, line);
   }
 
@@ -218,41 +218,42 @@ void Mesh::save_vtk(const char* path,
   file << "ASCII" << std::endl;
   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
 
-  file << "POINTS " << Nodes().size() << " double" << std::endl;
-  ranges::for_each(NodeViews(*this), [&](NodeView node) {
-    const vec3_t& pos = node.Coords();
+  file << "POINTS " << nodes().size() << " double" << std::endl;
+  ranges::for_each(node_views(*this), [&](NodeView node) {
+    const vec3_t& pos = node.coords();
     file << pos.x << " " << pos.y << " " << pos.z << std::endl;
   });
   file << std::endl;
 
   size_t const sumNumCellAdjNodes =
-    ForEachSum(IntCellViews(*this), size_t(0),
-               [](CellView cell) { return cell.AdjacentNodes().size() + 1; });
-  file << "CELLS " << Cells({}).size() << " " << sumNumCellAdjNodes
+      ForEachSum(int_cell_views(*this), size_t(0), [](CellView cell) {
+        return cell.adjacent_nodes().size() + 1;
+      });
+  file << "CELLS " << cells({}).size() << " " << sumNumCellAdjNodes
        << std::endl;
-  ranges::for_each(IntCellViews(*this), [&](CellView cell) {
-    file << cell.AdjacentNodes().size() << " ";
-    cell.ForEachNode([&](size_t node_index) { file << node_index << " "; });
+  ranges::for_each(int_cell_views(*this), [&](CellView cell) {
+    file << cell.adjacent_nodes().size() << " ";
+    cell.for_each_node([&](size_t node_index) { file << node_index << " "; });
     file << std::endl;
   });
   file << std::endl;
 
-  file << "CELL_TYPES " << Cells({}).size() << std::endl;
-  ranges::for_each(IntCellViews(*this), [&](CellView cell) {
+  file << "CELL_TYPES " << cells({}).size() << std::endl;
+  ranges::for_each(int_cell_views(*this), [&](CellView cell) {
     static const std::map<ShapeType, const char*> shapes = {
-      {ShapeType::Node, "1"},         {ShapeType::Segment, "2"},
-      {ShapeType::Triangle, "5"},     {ShapeType::Quadrangle, "9"},
-      {ShapeType::Tetrahedron, "10"}, {ShapeType::Pyramid, "14"},
-      {ShapeType::Pentahedron, "13"}, {ShapeType::Hexahedron, "12"}};
-    file << shapes.at(cell.shapeType()) << std::endl;
+        {ShapeType::Node, "1"},         {ShapeType::Segment, "2"},
+        {ShapeType::Triangle, "5"},     {ShapeType::Quadrangle, "9"},
+        {ShapeType::Tetrahedron, "10"}, {ShapeType::Pyramid, "14"},
+        {ShapeType::Pentahedron, "13"}, {ShapeType::Hexahedron, "12"}};
+    file << shapes.at(cell.shape_type()) << std::endl;
   });
   file << std::endl;
 
-  file << "CELL_DATA " << Cells({}).size() << std::endl;
+  file << "CELL_DATA " << cells({}).size() << std::endl;
   for (const sFieldDesc& field : fields) {
     file << "SCALARS " << field.name << " double 1" << std::endl;
     file << "LOOKUP_TABLE default" << std::endl;
-    ranges::for_each(IntCellViews(*this), [&](CellView cell) {
+    ranges::for_each(int_cell_views(*this), [&](CellView cell) {
       file << (*field.scalar)[cell][field.var_index] << std::endl;
     });
   }

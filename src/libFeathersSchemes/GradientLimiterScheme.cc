@@ -88,8 +88,8 @@ inline real_t tVenkatakrishnanSlopeLimiter::operator()(real_t du_min,
   const real_t delta_neg_sqr = std::pow(delta_neg, 2);
   const real_t delta_pos_neg = delta_pos * delta_neg;
   const real_t limiter =
-    (delta_pos_sqr + 2.0 * delta_pos_neg + eps_sqr) /
-    (delta_pos_sqr + 2.0 * delta_neg_sqr + delta_pos_neg + eps_sqr);
+      (delta_pos_sqr + 2.0 * delta_pos_neg + eps_sqr) /
+      (delta_pos_sqr + 2.0 * delta_neg_sqr + delta_pos_neg + eps_sqr);
   return limiter;
 } // tVenkatakrishnanSlopeLimiter::operator()
 
@@ -122,8 +122,8 @@ tCubicSlopeLimiter::operator()(real_t du_min, real_t du_max, real_t du_face,
   auto limiter = 1.0;
   if (y_cur < y_thr) {
     const real_t y_div = y_cur / y_thr;
-    limiter =
-      y_cur + std::pow(y_div, 2) * (3.0 - 2.0 * y_thr + (y_thr - 2.0) * y_div);
+    limiter = y_cur +
+              std::pow(y_div, 2) * (3.0 - 2.0 * y_thr + (y_thr - 2.0) * y_div);
   }
   return limiter;
 } // tCubicSlopeLimiter::operator()
@@ -137,8 +137,8 @@ tCubicSlopeLimiter::operator()(real_t du_min, real_t du_max, real_t du_face,
  * Compute second slope coefficient.
  */
 inline real_t tDummySecondLimiter::operator()(
-  real_t limiter, real_t FEATHERS_NOT_USED(du_min),
-  real_t FEATHERS_NOT_USED(du_max), real_t FEATHERS_NOT_USED(eps_sqr)) const {
+    real_t limiter, real_t FEATHERS_NOT_USED(du_min),
+    real_t FEATHERS_NOT_USED(du_max), real_t FEATHERS_NOT_USED(eps_sqr)) const {
   const real_t second_limiter = limiter;
   return second_limiter;
 } // tDummySecondLimiter::operator()
@@ -179,25 +179,25 @@ inline real_t tCubicSecondLimiter::operator()(real_t limiter, real_t du_min,
  */
 template<class tSlopeLimiter, class tSecondLimiter>
 void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
-  size_t num_vars, tScalarField& lim_u, const tScalarField& u,
-  const tVectorField& grad_u) const {
+    size_t num_vars, tScalarField& lim_u, const tScalarField& u,
+    const tVectorField& grad_u) const {
   /* Compute the cell-centered
    * limiting coefficients and averages. */
-  ForEach(IntCellViews(*m_mesh), [&](CellView cell) {
+  ForEach(int_cell_views(*m_mesh), [&](CellView cell) {
     static const real_t k = 0.1;
-    const real_t eps_sqr = std::pow(k * cell.Volume(), 3);
+    const real_t eps_sqr = std::pow(k * cell.volume(), 3);
     /* Find the largest negative and positive differences
      * between values of and neighbor Cells and the current cell. */
     FEATHERS_TMP_SCALAR_FIELD(du_min, num_vars);
     du_min = u[cell];
     FEATHERS_TMP_SCALAR_FIELD(du_max, num_vars);
     du_max = u[cell];
-    cell.ForEachFaceCells([&](CellView cell_inner, CellView cell_outer) {
+    cell.for_each_face_cells([&](CellView cell_inner, CellView cell_outer) {
       for (size_t i = 0; i < num_vars; ++i) {
         du_min[i] =
-          std::min(du_min[i], std::min(u[cell_outer][i], u[cell_inner][i]));
+            std::min(du_min[i], std::min(u[cell_outer][i], u[cell_inner][i]));
         du_max[i] =
-          std::max(du_max[i], std::max(u[cell_outer][i], u[cell_inner][i]));
+            std::max(du_max[i], std::max(u[cell_outer][i], u[cell_inner][i]));
       }
     });
     for (size_t i = 0; i < num_vars; ++i) {
@@ -208,12 +208,12 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
     /* Compute slope limiting coefficients:
      * clamp the Node delta with computed local delta extrema. */
     lim_u[cell].fill(1.0);
-    cell.ForEachFace([&](FaceView face) {
-      const vec3_t dr = face.Center() - cell.Center();
+    cell.for_each_face([&](FaceView face) {
+      const vec3_t dr = face.center() - cell.center();
       for (size_t i = 0; i < num_vars; ++i) {
         const real_t du_face = glm::dot(grad_u[cell][i], dr);
         const real_t limiter =
-          m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
+            m_slope_limiter(du_min[i], du_max[i], du_face, eps_sqr);
         lim_u[cell][i] = std::min(lim_u[cell][i], limiter);
       }
     });
@@ -222,7 +222,7 @@ void tGradientLimiterScheme<tSlopeLimiter, tSecondLimiter>::get_cell_limiter(
      * disable limiting near smooth regions. */
     for (size_t i = 0; i < num_vars; ++i) {
       const real_t limiter =
-        m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
+          m_second_limiter(lim_u[cell][i], du_min[i], du_max[i], eps_sqr);
       lim_u[cell][i] = limiter;
     }
   });

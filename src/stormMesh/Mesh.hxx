@@ -36,73 +36,74 @@
 
 namespace Storm {
 
-inline constexpr size_t FaceInnerCell_{0};
-inline constexpr size_t FaceOuterCell_{1};
+namespace Detail_ {
+inline constexpr size_t face_inner_cell_{0};
+inline constexpr size_t face_outer_cell_{1};
+} // namespace Detail_
 
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Hybrid unstructured multidimensional mesh.
-/// @todo On our way to stateless mesh:
-/// @todo 1. Polish the insertion behaviour: marks assignments and others.
-/// @todo 2. Implement the symmetric topoligies insertion.
-/// @todo 3. Switch to the faster lookup with set algorithms.
-/// @todo 3. ShapeType + ShapeDesc vs. Shape. Ghosts?
-/// @todo Do not use iterators in the mesh implementation.
-/// @todo "Element" -> "Shape".
-/// @todo Make Dim a template parameter.
+/// @todo 1. Untie the Shape from the node indices and node pos: \
+///          maybe pass the node indices and coords as a parameter \
+///          to functions. \
+///          We cannot keep std::span of the node coords inside of \
+///          Shape if we need to keep it: it may be gone after the \
+///          new node is inserted. Better way is to pass it as the \
+///          parameter. \
+///          However, node indices mey be stored.
 /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 // template<size_t SDim, size_t TDim, template<class, class, class> class Table>
 class Mesh : public tObject<Mesh> {
 private:
 
-  size_t NumNodes_{0}, NumEdges_{0};
-  size_t NumFaces_{0}, NumCells_{0};
+  size_t num_nodes_{0}, num_edges_{0};
+  size_t num_faces_{0}, num_cells_{0};
 
-  Vector<NodeMark, NodeIndex> NodeMarks_;
-  Vector<EdgeMark, EdgeIndex> EdgeMarks_;
-  Vector<FaceMark, FaceIndex> FaceMarks_;
-  Vector<CellMark, CellIndex> CellMarks_;
-  Vector<NodeIndex, NodeMark> NodeRanges_;
-  Vector<EdgeIndex, EdgeMark> EdgeRanges_;
-  Vector<FaceIndex, FaceMark> FaceRanges_;
-  Vector<CellIndex, CellMark> CellRanges_;
+  Vector<NodeMark, NodeIndex> node_marks_;
+  Vector<EdgeMark, EdgeIndex> edge_marks_;
+  Vector<FaceMark, FaceIndex> face_marks_;
+  Vector<CellMark, CellIndex> cell_marks_;
+  Vector<NodeIndex, NodeMark> node_ranges_;
+  Vector<EdgeIndex, EdgeMark> edge_ranges_;
+  Vector<FaceIndex, FaceMark> face_ranges_;
+  Vector<CellIndex, CellMark> cell_ranges_;
 
-  Vector<ShapeType, EdgeIndex> EdgeShapes_;
-  Vector<ShapeType, FaceIndex> FaceShapes_;
-  Vector<ShapeType, CellIndex> CellShapes_;
-  Vector<vec3_t, NodeIndex> NodeCoords_;
-  Vector<real_t, EdgeIndex> EdgeLens_;
-  Vector<vec3_t, EdgeIndex> EdgeDirs_;
-  Vector<real_t, FaceIndex> FaceAreas_;
-  Vector<vec3_t, FaceIndex> FaceNormals_;
-  Vector<vec3_t, FaceIndex> FaceCenters_;
-  Vector<real_t, CellIndex> CellVolumes_;
-  Vector<vec3_t, CellIndex> CellCenters_;
-  real_t MinEdgeLen_{qnan}, MaxEdgeLen_{qnan};
-  real_t MinFaceArea_{qnan}, MaxFaceArea_{qnan};
-  real_t MinCellVolume_{qnan}, MaxCellVolume_{qnan};
+  Vector<ShapeType, EdgeIndex> edge_shapes_;
+  Vector<ShapeType, FaceIndex> face_shapes_;
+  Vector<ShapeType, CellIndex> cell_shapes_;
+  Vector<vec3_t, NodeIndex> node_coords_;
+  Vector<real_t, EdgeIndex> edge_lens_;
+  Vector<vec3_t, EdgeIndex> edge_dirs_;
+  Vector<real_t, FaceIndex> face_areas_;
+  Vector<vec3_t, FaceIndex> face_normals_;
+  Vector<vec3_t, FaceIndex> face_centers_;
+  Vector<real_t, CellIndex> cell_volumes_;
+  Vector<vec3_t, CellIndex> cell_centers_;
+  real_t min_edge_len_{qnan}, max_edge_len_{qnan};
+  real_t min_face_area_{qnan}, max_face_area_{qnan};
+  real_t min_cell_volume_{qnan}, max_cell_volume_{qnan};
 
-  CsrTable<EdgeIndex, NodeIndex> EdgeNodes_;
-  CsrTable<FaceIndex, NodeIndex> FaceNodes_;
-  CsrTable<CellIndex, NodeIndex> CellNodes_;
-  CsrTable<FaceIndex, EdgeIndex> FaceEdges_;
-  CsrTable<CellIndex, EdgeIndex> CellEdges_;
-  CsrTable<CellIndex, FaceIndex> CellFaces_;
+  CsrTable<EdgeIndex, NodeIndex> edge_nodes_;
+  CsrTable<FaceIndex, NodeIndex> face_nodes_;
+  CsrTable<CellIndex, NodeIndex> cell_nodes_;
+  CsrTable<FaceIndex, EdgeIndex> face_edges_;
+  CsrTable<CellIndex, EdgeIndex> cell_edges_;
+  CsrTable<CellIndex, FaceIndex> cell_faces_;
 
-  CsrTable<NodeIndex, EdgeIndex> NodeEdges_;
-  CsrTable<NodeIndex, FaceIndex> NodeFaces_;
-  CsrTable<NodeIndex, CellIndex> NodeCells_;
-  CsrTable<EdgeIndex, FaceIndex> EdgeFaces_;
-  CsrTable<EdgeIndex, CellIndex> EdgeCells_;
-  CsrTable<FaceIndex, CellIndex> FaceCells_;
+  CsrTable<NodeIndex, EdgeIndex> node_edges_;
+  CsrTable<NodeIndex, FaceIndex> node_faces_;
+  CsrTable<NodeIndex, CellIndex> node_cells_;
+  CsrTable<EdgeIndex, FaceIndex> edge_faces_;
+  CsrTable<EdgeIndex, CellIndex> edge_cells_;
+  CsrTable<FaceIndex, CellIndex> face_cells_;
 
-  CsrTable<NodeIndex, NodeIndex> NodeNodes_;
-  CsrTable<EdgeIndex, EdgeIndex> EdgeEdges_;
-  CsrTable<FaceIndex, FaceIndex> FaceFaces_;
-  CsrTable<CellIndex, CellIndex> CellCells_;
+  CsrTable<NodeIndex, NodeIndex> node_nodes_;
+  CsrTable<EdgeIndex, EdgeIndex> edge_edges_;
+  CsrTable<FaceIndex, FaceIndex> face_faces_;
+  CsrTable<CellIndex, CellIndex> cell_cells_;
 
-  std::map<std::set<NodeIndex>, EdgeIndex> EdgeLookup_;
-  std::map<std::set<NodeIndex>, FaceIndex> FaceLookup_;
-  std::map<std::set<NodeIndex>, CellIndex> CellLookup_;
+  std::map<std::set<NodeIndex>, EdgeIndex> edges_lookup_table_;
+  std::map<std::set<NodeIndex>, FaceIndex> faces_lookup_table_;
 
 public:
 
@@ -128,7 +129,7 @@ public:
   void finalize() {
     generate_boundary_cells();
     reorder_faces();
-    UpdateElementsGeometry();
+    update_elements_geometry();
   }
 
   /// @}
@@ -139,23 +140,23 @@ public:
   /// @{
 
   /// @brief Range of node indices.
-  auto Nodes() const noexcept {
-    return views::iota(NodeIndex{0}, NodeIndex{NumNodes_});
+  auto nodes() const noexcept {
+    return views::iota(NodeIndex{0}, NodeIndex{num_nodes_});
   }
 
   /// @brief Range of edge indices.
-  auto Edges() const noexcept {
-    return views::iota(EdgeIndex{0}, EdgeIndex{NumEdges_});
+  auto edges() const noexcept {
+    return views::iota(EdgeIndex{0}, EdgeIndex{num_edges_});
   }
 
   /// @brief Range of face indices.
-  auto Faces() const noexcept {
-    return views::iota(FaceIndex{0}, FaceIndex{NumFaces_});
+  auto faces() const noexcept {
+    return views::iota(FaceIndex{0}, FaceIndex{num_faces_});
   }
 
   /// @brief Range of cell indices.
-  auto Cells() const noexcept {
-    return views::iota(CellIndex{0}, CellIndex{NumCells_});
+  auto cells() const noexcept {
+    return views::iota(CellIndex{0}, CellIndex{num_cells_});
   }
 
   /// @}
@@ -166,75 +167,75 @@ public:
   /// @{
 
   /// @brief Number of node marks.
-  size_t NumNodeMarks() const noexcept {
-    StormAssert(!NodeRanges_.empty());
-    return NodeRanges_.size() - 1;
+  size_t num_node_marks() const noexcept {
+    STORM_ASSERT_(!node_ranges_.empty());
+    return node_ranges_.size() - 1;
   }
 
   /// @brief Number of edge marks.
-  size_t NumEdgeMarks() const noexcept {
-    StormAssert(!EdgeRanges_.empty());
-    return EdgeRanges_.size() - 1;
+  size_t num_edge_marks() const noexcept {
+    STORM_ASSERT_(!edge_ranges_.empty());
+    return edge_ranges_.size() - 1;
   }
 
   /// @brief Number of face marks.
-  size_t NumFaceMarks() const noexcept {
-    StormAssert(!FaceRanges_.empty());
-    return FaceRanges_.size() - 1;
+  size_t num_face_marks() const noexcept {
+    STORM_ASSERT_(!face_ranges_.empty());
+    return face_ranges_.size() - 1;
   }
 
   /// @brief Number of cell marks.
-  size_t NumCellMarks() const noexcept {
-    StormAssert(!CellRanges_.empty());
-    return CellRanges_.size() - 1;
+  size_t num_cell_marks() const noexcept {
+    STORM_ASSERT_(!cell_ranges_.empty());
+    return cell_ranges_.size() - 1;
   }
 
-  /// @brief Range of node indices with a @p nodeMark.
-  auto Nodes(NodeMark nodeMark) const noexcept {
-    StormAssert(nodeMark < NumNodeMarks());
-    return views::iota(NodeRanges_[nodeMark], NodeRanges_[nodeMark + 1]);
+  /// @brief Range of node indices with a @p node_mark.
+  auto nodes(NodeMark node_mark) const noexcept {
+    STORM_ASSERT_(node_mark < num_node_marks());
+    return views::iota(node_ranges_[node_mark], node_ranges_[node_mark + 1]);
   }
 
-  /// @brief Range of edge indices with a @p edgeMark.
-  auto Edges(EdgeMark edgeMark) const noexcept {
-    StormAssert(edgeMark < NumEdgeMarks());
-    return views::iota(EdgeRanges_[edgeMark], EdgeRanges_[edgeMark + 1]);
+  /// @brief Range of edge indices with a @p edge_mark.
+  auto edges(EdgeMark edge_mark) const noexcept {
+    STORM_ASSERT_(edge_mark < num_edge_marks());
+    return views::iota(edge_ranges_[edge_mark], edge_ranges_[edge_mark + 1]);
   }
 
-  /// @brief Range of face indices with a @p faceMark.
-  auto Faces(FaceMark faceMark) const noexcept {
-    StormAssert(faceMark < NumFaceMarks());
-    return views::iota(FaceRanges_[faceMark], FaceRanges_[faceMark + 1]);
+  /// @brief Range of face indices with a @p face_mark.
+  auto faces(FaceMark face_mark) const noexcept {
+    STORM_ASSERT_(face_mark < num_face_marks());
+    return views::iota(face_ranges_[face_mark], face_ranges_[face_mark + 1]);
   }
 
-  /// @brief Range of cell indices with a @p cellMark.
-  auto Cells(CellMark cellMark) const noexcept {
-    StormAssert(cellMark < NumCellMarks());
-    return views::iota(CellRanges_[cellMark], CellRanges_[cellMark + 1]);
+  /// @brief Range of cell indices with a @p cell_mark.
+  auto cells(CellMark cell_mark) const noexcept {
+    STORM_ASSERT_(cell_mark < num_cell_marks());
+    return views::iota(cell_ranges_[cell_mark], cell_ranges_[cell_mark + 1]);
   }
 
-  /// @brief Get node @p nodeIndex mark.
-  NodeMark Mark(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes_);
-    return NodeMarks_[nodeIndex];
+  /// @brief Get node @p node_index mark.
+  NodeMark mark(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_);
+    return node_marks_[node_index];
   }
 
-  /// @brief Get edge @p edgeIndex mark.
-  EdgeMark Mark(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_);
-    return EdgeMarks_[edgeIndex];
+  /// @brief Get edge @p edge_index mark.
+  EdgeMark mark(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_);
+    return edge_marks_[edge_index];
   }
 
-  /// @brief Get face @p faceIndex mark.
-  FaceMark Mark(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_);
-    return FaceMarks_[faceIndex];
+  /// @brief Get face @p face_index mark.
+  FaceMark mark(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_);
+    return face_marks_[face_index];
   }
 
-  /// @brief Get cell @p cellIndex mark.
-  CellMark Mark(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_);
-    return CellMarks_[cellIndex];
+  /// @brief Get cell @p cell_index mark.
+  CellMark mark(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_);
+    return cell_marks_[cell_index];
   }
 
   /// @}
@@ -244,137 +245,130 @@ public:
   /// ---------------------------------------------------------------- ///
   /// @{
 
-  /// @brief Get edge @p edgeIndex shape type.
-  ShapeType shapeType(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_);
-    return EdgeShapes_[edgeIndex];
+  /// @brief Get edge @p edge_index shape type.
+  ShapeType shape_type(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_);
+    return edge_shapes_[edge_index];
   }
 
-  /// @brief Get face @p faceIndex shape type.
-  ShapeType shapeType(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_);
-    return FaceShapes_[faceIndex];
+  /// @brief Get face @p face_index shape type.
+  ShapeType shape_type(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_);
+    return face_shapes_[face_index];
   }
 
-  /// @brief Get cell @p cellIndex shape type.
-  ShapeType shapeType(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_);
-    return CellShapes_[cellIndex];
-  }
-
-private:
-
-  auto makeShape_(ShapeDesc&& desc) const {
-    return Element::Make(std::forward<ShapeDesc>(desc), NodeCoords_);
+  /// @brief Get cell @p cell_index shape type.
+  ShapeType shape_type(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_);
+    return cell_shapes_[cell_index];
   }
 
 public:
 
-  /// @brief Get element object.
+  /// @brief Get element shape.
   template<class Tag>
   auto shape(Index<Tag> index) const {
-    auto const node_indices = AdjacentNodes(index);
-    return makeShape_({shapeType(index),
-                       std::vector(node_indices.begin(), node_indices.end())});
+    return Shape::make(
+        {shape_type(index), ranges::to<std::vector>(adjacent_nodes(index))});
   }
 
-  /// @brief Get node @p nodeIndex coordinates.
-  vec3_t NodeCoords(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes_ && "nodeIndex is out of range");
-    return NodeCoords_[nodeIndex];
+  /// @brief Get the node @p node_index coordinates.
+  vec3_t node_coords(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+    return node_coords_[node_index];
   }
 
-  /// @brief Set node @p nodeIndex position @p Coords.
-  void SetNodeCoords(NodeIndex nodeIndex, vec3_t const& coords) noexcept {
-    StormAssert(nodeIndex < NumNodes_ && "nodeIndex is out of range");
-    NodeCoords_[nodeIndex] = coords;
+  /// @brief Set the node @p node_index position @p coords.
+  void set_node_coords(NodeIndex node_index, vec3_t const& coords) noexcept {
+    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+    node_coords_[node_index] = coords;
   }
 
-  /// @brief Get edge @p edgeIndex length.
-  real_t EdgeLen(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_ && "edgeIndex is out of range");
-    return EdgeLens_[edgeIndex];
+  /// @brief Get the edge @p edge_index length.
+  real_t edge_len(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+    return edge_lens_[edge_index];
   }
 
-  /// @brief Get edge @p edgeIndex direction.
-  vec3_t EdgeDir(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_ && "edgeIndex is out of range");
-    return EdgeDirs_[edgeIndex];
+  /// @brief Get the edge @p edge_index direction.
+  vec3_t edge_dir(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+    return edge_dirs_[edge_index];
   }
 
-  /// @brief Get face @p faceIndex Area/length.
-  real_t FaceArea(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return FaceAreas_[faceIndex];
+  /// @brief Get the face @p face_index area (or length in 2D).
+  real_t face_area(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return face_areas_[face_index];
   }
 
-  /// @brief Get face @p faceIndex Normal.
-  vec3_t FaceNormal(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return FaceNormals_[faceIndex];
+  /// @brief Get the face @p face_index normal.
+  vec3_t face_normal(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return face_normals_[face_index];
   }
 
-  /// @brief Get face @p faceIndex Center.
-  vec3_t FaceCenter(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return FaceCenters_[faceIndex];
+  /// @brief Get the face @p face_index center position.
+  vec3_t face_center(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return face_centers_[face_index];
   }
 
-  /// @brief Get cell @p cellIndex Volume/Area/length.
-  real_t CellVolume(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_ && "cellIndex is out of range");
-    return CellVolumes_[cellIndex];
+  /// @brief Get the cell @p cell_index volume (or area in 2D).
+  real_t cell_volume(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+    return cell_volumes_[cell_index];
   }
 
-  /// @brief Get cell @p cellIndex Center.
-  vec3_t CellCenter(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_ && "cellIndex is out of range");
-    return CellCenters_[cellIndex];
+  /// @brief Get cell @p cell_index center position.
+  vec3_t cell_center(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+    return cell_centers_[cell_index];
   }
 
   /// @brief Get the minimal edge length.
-  real_t MinEdgeLen() const noexcept {
-    StormAssert(std::isfinite(MinEdgeLen_));
-    return MinEdgeLen_;
+  real_t min_edge_len() const noexcept {
+    STORM_ASSERT_(std::isfinite(min_edge_len_));
+    return min_edge_len_;
   }
 
   /// @brief Get the maximal edge length.
-  real_t MaxEdgeLen() const noexcept {
-    StormAssert(std::isfinite(MaxEdgeLen_));
-    return MaxEdgeLen_;
+  real_t max_edge_len() const noexcept {
+    STORM_ASSERT_(std::isfinite(max_edge_len_));
+    return max_edge_len_;
   }
 
-  /// @brief Get the minimal face Area.
-  real_t MinFaceArea() const noexcept {
-    StormAssert(std::isfinite(MinFaceArea_));
-    return MinFaceArea_;
+  /// @brief Get the minimal face area.
+  real_t min_face_area() const noexcept {
+    STORM_ASSERT_(std::isfinite(min_face_area_));
+    return min_face_area_;
   }
 
-  /// @brief Get the maximal face Area.
-  real_t MaxFaceArea() const noexcept {
-    StormAssert(std::isfinite(MaxFaceArea_));
-    return MaxFaceArea_;
+  /// @brief Get the maximal face area.
+  real_t max_face_area() const noexcept {
+    STORM_ASSERT_(std::isfinite(max_face_area_));
+    return max_face_area_;
   }
 
-  /// @brief Get the minimal cell Volume.
-  real_t MinCellVolume() const noexcept {
-    StormAssert(std::isfinite(MinCellVolume_));
-    return MinCellVolume_;
+  /// @brief Get the minimal cell volume.
+  real_t min_cell_volume() const noexcept {
+    STORM_ASSERT_(std::isfinite(min_cell_volume_));
+    return min_cell_volume_;
   }
 
-  /// @brief Get the maximal cell Volume.
-  real_t MaxCellVolume() const noexcept {
-    StormAssert(std::isfinite(MaxCellVolume_));
-    return MaxCellVolume_;
+  /// @brief Get the maximal cell volume.
+  real_t max_cell_volume() const noexcept {
+    STORM_ASSERT_(std::isfinite(max_cell_volume_));
+    return max_cell_volume_;
   }
 
-  /// @brief Compute all elements geometry properties: \
-  ///   edge lengths and directions; face areas, normals and \
+  /// @brief Compute all elements geometry properties:
+  ///   edge lengths and directions; face areas, normals and
   ///   center positions; cell volumes and center positions.
   ///
-  /// This function should be called \
+  /// This function should be called
   ///   after each node position modification.
-  void UpdateElementsGeometry();
+  void update_elements_geometry();
 
   /// @}
 
@@ -387,46 +381,46 @@ public:
   ///   that can be extracted from the shape only.
   /// @{
 
-  /// @brief Range of the edge @p edgeIndex adjacent node indices.
+  /// @brief Range of the edge @p edge_index adjacent node indices.
   /// Denote a node to be adjacent to an edge if it one its nodes.
-  auto AdjacentNodes(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_ && "edgeIndex is out of range");
-    return const_cast<Mesh*>(this)->EdgeNodes_[edgeIndex];
+  auto adjacent_nodes(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+    return const_cast<Mesh*>(this)->edge_nodes_[edge_index];
   }
 
-  /// @brief Range of the face @p faceIndex adjacent node indices.
+  /// @brief Range of the face @p face_index adjacent node indices.
   /// Denote a node to be adjacent to a face if it one its nodes.
-  auto AdjacentNodes(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return const_cast<Mesh*>(this)->FaceNodes_[faceIndex];
+  auto adjacent_nodes(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return const_cast<Mesh*>(this)->face_nodes_[face_index];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent node indices.
+  /// @brief Range of the cell @p cell_index adjacent node indices.
   /// Denote a node to be adjacent to a cell if it one its nodes.
-  auto AdjacentNodes(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_ && "cellIndex is out of range");
-    return const_cast<Mesh*>(this)->CellNodes_[cellIndex];
+  auto adjacent_nodes(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+    return const_cast<Mesh*>(this)->cell_nodes_[cell_index];
   }
 
-  /// @brief Range of the face @p faceIndex adjacent edge indices.
+  /// @brief Range of the face @p face_index adjacent edge indices.
   /// Denote an edge to be adjacent to a face if it one its edges.
-  auto AdjacentEdges(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return const_cast<Mesh*>(this)->FaceEdges_[faceIndex];
+  auto adjacent_edges(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return const_cast<Mesh*>(this)->face_edges_[face_index];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent edge indices.
+  /// @brief Range of the cell @p cell_index adjacent edge indices.
   /// Denote an edge to be adjacent to a cell if it one its edges.
-  auto AdjacentEdges(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_ && "cellIndex is out of range");
-    return const_cast<Mesh*>(this)->CellEdges_[cellIndex];
+  auto adjacent_edges(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+    return const_cast<Mesh*>(this)->cell_edges_[cell_index];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent face indices.
+  /// @brief Range of the cell @p cell_index adjacent face indices.
   /// Denote a face to be adjacent to a cell if it one its faces.
-  auto AdjacentFaces(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_ && "cellIndex is out of range");
-    return const_cast<Mesh*>(this)->CellFaces_[cellIndex];
+  auto adjacent_faces(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+    return const_cast<Mesh*>(this)->cell_faces_[cell_index];
   }
 
   /// @}
@@ -435,40 +429,40 @@ public:
   ///   that is a transpose of the primary adjacency.
   /// @{
 
-  /// @brief Range of the node @p nodeIndex adjacent edge indices.
-  auto AdjacentEdges(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes_ && "nodeIndex is out of range");
-    return const_cast<Mesh*>(this)->NodeEdges_[nodeIndex];
+  /// @brief Range of the node @p node_index adjacent edge indices.
+  auto adjacent_edges(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+    return const_cast<Mesh*>(this)->node_edges_[node_index];
   }
 
-  /// @brief Range of the node @p nodeIndex adjacent face indices.
-  auto AdjacentFaces(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes_ && "nodeIndex is out of range");
-    return const_cast<Mesh*>(this)->NodeFaces_[nodeIndex];
+  /// @brief Range of the node @p node_index adjacent face indices.
+  auto adjacent_faces(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+    return const_cast<Mesh*>(this)->node_faces_[node_index];
   }
 
-  /// @brief Range of the node @p nodeIndex adjacent cell indices.
-  auto AdjacentCells(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes_ && "nodeIndex is out of range");
-    return const_cast<Mesh*>(this)->NodeCells_[nodeIndex];
+  /// @brief Range of the node @p node_index adjacent cell indices.
+  auto adjacent_cells(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+    return const_cast<Mesh*>(this)->node_cells_[node_index];
   }
 
-  /// @brief Range of the edge @p edgeIndex adjacent face indices.
-  auto AdjacentFaces(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_ && "edgeIndex is out of range");
-    return const_cast<Mesh*>(this)->EdgeFaces_[edgeIndex];
+  /// @brief Range of the edge @p edge_index adjacent face indices.
+  auto adjacent_faces(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+    return const_cast<Mesh*>(this)->edge_faces_[edge_index];
   }
 
-  /// @brief Range of the edge @p edgeIndex adjacent cell indices.
-  auto AdjacentCells(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_ && "edgeIndex is out of range");
-    return const_cast<Mesh*>(this)->EdgeCells_[edgeIndex];
+  /// @brief Range of the edge @p edge_index adjacent cell indices.
+  auto adjacent_cells(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+    return const_cast<Mesh*>(this)->edge_cells_[edge_index];
   }
 
-  /// @brief Range of the face @p faceIndex adjacent cell indices.
-  auto AdjacentCells(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return const_cast<Mesh*>(this)->FaceCells_[faceIndex];
+  /// @brief Range of the face @p face_index adjacent cell indices.
+  auto adjacent_cells(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return const_cast<Mesh*>(this)->face_cells_[face_index];
   }
 
   /// @}
@@ -477,32 +471,32 @@ public:
   ///   of the corresponding primary and secondary adjacencies.
   /// @{
 
-  /// @brief Range of the node @p nodeIndex adjacent node indices.
+  /// @brief Range of the node @p node_index adjacent node indices.
   /// Denote two nodes as adjacent if there is an edge connecting them.
-  auto AdjacentNodes(NodeIndex nodeIndex) const noexcept {
-    StormAssert(nodeIndex < NumNodes_ && "nodeIndex is out of range");
-    return const_cast<Mesh*>(this)->NodeNodes_[nodeIndex];
+  auto adjacent_nodes(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+    return const_cast<Mesh*>(this)->node_nodes_[node_index];
   }
 
-  /// @brief Range of the edge @p edgeIndex adjacent edge indices.
+  /// @brief Range of the edge @p edge_index adjacent edge indices.
   /// Denote two edges as adjacent if they share a common node.
-  auto AdjacentEdges(EdgeIndex edgeIndex) const noexcept {
-    StormAssert(edgeIndex < NumEdges_ && "edgeIndex is out of range");
-    return const_cast<Mesh*>(this)->EdgeEdges_[edgeIndex];
+  auto adjacent_edges(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+    return const_cast<Mesh*>(this)->edge_edges_[edge_index];
   }
 
-  /// @brief Range of the face @p faceIndex adjacent face indices.
+  /// @brief Range of the face @p face_index adjacent face indices.
   /// Denote two faces as adjacent if they share a common edge.
-  auto AdjacentFaces(FaceIndex faceIndex) const noexcept {
-    StormAssert(faceIndex < NumFaces_ && "faceIndex is out of range");
-    return const_cast<Mesh*>(this)->FaceFaces_[faceIndex];
+  auto adjacent_faces(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+    return const_cast<Mesh*>(this)->face_faces_[face_index];
   }
 
-  /// @brief Range of the cell @p cellIndex adjacent cell indices.
+  /// @brief Range of the cell @p cell_index adjacent cell indices.
   /// Denote two cells as adjacent if they share a common face.
-  auto AdjacentCells(CellIndex cellIndex) const noexcept {
-    StormAssert(cellIndex < NumCells_ && "cellIndex is out of range");
-    return const_cast<Mesh*>(this)->CellCells_[cellIndex];
+  auto adjacent_cells(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+    return const_cast<Mesh*>(this)->cell_cells_[cell_index];
   }
 
   /// @}
@@ -510,15 +504,15 @@ public:
 private:
 
   template<class Tag>
-  auto AdjacentElements_(auto elementIndex) const noexcept {
+  auto adjacent_elements_(auto elementIndex) const noexcept {
     if constexpr (std::same_as<Tag, NodeTag>) {
-      return AdjacentNodes(elementIndex);
+      return adjacent_nodes(elementIndex);
     } else if constexpr (std::same_as<Tag, EdgeTag>) {
-      return AdjacentEdges(elementIndex);
+      return adjacent_edges(elementIndex);
     } else if constexpr (std::same_as<Tag, FaceTag>) {
-      return AdjacentFaces(elementIndex);
+      return adjacent_faces(elementIndex);
     } else if constexpr (std::same_as<Tag, CellTag>) {
-      return AdjacentCells(elementIndex);
+      return adjacent_cells(elementIndex);
     } else {
       static_assert(always_false<Tag>, "Invalid tag.");
     }
@@ -533,75 +527,65 @@ public:
   /// ---------------------------------------------------------------- ///
   /// @{
 
-  /// @brief Insert a new node with a position @p Coords
-  ///   and a Mark @p nodeMark into the mesh.
+  /// @brief Insert a new node with a position @p coords
+  ///   and a mark @p node_mark into the mesh.
   /// @returns Index of the inserted node.
-  NodeIndex InsertNode(vec3_t const& coords, NodeMark nodeMark = {});
+  NodeIndex insert_node(const vec3_t& coords, NodeMark node_mark = {});
 
   /// @brief Find or emplace a new edge_shape with a shape @p edgeShape
-  ///   and node indices @p Nodes.
+  ///   and node indices @p nodes.
   ///
   /// Insertion would update the edge_shape-node, edge_shape-edge_shape and
   ///   node-node topologies.
   ///
-  /// @param edgeMark Mark that would be assigned to an edge_shape if
+  /// @param edge_mark mark that would be assigned to an edge_shape if
   ///   the insertion took place, otherwise ignored.
   /// @returns A pair of an index of the found or inserted edge_shape
   ///   and a boolean value denoting whether the insertion took place.
-  // std::pair<EdgeIndex, bool>
-  //   findOrInsertEdge(std::shared_ptr<Shape> edgeShape,
-  //                    EdgeMark edgeMark = {});
-  EdgeIndex InsertEdge(std::unique_ptr<Element>&& edgeShape,
-                       EdgeMark edgeMark = {});
-  EdgeIndex InsertEdge(ShapeDesc&& edgeDesc, EdgeMark edgeMark = {}) {
-    return InsertEdge(makeShape_(std::forward<ShapeDesc>(edgeDesc)), edgeMark);
+  EdgeIndex insert_edge(std::unique_ptr<Shape>&& edge_shape,
+                        EdgeMark edge_mark = {});
+  EdgeIndex insert_edge(const ShapeDesc& edge_desc, EdgeMark edge_mark = {}) {
+    return insert_edge(Shape::make(edge_desc), edge_mark);
   }
 
   /// @brief Find or emplace a new face_shape with a shape @p faceShape
-  ///   and node indices @p Nodes.
+  ///   and node indices @p nodes.
   ///
-  /// Insertion would implicitly insert the missing Edges and
+  /// Insertion would implicitly insert the missing edges and
   ///   update the face_shape-edge and face_shape-face_shape topologies. The
-  ///   implicitly inserted Edges would inherit the Mark from
+  ///   implicitly inserted edges would inherit the mark from
   ///   explicitly inserted face_shape.
   ///
-  /// @param faceMark Mark that would be assigned to a face_shape if
+  /// @param face_mark mark that would be assigned to a face_shape if
   ///   the insertion took place, otherwise ignored.
   /// @returns A pair of an index of the found or inserted face_shape
   ///   and a boolean value denoting whether the insertion took place.
-  // std::pair<FaceIndex, bool>
-  //   findOrInsertFace(std::shared_ptr<Shape> faceShape,
-  //                    FaceMark faceMark = {});
-  FaceIndex InsertFace(std::unique_ptr<Element>&& faceShape,
-                       FaceMark faceMark = {});
-  FaceIndex InsertFace(ShapeDesc&& faceDesc, FaceMark faceMark = {}) {
-    return InsertFace(makeShape_(std::forward<ShapeDesc>(faceDesc)), faceMark);
+  FaceIndex insert_face(std::unique_ptr<Shape>&& face_shape,
+                        FaceMark face_mark = {});
+  FaceIndex insert_face(const ShapeDesc& face_desc, FaceMark face_mark = {}) {
+    return insert_face(Shape::make(face_desc), face_mark);
   }
 
   /// @brief Find or emplace a new cell with a shape @p cellShape
-  ///   and node indices @p Nodes.
+  ///   and node indices @p nodes.
   ///
-  /// Insertion would implicitly insert the missing Faces and
+  /// Insertion would implicitly insert the missing faces and
   ///   update the cell-face and cell-cell topologies. The
-  ///   implicitly inserted face would inherit the Mark from
+  ///   implicitly inserted face would inherit the mark from
   ///   explicitly inserted cell.
   ///
-  /// @param cellMark Mark that would be assigned to a cell if
+  /// @param cell_mark mark that would be assigned to a cell if
   ///   the insertion took place, otherwise ignored.
   /// @returns A pair of an index of the found or inserted cell
   ///   and a boolean value denoting whether the insertion took place.
-  // std::pair<CellIndex, bool>
-  //   findOrInsertCell(std::shared_ptr<Shape> cellShape,
-  //                    CellMark cellMark = {});
-  CellIndex insert_cell(std::unique_ptr<Element>&& cell, CellMark cellMark = {},
-                        bool ghost = false);
-  CellIndex insert_cell(ShapeDesc&& cellDesc, CellMark cellMark = {},
+  CellIndex insert_cell(std::unique_ptr<Shape>&& cell_shape,
+                        CellMark cell_mark = {}, bool ghost = false);
+  CellIndex insert_cell(const ShapeDesc& cell_desc, CellMark cell_mark = {},
                         bool ghost = false) {
-    return insert_cell(makeShape_(std::forward<ShapeDesc>(cellDesc)), cellMark,
-                       ghost);
+    return insert_cell(Shape::make(cell_desc), cell_mark, ghost);
   }
 
-  /// @brief Generate boundary Cells to complete face connectivity.
+  /// @brief Generate boundary cells to complete face connectivity.
   void generate_boundary_cells(FaceIndex ff = FaceIndex{npos});
 
   /// @}
@@ -611,27 +595,27 @@ public:
   /// ---------------------------------------------------------------- ///
   /// @{
 
-  /// @brief Flip the face @p faceIndex.
-  /// A face can be flipped only if it is not adjacent to any Cells
-  /// or it is adjacent to the exactly two interior Cells.
-  void flip_face(FaceIndex faceIndex) noexcept;
+  /// @brief Flip the face @p face_index.
+  /// A face can be flipped only if it is not adjacent to any cells
+  /// or it is adjacent to the exactly two interior cells.
+  void flip_face(FaceIndex face_index) noexcept;
 
-  /// @brief Change order of all Nodes.
+  /// @brief Change order of all nodes.
   void PermuteNodes(std::vector<size_t>&& nodePermutation = {});
 
-  /// @brief Change order of all Edges.
+  /// @brief Change order of all edges.
   void PermuteEdges(std::vector<size_t>&& edgePermutation = {});
 
-  /// @brief Change order of all Faces.
+  /// @brief Change order of all faces.
   void PermuteFaces(std::vector<size_t>&& facePermutation = {});
 
-  /// @brief Change order of all Cells.
+  /// @brief Change order of all cells.
   void PermuteCells(std::vector<size_t>&& cellPermutation = {});
 
 private:
 
   template<class Tag>
-  void FixPermutationAndAdjacency_(std::vector<size_t>& cellIndex);
+  void FixPermutationAndAdjacency_(std::vector<size_t>& cell_index);
 
 protected:
 

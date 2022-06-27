@@ -20,7 +20,7 @@ list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/lib/cmake")
 
 # Enable GLM.
-find_package(GLM REQUIRED)
+#find_package(GLM REQUIRED)
 
 # Enable Intel TBB.
 find_package(TBB REQUIRED tbb)

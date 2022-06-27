@@ -38,6 +38,7 @@ namespace Storm {
 /** Abstract cell-centered gradient scheme. */
 class iGradientScheme : public tObject<iGradientScheme> {
 public:
+
   /** Compute cell-centered gradients. */
   virtual void get_gradients(size_t num_vars, tVectorField& grad_u,
                              const tScalarField& u) const = 0;
@@ -52,20 +53,24 @@ public:
  */
 class cLeastSquaresGradientScheme final : public iGradientScheme {
 private:
+
   std::shared_ptr<const Mesh> m_mesh;
   tMatrixField m_inverse_matrices;
 
 public:
+
   /** Initialize the gradient scheme. */
-  explicit cLeastSquaresGradientScheme(std::shared_ptr<const Mesh> mesh) :
-      m_mesh(std::move(mesh)), m_inverse_matrices(1, m_mesh->Cells().size()) {
+  explicit cLeastSquaresGradientScheme(std::shared_ptr<const Mesh> mesh)
+      : m_mesh(std::move(mesh)), m_inverse_matrices(1, m_mesh->cells().size()) {
     init_gradients_();
   }
 
 private:
+
   void init_gradients_();
 
 public:
+
   /** Compute cell-centered gradients. */
   void get_gradients(size_t num_vars, tVectorField& grad_u,
                      const tScalarField& u) const final;

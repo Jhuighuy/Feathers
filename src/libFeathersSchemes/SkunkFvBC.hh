@@ -42,17 +42,19 @@
 // //
 
 /**
- * Abstract finite-Volume boundary condition.
+ * Abstract finite-volume boundary condition.
  */
 template<int_t num_vars_t>
 class MhdFvBcT : public std::enable_shared_from_this<MhdFvBcT<num_vars_t>> {
 public:
+
   /** Compute the ghost state values. */
   void get_ghost_state(tScalarField& u) const {
     get_ghost_state_(u);
   }
 
 private:
+
   /** Compute the ghost state values. */
   virtual void get_ghost_state_(tScalarField& u) const = 0;
 }; // class MhdFvBcT
@@ -70,10 +72,12 @@ private:
 template<typename MhdPhysicsT>
 class MhdFvBcPT : public std::enable_shared_from_this<MhdFvBcPT<MhdPhysicsT>> {
 public:
+
   using MhdFluidStateT = typename MhdPhysicsT::MhdFluidStateT;
   static constexpr int_t num_vars = MhdPhysicsT::num_vars;
 
 public:
+
   /** @brief Compute the ghost states. */
   void get_ghost_state(const Storm::vec3_t& n, const Storm::vec3_t& r,
                        const Storm::vec3_t& r_ghost, const real_t* u,
@@ -84,6 +88,7 @@ public:
   }
 
 private:
+
   /** @brief Compute the ghost state. */
   virtual void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r,
                                 const Storm::vec3_t& r_ghost,
@@ -105,10 +110,12 @@ private:
 template<typename MhdPhysicsT>
 class MhdFvBcFarFieldT : public MhdFvBcPT<MhdPhysicsT> {
 public:
+
   using typename MhdFvBcPT<MhdPhysicsT>::MhdFluidStateT;
   using MhdFvBcPT<MhdPhysicsT>::num_vars;
 
 private:
+
   /** @brief Compute the ghost state. */
   void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r,
                         const Storm::vec3_t& r_ghost, const MhdFluidStateT& u,
@@ -128,14 +135,16 @@ private:
 template<typename MhdPhysicsT>
 class MhdFvBcNoSlipT : public MhdFvBcPT<MhdPhysicsT> {
 public:
+
   using typename MhdFvBcPT<MhdPhysicsT>::MhdFluidStateT;
   using MhdFvBcPT<MhdPhysicsT>::num_vars;
   std::function<Storm::vec3_t(Storm::vec3_t)> vfunc;
 
-  MhdFvBcNoSlipT(std::function<Storm::vec3_t(Storm::vec3_t)> vfunc = nullptr) :
-      vfunc(std::move(vfunc)) {}
+  MhdFvBcNoSlipT(std::function<Storm::vec3_t(Storm::vec3_t)> vfunc = nullptr)
+      : vfunc(std::move(vfunc)) {}
 
 private:
+
   /** @brief Compute the ghost state. */
   void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r,
                         const Storm::vec3_t& r_ghost, const MhdFluidStateT& u,
@@ -148,10 +157,12 @@ private:
 template<typename MhdPhysicsT>
 class MhdFvBcSlipT : public MhdFvBcPT<MhdPhysicsT> {
 public:
+
   using typename MhdFvBcPT<MhdPhysicsT>::MhdFluidStateT;
   using MhdFvBcPT<MhdPhysicsT>::num_vars;
 
 private:
+
   /** @brief Compute the ghost state. */
   void get_ghost_state_(const Storm::vec3_t& n, const Storm::vec3_t& r,
                         const Storm::vec3_t& r_ghost, const MhdFluidStateT& u,
