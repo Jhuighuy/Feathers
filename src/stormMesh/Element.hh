@@ -58,8 +58,8 @@ protected:
   std::vector<NodeIndex> node_indices_;
 
   template<class... Indices>
-  constexpr auto part_desc_(ShapeType shape_type,
-                            Indices... node_locals) const {
+  /*constexpr*/ auto part_desc_(ShapeType shape_type,
+                                Indices... node_locals) const {
     return ShapeDesc{shape_type, {node_indices_[node_locals]...}};
   }
 
@@ -125,21 +125,21 @@ public:
   /// @{
 
   /// @brief Get the shape type.
-  constexpr virtual ShapeType shape_type() const noexcept = 0;
+  /*constexpr*/ virtual ShapeType shape_type() const noexcept = 0;
 
   /** Get element node indices. */
-  constexpr const std::vector<NodeIndex>& node_indices() const {
+  /*constexpr*/ const std::vector<NodeIndex>& node_indices() const {
     return node_indices_;
   }
 
   /// @brief Number of nodes in the shape.
-  constexpr virtual size_t num_nodes() const noexcept = 0;
+  /*constexpr*/ virtual size_t num_nodes() const noexcept = 0;
 
   /// @brief Make shape edges description array.
-  constexpr virtual std::vector<ShapeDesc> make_edges_desc() const = 0;
+  /*constexpr*/ virtual std::vector<ShapeDesc> make_edges_desc() const = 0;
 
   /// @brief Make shape faces description array.
-  constexpr virtual std::vector<ShapeDesc> make_faces_desc() const = 0;
+  /*constexpr*/ virtual std::vector<ShapeDesc> make_faces_desc() const = 0;
 
   /// @} // Topology.
 
@@ -149,11 +149,11 @@ template<ShapeType ShapeType_, size_t NumNodes_, class Base>
 class ShapeHelper_ : public Base {
 public:
 
-  constexpr ShapeType shape_type() const noexcept final {
+  /*constexpr*/ ShapeType shape_type() const noexcept final {
     return ShapeType_;
   }
 
-  constexpr size_t num_nodes() const noexcept final {
+  /*constexpr*/ size_t num_nodes() const noexcept final {
     return NumNodes_;
   }
 
@@ -231,7 +231,7 @@ public:
   }
 
   /// @brief Make splitting into the simplex parts.
-  constexpr virtual std::vector<ShapeDesc> make_simplices_desc() const = 0;
+  /*constexpr*/ virtual std::vector<ShapeDesc> make_simplices_desc() const = 0;
 
 private:
 
@@ -251,22 +251,22 @@ private:
 class Node final : public ShapeHelper_<ShapeType::Node, 1, SimplexShape> {
 public:
 
-  constexpr real_t
+  /*constexpr*/ real_t
   volume([[maybe_unused]] const NodeCoordsVector& node_coords) const final {
     return 1.0;
   }
 
-  constexpr vec3_t
+  /*constexpr*/ vec3_t
   normal([[maybe_unused]] const NodeCoordsVector& node_coords) const final {
-    constexpr vec3_t right(1.0, 0.0, 0.0);
+    /*constexpr*/ vec3_t right(1.0, 0.0, 0.0);
     return right;
   }
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return {};
   }
 
@@ -296,7 +296,7 @@ public:
   vec3_t normal(const NodeCoordsVector& node_coords) const final {
     const vec3_t delta{node_coords[node_indices()[1]] -
                        node_coords[node_indices()[0]]};
-    static constexpr vec3_t up(0.0, 0.0, 1.0);
+    static /*constexpr*/ vec3_t up(0.0, 0.0, 1.0);
     return glm::normalize(glm::cross(delta, up));
   }
 
@@ -306,11 +306,11 @@ public:
     return glm::normalize(delta);
   }
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1)};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return {part_desc_(ShapeType::Node, 0), part_desc_(ShapeType::Node, 1)};
   }
 
@@ -350,12 +350,12 @@ public:
     return glm::normalize(glm::cross(delta1, delta2));
   }
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1),
             part_desc_(ShapeType::Segment, 1, 2),
             part_desc_(ShapeType::Segment, 2, 0)};
   }
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return make_edges_desc();
   }
 
@@ -377,18 +377,18 @@ class Quadrangle final :
     public ShapeHelper_<ShapeType::Quadrangle, 4, ComplexShape> {
 public:
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1),
             part_desc_(ShapeType::Segment, 1, 2),
             part_desc_(ShapeType::Segment, 2, 3),
             part_desc_(ShapeType::Segment, 3, 0)};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return make_edges_desc();
   }
 
-  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_simplices_desc() const final {
     return {part_desc_(ShapeType::Triangle, 0, 1, 2),
             part_desc_(ShapeType::Triangle, 2, 3, 0)};
     // return {
@@ -437,7 +437,7 @@ public:
     return std::abs(glm::dot(delta1, glm::cross(delta2, delta3))) / 6.0;
   }
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1),
             part_desc_(ShapeType::Segment, 1, 2),
             part_desc_(ShapeType::Segment, 2, 0),
@@ -446,7 +446,7 @@ public:
             part_desc_(ShapeType::Segment, 2, 3)};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return {part_desc_(ShapeType::Triangle, 0, 2, 1),
             part_desc_(ShapeType::Triangle, 0, 1, 3),
             part_desc_(ShapeType::Triangle, 1, 2, 3),
@@ -483,7 +483,7 @@ public:
 class Pyramid final : public ShapeHelper_<ShapeType::Pyramid, 5, ComplexShape> {
 public:
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1),
             part_desc_(ShapeType::Segment, 1, 2),
             part_desc_(ShapeType::Segment, 2, 3),
@@ -494,7 +494,7 @@ public:
             part_desc_(ShapeType::Segment, 3, 4)};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return {part_desc_(ShapeType::Quadrangle, 0, 3, 2, 1),
             part_desc_(ShapeType::Triangle, 0, 1, 4),
             part_desc_(ShapeType::Triangle, 1, 2, 4),
@@ -502,7 +502,7 @@ public:
             part_desc_(ShapeType::Triangle, 3, 0, 4)};
   }
 
-  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_simplices_desc() const final {
     return {part_desc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
             part_desc_(ShapeType::Tetrahedron, 2, 3, 0, 4)};
     // return {
@@ -545,7 +545,7 @@ class Pentahedron final :
     public ShapeHelper_<ShapeType::Pentahedron, 6, ComplexShape> {
 public:
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1),
             part_desc_(ShapeType::Segment, 1, 2),
             part_desc_(ShapeType::Segment, 2, 0),
@@ -557,7 +557,7 @@ public:
             part_desc_(ShapeType::Segment, 5, 3)};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return {part_desc_(ShapeType::Quadrangle, 0, 1, 4, 3),
             part_desc_(ShapeType::Quadrangle, 1, 2, 5, 4),
             part_desc_(ShapeType::Quadrangle, 2, 0, 3, 5),
@@ -565,7 +565,7 @@ public:
             part_desc_(ShapeType::Triangle, 3, 4, 5)};
   }
 
-  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_simplices_desc() const final {
     return {part_desc_(ShapeType::Tetrahedron, 0, 1, 2, 4),
             part_desc_(ShapeType::Tetrahedron, 2, 0, 3, 4),
             part_desc_(ShapeType::Tetrahedron, 3, 5, 2, 4)};
@@ -605,7 +605,7 @@ class Hexahedron final :
     public ShapeHelper_<ShapeType::Hexahedron, 8, ComplexShape> {
 public:
 
-  constexpr std::vector<ShapeDesc> make_edges_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_edges_desc() const final {
     return {part_desc_(ShapeType::Segment, 0, 1),
             part_desc_(ShapeType::Segment, 1, 2),
             part_desc_(ShapeType::Segment, 2, 3),
@@ -620,7 +620,7 @@ public:
             part_desc_(ShapeType::Segment, 7, 4)};
   }
 
-  constexpr std::vector<ShapeDesc> make_faces_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_faces_desc() const final {
     return {part_desc_(ShapeType::Quadrangle, 0, 3, 2, 1),
             part_desc_(ShapeType::Quadrangle, 0, 1, 5, 4),
             part_desc_(ShapeType::Quadrangle, 1, 2, 6, 5),
@@ -629,7 +629,7 @@ public:
             part_desc_(ShapeType::Quadrangle, 4, 5, 6, 7)};
   }
 
-  constexpr std::vector<ShapeDesc> make_simplices_desc() const final {
+  /*constexpr*/ std::vector<ShapeDesc> make_simplices_desc() const final {
     return {part_desc_(ShapeType::Tetrahedron, 0, 3, 1, 4),
             part_desc_(ShapeType::Tetrahedron, 3, 2, 1, 6),
             part_desc_(ShapeType::Tetrahedron, 4, 5, 6, 1),

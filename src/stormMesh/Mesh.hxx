@@ -28,6 +28,8 @@
 #include <map>
 #include <set>
 
+#include <optional>
+
 #include "Element.hh"
 #include "Field.hh"
 #include <stormMesh/Base.hxx>
@@ -532,58 +534,53 @@ public:
   /// @returns Index of the inserted node.
   NodeIndex insert_node(const vec3_t& coords, NodeMark node_mark = {});
 
-  /// @brief Find or emplace a new edge_shape with a shape @p edgeShape
-  ///   and node indices @p nodes.
+  /// @brief Find or insert a new edge with a shape @p edge_shape.
   ///
-  /// Insertion would update the edge_shape-node, edge_shape-edge_shape and
+  /// Insertion would update the edge-node, edge-edge and
   ///   node-node topologies.
   ///
-  /// @param edge_mark mark that would be assigned to an edge_shape if
-  ///   the insertion took place, otherwise ignored.
-  /// @returns A pair of an index of the found or inserted edge_shape
-  ///   and a boolean value denoting whether the insertion took place.
+  /// @param edge_mark Mark that would be assigned to an edge if present.
+  /// @returns Index of the found or inserted edge.
+  /// @{
   EdgeIndex insert_edge(std::unique_ptr<Shape>&& edge_shape,
-                        EdgeMark edge_mark = {});
-  EdgeIndex insert_edge(const ShapeDesc& edge_desc, EdgeMark edge_mark = {}) {
+                        std::optional<EdgeMark> edge_mark = std::nullopt);
+  EdgeIndex insert_edge(const ShapeDesc& edge_desc,
+                        std::optional<EdgeMark> edge_mark = std::nullopt) {
     return insert_edge(Shape::make(edge_desc), edge_mark);
   }
+  /// @}
 
-  /// @brief Find or emplace a new face_shape with a shape @p faceShape
-  ///   and node indices @p nodes.
+  /// @brief Find or insert a new face with a shape @p face_shape.
   ///
   /// Insertion would implicitly insert the missing edges and
-  ///   update the face_shape-edge and face_shape-face_shape topologies. The
-  ///   implicitly inserted edges would inherit the mark from
-  ///   explicitly inserted face_shape.
+  ///   update the face-edge and face-face topologies.
   ///
-  /// @param face_mark mark that would be assigned to a face_shape if
-  ///   the insertion took place, otherwise ignored.
-  /// @returns A pair of an index of the found or inserted face_shape
-  ///   and a boolean value denoting whether the insertion took place.
+  /// @param face_mark Mark that would be assigned to a face if present.
+  /// @returns Index of the found or inserted face.
+  /// @{
   FaceIndex insert_face(std::unique_ptr<Shape>&& face_shape,
-                        FaceMark face_mark = {});
-  FaceIndex insert_face(const ShapeDesc& face_desc, FaceMark face_mark = {}) {
+                        std::optional<FaceMark> face_mark = std::nullopt);
+  FaceIndex insert_face(const ShapeDesc& face_desc,
+                        std::optional<FaceMark> face_mark = std::nullopt) {
     return insert_face(Shape::make(face_desc), face_mark);
   }
+  /// @}
 
-  /// @brief Find or emplace a new cell with a shape @p cellShape
-  ///   and node indices @p nodes.
+  /// @brief Insert a new cell with a shape @p cell_shape.
   ///
   /// Insertion would implicitly insert the missing faces and
-  ///   update the cell-face and cell-cell topologies. The
-  ///   implicitly inserted face would inherit the mark from
-  ///   explicitly inserted cell.
+  ///   update the cell-face and cell-cell topologies.
   ///
-  /// @param cell_mark mark that would be assigned to a cell if
-  ///   the insertion took place, otherwise ignored.
-  /// @returns A pair of an index of the found or inserted cell
-  ///   and a boolean value denoting whether the insertion took place.
+  /// @param cell_mark Mark that would be assigned to a cell.
+  /// @returns Index of the or inserted cell.
+  /// @{
   CellIndex insert_cell(std::unique_ptr<Shape>&& cell_shape,
                         CellMark cell_mark = {}, bool ghost = false);
   CellIndex insert_cell(const ShapeDesc& cell_desc, CellMark cell_mark = {},
                         bool ghost = false) {
     return insert_cell(Shape::make(cell_desc), cell_mark, ghost);
   }
+  /// @}
 
   /// @brief Generate boundary cells to complete face connectivity.
   void generate_boundary_cells(FaceIndex ff = FaceIndex{npos});

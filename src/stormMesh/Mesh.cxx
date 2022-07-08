@@ -87,17 +87,20 @@ NodeIndex Mesh::insert_node(const vec3_t& coords, NodeMark node_mark) {
 } // Mesh::insert_node
 
 EdgeIndex Mesh::insert_edge(std::unique_ptr<Shape>&& edge_shape,
-                            EdgeMark edge_mark) {
+                            std::optional<EdgeMark> edge_mark) {
   // Try to find an existing edge.
   const auto [edge_iter, edge_inserted] = //
       edges_lookup_table_.try_emplace(
           ranges::to<std::set>(edge_shape->node_indices()), num_edges_);
   const EdgeIndex edge_index = edge_iter->second;
-  if (!edge_inserted) { return edge_index; }
+  if (!edge_inserted) {
+    if (edge_mark.has_value()) { edge_marks_[edge_index] = *edge_mark; }
+    return edge_index;
+  }
 
   // Emplace the edge properties.
   num_edges_ += 1;
-  edge_marks_.emplace_back(edge_mark);
+  edge_marks_.emplace_back(edge_mark.value_or(EdgeMark{0}));
   edge_shapes_.emplace_back(edge_shape->shape_type());
   edge_lens_.emplace_back(edge_shape->volume(node_coords_));
   edge_dirs_.emplace_back(edge_shape->dir(node_coords_));
@@ -107,6 +110,23 @@ EdgeIndex Mesh::insert_edge(std::unique_ptr<Shape>&& edge_shape,
   for (NodeIndex node_index : edge_nodes_[edge_index]) {
     node_edges_.insert(node_index, edge_index);
   }
+  edge_edges_.insert_row([&]() {
+    std::vector<EdgeIndex> this_edge_edges{};
+    for (NodeIndex node_index :
+         {edge_nodes_[edge_index].front(), edge_nodes_[edge_index].back()}) {
+      for (EdgeIndex other_edge_index : node_edges_[node_index]) {
+        this_edge_edges.emplace_back(other_edge_index);
+        if (edge_index != other_edge_index) {
+          edge_edges_.insert(other_edge_index, edge_index);
+        }
+      }
+    }
+    return this_edge_edges;
+  }());
+  node_nodes_.insert(edge_nodes_[edge_index].front(),
+                     edge_nodes_[edge_index].back());
+  node_nodes_.insert(edge_nodes_[edge_index].back(),
+                     edge_nodes_[edge_index].front());
 
   // Emplace empty rows that would be filled later on.
   edge_edges_.insert_row();
@@ -118,17 +138,20 @@ EdgeIndex Mesh::insert_edge(std::unique_ptr<Shape>&& edge_shape,
 } // Mesh::insert_edge
 
 FaceIndex Mesh::insert_face(std::unique_ptr<Shape>&& face_shape,
-                            FaceMark face_mark) {
+                            std::optional<FaceMark> face_mark) {
   // Try to find an existing face.
   const auto [face_iter, face_inserted] = //
       faces_lookup_table_.try_emplace(
           ranges::to<std::set>(face_shape->node_indices()), num_faces_);
   const FaceIndex face_index = face_iter->second;
-  if (!face_inserted) { return face_index; }
+  if (!face_inserted) {
+    if (face_mark.has_value()) { face_marks_[face_index] = *face_mark; }
+    return face_index;
+  }
 
   // Emplace the face properties.
   num_faces_ += 1;
-  face_marks_.emplace_back(face_mark);
+  face_marks_.emplace_back(face_mark.value_or(FaceMark{0}));
   face_shapes_.emplace_back(face_shape->shape_type());
   face_areas_.emplace_back(face_shape->volume(node_coords_));
   face_normals_.emplace_back(face_shape->normal(node_coords_));
@@ -150,9 +173,20 @@ FaceIndex Mesh::insert_face(std::unique_ptr<Shape>&& face_shape,
     }
     return this_face_edges;
   }());
+  face_faces_.insert_row([&]() {
+    std::vector<FaceIndex> this_face_faces{};
+    for (EdgeIndex edge_index : face_edges_[face_index]) {
+      for (FaceIndex other_face_index : edge_faces_[edge_index]) {
+        this_face_faces.emplace_back(other_face_index);
+        if (face_index != other_face_index) {
+          face_faces_.insert(other_face_index, face_index);
+        }
+      }
+    }
+    return this_face_faces;
+  }());
 
   // Emplace empty rows that would be filled later on.
-  face_faces_.insert_row();
   face_cells_.insert_row();
 
   return face_index;
@@ -290,7 +324,8 @@ void Mesh::FixPermutationAndAdjacency_(std::vector<size_t>& permutation) {
 void Mesh::PermuteNodes(std::vector<size_t>&& nodePermutation) {
   /* Permute Node properties and fix the adjacency tables. */
   FixPermutationAndAdjacency_<NodeTag>(nodePermutation);
-  permute_rows(nodePermutation.begin(), nodePermutation.end(), node_nodes_,
+  permute_rows(((std::vector<NodeIndex>&) nodePermutation).begin(),
+               ((std::vector<NodeIndex>&) nodePermutation).end(), node_nodes_,
                node_edges_, node_faces_, node_cells_);
   permute_inplace(nodePermutation.begin(), nodePermutation.end(),
                   node_marks_.begin(), node_coords_.begin());
@@ -310,7 +345,8 @@ void Mesh::PermuteNodes(std::vector<size_t>&& nodePermutation) {
 void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
   /* Permute edge properties and fix the adjacency tables. */
   FixPermutationAndAdjacency_<EdgeTag>(edgePermutation);
-  permute_rows(edgePermutation.begin(), edgePermutation.end(), edge_nodes_,
+  permute_rows(((std::vector<EdgeIndex>&) edgePermutation).begin(),
+               ((std::vector<EdgeIndex>&) edgePermutation).end(), edge_nodes_,
                edge_edges_, edge_faces_, edge_cells_);
   permute_inplace(edgePermutation.begin(), edgePermutation.end(),
                   edge_marks_.begin(), edge_shapes_.begin(), edge_lens_.begin(),
@@ -331,7 +367,8 @@ void Mesh::PermuteEdges(std::vector<size_t>&& edgePermutation) {
 void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
   /* Permute data. */
   FixPermutationAndAdjacency_<FaceTag>(facePermutation);
-  permute_rows(facePermutation.begin(), facePermutation.end(), face_nodes_,
+  permute_rows(((std::vector<FaceIndex>&) facePermutation).begin(),
+               ((std::vector<FaceIndex>&) facePermutation).end(), face_nodes_,
                face_edges_, face_faces_, face_cells_);
   permute_inplace(facePermutation.begin(), facePermutation.end(),
                   face_marks_.begin(), face_shapes_.begin(),
@@ -353,7 +390,8 @@ void Mesh::PermuteFaces(std::vector<size_t>&& facePermutation) {
 void Mesh::PermuteCells(std::vector<size_t>&& cellPermutation) {
   /* Permute data. */
   FixPermutationAndAdjacency_<CellTag>(cellPermutation);
-  permute_rows(cellPermutation.begin(), cellPermutation.end(), cell_nodes_,
+  permute_rows(((std::vector<CellIndex>&) cellPermutation).begin(),
+               ((std::vector<CellIndex>&) cellPermutation).end(), cell_nodes_,
                cell_edges_, cell_faces_, cell_cells_);
   permute_inplace(cellPermutation.begin(), cellPermutation.end(),
                   cell_marks_.begin(), cell_shapes_.begin(),
