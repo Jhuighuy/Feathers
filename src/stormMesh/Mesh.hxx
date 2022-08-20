@@ -1,27 +1,22 @@
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// Copyright (C) 2022 Oleg Butakov
 ///
-/// Permission is hereby granted, free of charge, to any person
-/// obtaining a copy of this software and associated documentation
-/// files (the "Software"), to deal in the Software without
-/// restriction, including without limitation the rights  to use,
-/// copy, modify, merge, publish, distribute, sublicense, and/or
-/// sell copies of the Software, and to permit persons to whom the
-/// Software is furnished to do so, subject to the following
-/// conditions:
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the "Software"), to
+/// deal in the Software without restriction, including without limitation the
+/// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+/// sell copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
 ///
-/// The above copyright notice and this permission notice shall be
-/// included in all copies or substantial portions of the Software.
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
 ///
-/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-/// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-/// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-/// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-/// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-/// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-/// OTHER DEALINGS IN THE SOFTWARE.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+/// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+/// IN THE SOFTWARE.
 
 #pragma once
 
@@ -38,23 +33,12 @@
 
 namespace Storm {
 
-namespace Detail_ {
-inline constexpr size_t face_inner_cell_{0};
-inline constexpr size_t face_outer_cell_{1};
-} // namespace Detail_
+namespace detail_ {
+  inline constexpr size_t face_inner_cell_{0};
+  inline constexpr size_t face_outer_cell_{1};
+} // namespace detail_
 
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
 /// @brief Hybrid unstructured multidimensional mesh.
-/// @todo 1. Untie the Shape from the node indices and node pos: \
-///          maybe pass the node indices and coords as a parameter \
-///          to functions. \
-///          We cannot keep std::span of the node coords inside of \
-///          Shape if we need to keep it: it may be gone after the \
-///          new node is inserted. Better way is to pass it as the \
-///          parameter. \
-///          However, node indices mey be stored.
-/// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- ///
-// template<size_t SDim, size_t TDim, template<class, class, class> class Table>
 class Mesh : public tObject<Mesh> {
 private:
 
@@ -275,91 +259,100 @@ public:
   }
 
   /// @brief Get the node @p node_index coordinates.
-  vec3_t node_coords(NodeIndex node_index) const noexcept {
-    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+  [[nodiscard]] constexpr vec3_t
+  node_coords(NodeIndex node_index) const noexcept {
+    STORM_ASSERT_(node_index < num_nodes_, "node_index is out of range!");
     return node_coords_[node_index];
   }
 
   /// @brief Set the node @p node_index position @p coords.
-  void set_node_coords(NodeIndex node_index, vec3_t const& coords) noexcept {
-    STORM_ASSERT_(node_index < num_nodes_ && "node_index is out of range");
+  [[nodiscard]] constexpr void //
+  set_node_coords(NodeIndex node_index, vec3_t const& coords) noexcept {
+    STORM_ASSERT_(node_index < num_nodes_, "node_index is out of range!");
     node_coords_[node_index] = coords;
   }
 
   /// @brief Get the edge @p edge_index length.
-  real_t edge_len(EdgeIndex edge_index) const noexcept {
-    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+  [[nodiscard]] constexpr real_t //
+  edge_len(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_, "edge_index is out of range!");
     return edge_lens_[edge_index];
   }
 
   /// @brief Get the edge @p edge_index direction.
-  vec3_t edge_dir(EdgeIndex edge_index) const noexcept {
-    STORM_ASSERT_(edge_index < num_edges_ && "edge_index is out of range");
+  [[nodiscard]] constexpr vec3_t //
+  edge_dir(EdgeIndex edge_index) const noexcept {
+    STORM_ASSERT_(edge_index < num_edges_, "edge_index is out of range!");
     return edge_dirs_[edge_index];
   }
 
   /// @brief Get the face @p face_index area (or length in 2D).
-  real_t face_area(FaceIndex face_index) const noexcept {
-    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+  [[nodiscard]] constexpr real_t
+  face_area(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_, "face_index is out of range!");
     return face_areas_[face_index];
   }
 
   /// @brief Get the face @p face_index normal.
-  vec3_t face_normal(FaceIndex face_index) const noexcept {
-    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+  [[nodiscard]] constexpr vec3_t //
+  face_normal(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_, "face_index is out of range!");
     return face_normals_[face_index];
   }
 
   /// @brief Get the face @p face_index center position.
-  vec3_t face_center(FaceIndex face_index) const noexcept {
-    STORM_ASSERT_(face_index < num_faces_ && "face_index is out of range");
+  [[nodiscard]] constexpr vec3_t //
+  face_center(FaceIndex face_index) const noexcept {
+    STORM_ASSERT_(face_index < num_faces_, "face_index is out of range!");
     return face_centers_[face_index];
   }
 
   /// @brief Get the cell @p cell_index volume (or area in 2D).
-  real_t cell_volume(CellIndex cell_index) const noexcept {
-    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+  [[nodiscard]] constexpr real_t //
+  cell_volume(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_, "cell_index is out of range!");
     return cell_volumes_[cell_index];
   }
 
   /// @brief Get cell @p cell_index center position.
-  vec3_t cell_center(CellIndex cell_index) const noexcept {
-    STORM_ASSERT_(cell_index < num_cells_ && "cell_index is out of range");
+  [[nodiscard]] constexpr vec3_t //
+  cell_center(CellIndex cell_index) const noexcept {
+    STORM_ASSERT_(cell_index < num_cells_, "cell_index is out of range!");
     return cell_centers_[cell_index];
   }
 
   /// @brief Get the minimal edge length.
-  real_t min_edge_len() const noexcept {
+  [[nodiscard]] real_t min_edge_len() const noexcept {
     STORM_ASSERT_(std::isfinite(min_edge_len_));
     return min_edge_len_;
   }
 
   /// @brief Get the maximal edge length.
-  real_t max_edge_len() const noexcept {
+  [[nodiscard]] real_t max_edge_len() const noexcept {
     STORM_ASSERT_(std::isfinite(max_edge_len_));
     return max_edge_len_;
   }
 
   /// @brief Get the minimal face area.
-  real_t min_face_area() const noexcept {
+  [[nodiscard]] real_t min_face_area() const noexcept {
     STORM_ASSERT_(std::isfinite(min_face_area_));
     return min_face_area_;
   }
 
   /// @brief Get the maximal face area.
-  real_t max_face_area() const noexcept {
+  [[nodiscard]] real_t max_face_area() const noexcept {
     STORM_ASSERT_(std::isfinite(max_face_area_));
     return max_face_area_;
   }
 
   /// @brief Get the minimal cell volume.
-  real_t min_cell_volume() const noexcept {
+  [[nodiscard]] real_t min_cell_volume() const noexcept {
     STORM_ASSERT_(std::isfinite(min_cell_volume_));
     return min_cell_volume_;
   }
 
   /// @brief Get the maximal cell volume.
-  real_t max_cell_volume() const noexcept {
+  [[nodiscard]] real_t max_cell_volume() const noexcept {
     STORM_ASSERT_(std::isfinite(max_cell_volume_));
     return max_cell_volume_;
   }

@@ -61,9 +61,9 @@ namespace views = ranges::views;
 #endif
 
 // Check for C++20 support.
-//#if __cplusplus <= 202002L
-//#error Storm requires at least C++20
-//#endif
+// #if __cplusplus <= 202002L
+// #error Storm requires at least C++20
+// #endif
 
 /// @todo This should be moved to stormConfig.hxx
 #ifndef FEATHERS_CONFIG_FORCE_DISABLE_OPENMP
@@ -181,9 +181,9 @@ namespace views = ranges::views;
 /** Assertion macro. */
 /** @{ */
 #ifdef NDEBUG
-#define FEATHERS_ASSERT(x) FEATHERS_ASSUME(x)
+#define FEATHERS_ASSERT(x, ...) FEATHERS_ASSUME(x)
 #else
-#define FEATHERS_ASSERT(x) FEATHERS_ENSURE(x)
+#define FEATHERS_ASSERT(x, ...) FEATHERS_ENSURE(x)
 #endif
 /** @} */
 
